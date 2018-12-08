@@ -1,0 +1,12 @@
+name: shiny_unispec
+title: shiny_unispec
+username:
+account: rubytessa
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 396025
+bundleId: 1722301
+url: https://rubytessa.shinyapps.io/shiny_unispec/
+when: 1543287831.84922
+asMultiple: FALSE
+asStatic: FALSE
