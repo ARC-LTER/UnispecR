@@ -16,6 +16,8 @@ data_path <- "UnispecData/"
 
 
 # Functions ------------------------------------------
+source("unispec_functions.R")
+# for read_key_file()
 
 read_multispec_file <- function(multi_file) {
   ## Reads single multispec generated file
@@ -61,30 +63,6 @@ read_multispec_file <- function(multi_file) {
   return(tidy_df)
 }
 
-read_key_file <- function(key_file) {
-  # Read in format of .csv
-  key_csv <- read_csv(file = key_file, col_names = T,
-                      col_types = cols(
-                        Site = col_character(),
-                        Block = col_character(),
-                        Treatment = col_character(),
-                        Date = col_character(),
-                        P1 = col_integer(),
-                        P2 = col_integer(),
-                        P3 = col_integer(),
-                        P4 = col_integer(),
-                        P5 = col_integer()
-                      )) 
-  
-  # Consolidate measurements to tidy dataframe
-  key_df <- key_csv %>% 
-    gather(Measurement, FileNum, P1:P5) %>% 
-    filter(!is.na(FileNum)) %>% 
-    mutate(Measurement = str_extract(Measurement, "\\d+")) %>% 
-    mutate(Date = lubridate::mdy(Date))
-  
-  return(key_df)
-}
 
 calculate_ndvi_multispec <- function(tidydata) {
   nir <- c(820, 890)
@@ -109,8 +87,6 @@ calculate_ndvi_multispec <- function(tidydata) {
   
   return(ndvi_data)
 }
-
-
 
 
 
@@ -166,117 +142,10 @@ tidydata <- keys_data %>%
   filter(Wavelength >=400 & Wavelength <= 1100) # Choose relevent wavelengths 
 
 
-save(tidydata, file = "Toolik2018/Unispec/multispec_data_2017.Rda")
+
+## Save data
+#save(tidydata, file = "UnispecData/multispec_data_2017.Rda")
 
 
-
-
-
-
-
-
-
-# OBSELETE??? 4. Plot Reflectance Data ------------------------------------------------------------
-
-# Color sequences
-pur_pal <- RColorBrewer::brewer.pal(5, "Purples")
-
-####UNFISIHED
-# SELECTION
-sites <-c("SHB")
-blocks <- c("B1", "B2")
-trtmts <- c(NP, CT, "N", "P") 
-types <- c("correct")
-
-# Plotting Format
-plotdata <- tidydata %>% 
-  filter(Site %in% sites) %>% 
-  filter(Block %in% blocks) %>% 
-  filter(Treatment %in% trtmts) %>% 
-  filter(Type %in% types) %>% 
-  group_by(Site, Block, Treatment, Date, Wavelength) %>% 
-  summarize(
-    avg_reflect = mean(Reflectance),
-    max_ref = max(Reflectance),
-    min_ref = min(Reflectance),
-    var = var(Reflectance)) 
-
-# Actual Plot 
-ggplot(data = plotdata, mapping = aes(x = Wavelength, y =avg_reflect)) +
-  #geom_ribbon(aes(ymin=min_ref, ymax=max_ref, fill=Treatment), alpha=0.25) +
-  geom_line(aes(color=Treatment)) +
-  facet_grid(Block ~ Date) +
-  scale_color_manual(values=c("CT" = "black", "CT1"="black", "CT2"="black",
-                              "N" = "blue2", "NO3" = "dodgerblue", "NH4" = "deepskyblue",
-                              "P" = "red2",
-                              "NP" = pur_pal[5],
-                              "F0.5" = pur_pal[1],
-                              "F1" = pur_pal[2],
-                              "F2" = pur_pal[3],
-                              "F5" = pur_pal[4],
-                              "F10" = pur_pal[5]))  +
-  scale_fill_manual(values=c("CT" = "black", "CT1"="black", "CT2"="black",
-                             "N" = "blue2", "NO3" = "dodgerblue", "NH4" = "deepskyblue",
-                             "P" = "red2",
-                             "NP" = pur_pal[5],
-                             "F0.5" = pur_pal[1],
-                             "F1" = pur_pal[2],
-                             "F2" = pur_pal[3],
-                             "F5" = pur_pal[4],
-                             "F10" = pur_pal[5]))
-
-
-# OBSELETE??? 5. Calculate NDVI  ------------------------------------------------------
-
-#### NOW OBSELETE???? 
-#### LOOK IN unispec_indices_summary for the real deal. 
-
-
-# SELECTION
-sites <-c("LMAT")
-blocks <- c("B1", "B2", "B3", "B4")
-trtmts <- c(NP, CT, "N", "P") 
-types <- c("correct")
-
-# subset of full dataframe
-sub_data <- tidydata %>% 
-  filter(Site %in% sites) %>% 
-  filter(Block %in% blocks) %>% 
-  filter(Treatment %in% trtmts) %>% 
-  filter(Type %in% types) 
-  
-
-ndvi_data <- calculate_ndvi_multispec(sub_data) 
-
-plot_data <- ndvi_data %>% 
-  group_by(Site, Block, Treatment, Type, Date) %>% 
-  summarise(
-    avg_ndvi = mean(ndvi),
-    sd_ndvi = sd(ndvi)
-  )
-
-
-## Bar Plot
-ggplot(data = plot_data, mapping = aes(x = Treatment, y = avg_ndvi, fill=Type)) +
-  geom_bar(stat="identity", position= position_dodge(), color="black") + 
-  geom_errorbar(aes(ymin = avg_ndvi-sd_ndvi, ymax= avg_ndvi + sd_ndvi), width=0.2, position = position_dodge(0.9)) +
-  facet_grid(Block ~ Date)
-
-
-## Line Plot
-ggplot(data = plot_data, mapping = aes(x = Date, y = avg_ndvi, color = Treatment)) +
-  geom_point(aes(shape=Type)) + 
-  geom_line(aes(linetype=Type)) +
-  geom_errorbar(aes(ymin = avg_ndvi-sd_ndvi, ymax= avg_ndvi + sd_ndvi)) + 
-  scale_color_manual(values=c("CT" = "black", "CT1"="black", "CT2"="black",
-                              "N" = "blue2", "NO3" = "dodgerblue", "NH4" = "deepskyblue",
-                              "P" = "red2",
-                              "NP" = pur_pal[5],
-                              "F0.5" = pur_pal[1],
-                              "F1" = pur_pal[2],
-                              "F2" = pur_pal[3],
-                              "F5" = pur_pal[4],
-                              "F10" = pur_pal[5]))  +
-  facet_grid(Block ~ Site)
 
 

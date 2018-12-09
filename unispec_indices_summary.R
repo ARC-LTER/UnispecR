@@ -46,99 +46,7 @@ require(lubridate)
 
 
 # FUNCTIONS ---------------------------------------------------------------
-
-
-calculate_ndvi <- function(tidydata,  band_defn = "MODIS") {
-  if (band_defn == "ITEX") {
-    red <- c(560, 680)
-    nir <- c(725, 1000)
-  } else if (band_defn == "MODIS") {
-    
-    red <- c(620, 670)
-    nir <- c(841, 876)
-    blue <- c(459, 479)
-  } else if (band_defn == "SKYE" ) {
-    red <- c(620, 680)
-    nir <- c(830, 880)
-    blue <- c(455, 480)
-  } else {
-    print("ERROR - specify band definition")
-  }
-  
-  # Default MODIS bands for Red & NIR 
-  red_data <- tidydata %>% 
-    filter(Wavelength >= red[1] & Wavelength <= red[2]) %>% 
-    group_by(Site, Block, Treatment, Date, Measurement) %>% 
-    summarise(
-      red = mean(Reflectance)
-    )
-  
-  nir_data <- tidydata %>% 
-    filter(Wavelength >= nir[1] & Wavelength <= nir[2]) %>% 
-    group_by(Site, Block, Treatment, Date, Measurement) %>% 
-    summarise(
-      nir = mean(Reflectance)
-    )
-  
-  ndvi_data <- inner_join(nir_data, red_data) %>% 
-    mutate(ndvi = (nir-red)/(red+nir))
-  
-  return(ndvi_data)
-}
-
-calculate_index <- function(tidydata, band_defn ="MODIS", indices = c("NDVI", "EVI", "PBI_550")) {
-  # Default MODIS bands for Red, NIR, Blue
-  
-  if (band_defn == "ITEX") {
-    red <- c(560, 680)
-    nir <- c(725, 1000)
-  } else if (band_defn == "MODIS") {
-    
-    red <- c(620, 670)
-    nir <- c(841, 876)
-    blue <- c(459, 479)
-  } else if (band_defn == "SKYE" ) {
-    red <- c(620, 680)
-    nir <- c(830, 880)
-    blue <- c(455, 480)
-  } else if (band_defn == "Toolik-GIS-drone") {
-    # 2018 values
-    red <- c(640,680)
-    nir <- c(820,890)
-    
-    } else {
-    print("ERROR - specify band definition")
-  }
-
- index1_data <- tidydata %>%
-    mutate(color = ifelse(Wavelength >= blue[1] & Wavelength <= blue[2], "blue", 
-                          ifelse(Wavelength >= red[1] & Wavelength <= red[2], "red", 
-                                 ifelse(Wavelength >= nir[1] & Wavelength <= nir[2], "nir",
-                                        "other")))) %>% 
-    group_by(Site, Block, Treatment, Date, Measurement, color) %>% 
-    summarize(Reflectance = mean(Reflectance)) %>% 
-    spread(color, Reflectance) %>% 
-    mutate(NDVI = (nir-red)/(nir+red),
-           EVI = 2.5*((nir-red)/(nir+6*red-7.5*blue+1)),
-           EVI2 = 2.5*((nir-red)/(nir+2.4*red + 1)))
- 
- index2_data <- tidydata %>% 
-   group_by(Site, Block, Treatment, Date, Measurement, FileNum) %>% 
-   summarize(PRI_550 = (Reflectance[Wavelength == 550][1] - Reflectance[Wavelength == 531][1])/ 
-               (Reflectance[Wavelength == 550][1] + Reflectance[Wavelength == 531][1]),
-             PRI_570 = (Reflectance[Wavelength == 570][1] - Reflectance[Wavelength == 531][1])/ 
-               (Reflectance[Wavelength == 570][1] + Reflectance[Wavelength == 531][1]),
-             WBI = Reflectance[Wavelength == 900][1] / Reflectance[Wavelength == 970][1],
-             Chl = (Reflectance[Wavelength == 750][1] - Reflectance[Wavelength == 705][1])/ 
-               (Reflectance[Wavelength == 750][1] + Reflectance[Wavelength == 705][1]))
-
-  
- index_data <- inner_join(index1_data, index2_data) %>% 
-   select(-c(red, blue, nir, other))
- 
- return(index_data)
-}
-
+source("unispec_functions.R")
 
 # NDVI = (NIR-Red)/(NIR+Red)
 # 
@@ -170,9 +78,9 @@ NP <- c("F0.5","F1","F2","F5","F10","NP", "NO3", "NH4")
 trtmt_list <- c(CT, "N", "P", NP)
 
 # Read in Data from 2016-2017 ------------------------------------------------------------
-data_path <- "LTER_R/"
+data_path <- getwd()
 # read in index data from summary
-index_summary <- read_csv(file =paste0(data_path,"unispec_index_summary_2007-2016.csv"), col_names=T, col_type=cols(
+index_summary <- read_csv(file = "UnispecData/unispec_index_summary_2007-2016.csv", col_names=T, col_type=cols(
   SCAN_ID = col_character(),
   Year = col_integer(),
   Date = col_date(format="%m/%d/%Y"),
@@ -202,11 +110,11 @@ indices <- index_summary %>%
 
 
 # Load data from 2006-2018 ------------------------------------------------
-load("LTER_R/unispec_index_summary_dataframe.Rda")
+load("UnispecData/unispec_indices_summary_dataframe.Rda")
 
 
 # Load data from 2017  -------------------------------------------------
-load(paste0(data_path, "multispec_data_2017.Rda"))
+load("UnispecData/multispec_data_2017.Rda")
 
 tidy_multispec_data_2017 <- multispec_data_2017 %>% filter(Type=="correct") %>% 
   filter(Treatment %in% trtmt_list)
@@ -219,7 +127,7 @@ indices_2017 <- calculate_index(tidy_multispec_data_2017) %>%
   mutate(DOY = as.integer(lubridate::yday(Date))) 
 
 # Load data from 2018  -------------------------------------------------
-load(paste0(data_path,"multispec_data_2018.Rda"))
+load("UnispecData/multispec_data_2018.Rda")
 
 tidy_multispec_data_2018 <- multispec_data_2018 %>% filter(Type=="correct") %>% 
   filter(Treatment %in% trtmt_list)
@@ -242,7 +150,9 @@ index_data <- bind_rows(indices, indices_2017, .id=NULL) %>%
   mutate(Site = replace(Site, Site %in% LOF, "LOF")) %>% 
   mutate(Site = replace(Site, Site == "HTH", "DHT"))
 
-save(index_data, file =  "LTER_R/unispec_indices_summary_dataframe.Rda")
+
+# Save Data ---------------------------------------------------------------
+save(index_data, file =  "UnispecData/unispec_indices_summary_dataframe.Rda")
 
 # Plot Data ---------------------------------------------------------------
 

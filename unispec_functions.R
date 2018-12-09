@@ -56,27 +56,47 @@ read_key_file <- function(key_file) {
   return(key_df)
 }
 
-calculate_ndvi <- function(tidydata, nir = c(820,890), red = c(640, 680)) {
 
-  red_data <- tidydata %>%
-    filter(Wavelength >= red[1] & Wavelength <= red[2]) %>%
-    group_by(Site, Block, Treatment, Date, Measurement, Type) %>%
+
+
+calculate_ndvi <- function(tidydata,  band_defn = "MODIS") {
+  if (band_defn == "ITEX") {
+    red <- c(560, 680)
+    nir <- c(725, 1000)
+  } else if (band_defn == "MODIS") {
+    
+    red <- c(620, 670)
+    nir <- c(841, 876)
+    blue <- c(459, 479)
+  } else if (band_defn == "SKYE" ) {
+    red <- c(620, 680)
+    nir <- c(830, 880)
+    blue <- c(455, 480)
+  } else {
+    print("ERROR - specify band definition")
+  }
+  
+  # Default MODIS bands for Red & NIR 
+  red_data <- tidydata %>% 
+    filter(Wavelength >= red[1] & Wavelength <= red[2]) %>% 
+    group_by(Site, Block, Treatment, Date, Measurement) %>% 
     summarise(
       red = mean(Reflectance)
     )
-
-  nir_data <- tidydata %>%
-    filter(Wavelength >= nir[1] & Wavelength <= nir[2]) %>%
-    group_by(Site, Block, Treatment, Date, Measurement,Type) %>%
+  
+  nir_data <- tidydata %>% 
+    filter(Wavelength >= nir[1] & Wavelength <= nir[2]) %>% 
+    group_by(Site, Block, Treatment, Date, Measurement) %>% 
     summarise(
       nir = mean(Reflectance)
     )
-
-  ndvi_data <- inner_join(nir_data, red_data) %>%
+  
+  ndvi_data <- inner_join(nir_data, red_data) %>% 
     mutate(ndvi = (nir-red)/(red+nir))
-
+  
   return(ndvi_data)
 }
+
 
 calculate_index <- function(tidydata, band_defn ="MODIS", indices = c("NDVI", "EVI", "PBI_550", "PRI_570", "WBI", "Chl")) {
   # Default MODIS bands for Red, NIR, Blue
@@ -133,3 +153,6 @@ calculate_index <- function(tidydata, band_defn ="MODIS", indices = c("NDVI", "E
 
   return(index_data)
 }
+
+
+
