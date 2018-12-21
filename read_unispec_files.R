@@ -115,8 +115,8 @@ ref_summary <- ref_data %>%
 ## Join DATA with REFS 
 df_ref <- inner_join(df_tidy, ref_summary) %>% 
   select(Date, Time, Site, Block, Treatment, Measurement, Wavelength,  int, int_REF, ChB, ChA, ChB_REF, ChA_REF, CorrectionFactor_REF, Weather, Notes, Notes_REF, filename, FileNum, keyname) %>%
-  mutate(raw = ChB/ChA) %>% 
-  mutate(correct = raw*CorrectionFactor_REF) %>% 
+  mutate(raw = ChB/ChA) %>% # this is the raw reflectance
+  mutate(correct = raw*CorrectionFactor_REF) %>% # this line calculates corrected reflectance
   gather(Type, Reflectance, raw:correct)
 
 

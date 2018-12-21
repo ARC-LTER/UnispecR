@@ -132,10 +132,10 @@ calculate_index <- function(tidydata, band_defn ="MODIS", indices = c("NDVI", "E
     summarize(Reflectance = mean(Reflectance)) %>%
     spread(color, Reflectance) %>%
     mutate(NDVI = (nir-red)/(nir+red),
-           EVI = 2.5*((nir-red)/(nir+6*red-7.5*blue+1)),
+           EVI = 2.5*((nir-red)/(nir+6*red-7.5*blue + 1)),
            EVI2 = 2.5*((nir-red)/(nir+2.4*red + 1)))
 
-  ## Calculate PRI, WBI, Chl
+  ## Calculate PRI, WBI, Chl : requires interpolated data
   index2_data <- tidydata %>%
     group_by(Site, Block, Treatment, Date, Measurement, FileNum) %>%
     summarize(PRI_550 = (Reflectance[Wavelength == 550][1] - Reflectance[Wavelength == 531][1])/
