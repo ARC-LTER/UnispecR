@@ -1,0 +1,6 @@
+"0","## Join all data matching keys dataframe (drops any non-matching data),"
+"0","##  by columns (Date, Site, FileNum)"
+"0","df <- inner_join(data, keys) %>% "
+"0","  filter(Wavelength >= 400 & Wavelength <= 1000) # Choose relevent wavelengths "
+"2","Joining, by = c(""Site"", ""FileNum"", ""Date"")
+"

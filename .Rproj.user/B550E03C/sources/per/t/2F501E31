@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1545046563298.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3507097021",
+    "id" : "2F501E31",
+    "lastKnownWriteTime" : 1544739935,
+    "last_content_update" : 1544739935,
+    "path" : "~/UnispecR/qaqc_unispec_files.R",
+    "project_path" : "qaqc_unispec_files.R",
+    "properties" : {
+        "cursorPosition" : "111,0",
+        "docOutlineVisible" : "1",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

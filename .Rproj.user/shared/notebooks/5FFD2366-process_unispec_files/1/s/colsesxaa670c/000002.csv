@@ -1,0 +1,6 @@
+"0","## EXAMINE SPECIFIC info: check Integration, Notes, Weather, filename, etc. "
+"0","ref_check_files <- ref_check %>% "
+"0","  select(-c(Wavelength, ChA, ChB, CorrectionFactor_REF, keyname, Time)) %>% "
+"0","  unique()"
+"0","### View dataframe of ref_check_files"
+"0","kable(ref_check_files)"

@@ -1,0 +1,8 @@
+"0","## Find .spu files"
+"0","### alter data_path or specify Date(s) or Site(s) to read files"
+"0","files <- list.files(path = data_path, pattern = "".spu$"", full.names = T, recursive=T)"
+"0","## Read data from files (can take minutes)"
+"0","data_list <- data_frame(filename = files) %>% # create dataframe"
+"0","  mutate(file_contents = map(filename, function(x) read_spu_file(x)))"
+"0","## Unpack into usable dataframe "
+"0","data <- unnest(data_list) "

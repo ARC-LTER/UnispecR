@@ -1,0 +1,5 @@
+"0","## INTERACTIVE CODE (use when in RStudio)"
+"0","# library(""rChoiceDialogs"") # for interactively selecting file directories"
+"0","# data_path <- rchoose.dir(caption = ""Select Unispec files directory"")"
+"0","## STATIC CODE (use when Knitting)"
+"0","data_path  <- ""UnispecData/Unispec6/"" "

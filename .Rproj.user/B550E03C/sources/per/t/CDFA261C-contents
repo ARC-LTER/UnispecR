@@ -1,0 +1,193 @@
+---
+title: "Process LTER Unispec Data"
+author: "Ruby An"
+date: "December 17, 2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+source("unispec_functions.R") # file loads required packages and functions
+library("tidyverse")
+library("knitr")
+
+## Useful vectors for standardizing names and filtering data
+WSG <- c("WSG1", "WSG23")
+SHB <- c("SHB1", "SHB2")
+site_list <- list("MAT", "LMAT", "MNAT", "NANT", "DHT", WSG, SHB, "HST")
+
+CT <- c("CT","CT1","CT2")
+NP_gradient <- c("F0.5","F1","F2","F5","F10") # for LOF site
+N_types <- c("NO3", "NH4") # for LOF site
+trtmt_list <- list(CT, "N", "P", "NP", NP_gradient, N_types)
+```
+
+## How to use this R Markdown Notebook: 
+
+This R Markdown document will walk you through the steps to process Unispec-DC data collected from the Toolik Arctic LTER plots. For more background and info, consult *A People’s Guide to Unispec-DC Measurements and Data Prep* in the LTER files. 
+
+Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>. For exhaustive details on using R Markdown see <https://bookdown.org/yihui/rmarkdown/>. 
+
+To preview output in the *"Viewer"* pane of RStudio, look for the "gear" icon and choose the *"Preview in Viewer Pane"* option. If you want a static report, clicking the  **Knit** button will generate a document that includes both content as well as the output of any embedded R code chunks within the document.
+
+
+## Choose Directory
+
+Select the folder containing the unispec files you want to process. Run the following code chunk interactively to set folder via pop-up window. 
+```{r directory}
+## INTERACTIVE CODE (when in RStudio)
+# library("rChoiceDialogs") # for interactively selecting file directories
+# data_path <- rchoose.dir(caption = "Select Unispec files directory")
+
+## STATIC CODE (when Knitting)
+data_path  <- "UnispecData/Unispec1/" 
+```
+
+**Chosen Directory**: `r data_path`
+
+This directory should contain both the `.spu` files you wish to process and a corresponding `*_unispec_key.csv` file. The key file matches the .spu files to the date, site, block, treatment, plot, & measurement and specifies which white references to use to correct for instrument error. 
+
+## Load Unispec Data 
+Run the following code chunks to load & join keys to data from your chosen directory. 
+
+### Load Keys 
+```{r key} 
+## Find all file keys 
+### alter search pattern to choose specific key(s)
+key_files <- list.files(path = data_path, pattern = "*_key.csv", full.names = T, recursive = T)
+
+## Read in data from filekeys 
+key_list <- data_frame(keyname = key_files) %>% # create dataframe
+  mutate(key_contents = map(keyname, function(x) read_key_file(x))) 
+# map function: super useful to apply function to objects without slow "for" loops
+
+## Unpack into usable dataframe 
+keys <- unnest(key_list)
+```
+
+### Load Data
+```{r spu_data}
+## Find .spu files
+### alter data_path or specify Date(s) or Site(s) to read files
+files <- list.files(path = data_path, pattern = ".spu$", full.names = T, recursive=T)
+
+## Read data from files (can take minutes)
+data_list <- data_frame(filename = files) %>% # create dataframe
+  mutate(file_contents = map(filename, function(x) read_spu_file(x)))
+
+## Unpack into usable dataframe 
+data <- unnest(data_list) 
+```
+
+### Join Keys & Data
+```{r join_keys_data, echo=F}
+## Join all data matching keys dataframe (drops any non-matching data),
+##  by columns (Date, Site, FileNum)
+df <- inner_join(data, keys) %>% 
+  filter(Wavelength >= 500 & Wavelength <= 1000) # Choose relevent wavelengths 
+```
+
+The following table lists the dates and sites of the files contained in your chosen directory: 
+```{r df_table, echo=F}
+## Sites per Date table to display
+df_table <- df %>% 
+  select(Date, Site) %>% 
+  distinct() %>% 
+  group_by(Date) %>% 
+  do(Sites = t(.[-1])) %>% 
+  mutate(Sites = paste( unlist(Sites), collapse=','))
+
+kable(df_table)
+```
+
+
+
+## QAQC
+Quality check unispec data using the following code chunks.
+
+### White References
+White references correct for instrument & cable irregularities. Multiplying by the correction factor (ChA/ChB) smooths out the spectra. If multiple file numbers are listed (typically 5), the correction factors are averaged. 
+
+The following code chunk plots all the white refereence spectra. Look for correction factors very far from 1.0 or with odd peaks. 
+
+```{r refs, warnings=F}
+## Find all white reference files 
+ref_data <- df %>% 
+  filter(str_detect(Treatment, "REF"))%>% # extract reference data 
+  separate(Block, into = c("BX1", "BX2", "BX3", "BX4"), sep = ",") %>% # expand string entry in "Block", necessary if different ref for different blocks at same site
+  gather(Block, BlockString, BX1:BX4) %>% # re-condense into one column
+  mutate(Block = str_squish(BlockString), BlockString=NULL) %>% # remove whitespace from Block names introduced by "separate" function
+  filter(!is.na(Block)) %>% # remove empty rows for site w/out B3 or B4
+  mutate(CorrectionFactor_REF = ChA/ChB)
+
+## Plot ALL Correction Factors for quality check 
+cor_factor_plot <- ggplot(data = ref_data, mapping = aes(x = Wavelength, y = CorrectionFactor_REF)) +
+  geom_line(aes(color=Treatment, linetype=Measurement, alpha=Block)) +
+  facet_grid(Site ~ Date) + 
+  scale_alpha_discrete(range=c(1, 0.5)) # set transparency by block
+
+cor_factor_plot
+```
+
+Run the following code chunk interactively in RStudio to check specific reference files. 
+```{r check_refs, echo=F}
+# Useful Vectors
+sites <- unlist(site_list)
+dates <- df %>% select(Date) %>% unique() %>% slice(1:n()) %>% c()
+
+## SPECIFY SITE/DATE/ETC to ZOOM IN ON
+check_sites <- c("LMAT", "MAT")
+check_dates <- dates[1:3][[1]]
+
+ref_check <- ref_data %>% 
+  filter(Date %in% check_dates) %>% 
+  filter(Site %in% check_sites) 
+
+## Plot Specified Correction Factors for quality check 
+cor_factor_plot_zoom <- ggplot(data = ref_check, mapping = aes(x = Wavelength, y = CorrectionFactor_REF)) +
+  geom_line(aes(color=Treatment, linetype=Measurement, alpha=Block)) +
+  facet_grid(Site ~ Date) + 
+  scale_alpha_discrete(range=c(1, 0.25))
+
+cor_factor_plot_zoom
+
+## EXAMINE SPECIFIC info: check Integration, Notes, Weather, filename, etc. 
+ref_check_files <- ref_check %>% 
+  select(-c(Wavelength, ChA, ChB, CorrectionFactor_REF, keyname, Time)) %>% 
+  unique()
+
+### View dataframe of ref_check_files
+kable(ref_check_files)
+```
+
+Choose reference files by entering the appropriate file numbers in `r key_files` for the rows where the *Treatment* column = *REF*. There are typically 5 reference measurements per date/site. 
+
+```{r ref_table, echo=F}
+options(knitr.kable.NA = '')
+## Output Key Table of References 
+ref_keys <- keys %>% 
+  filter(Treatment == "REF") %>% 
+  mutate(Measurement = str_c("P", Measurement)) %>% 
+  select(Date, Site, Block, Weather, Notes, Measurement, FileNum) %>% 
+  spread(Measurement, FileNum) %>% 
+  unite(FileNums, P1:P5, sep=",")
+
+kable(ref_keys, caption="White Reference Files")
+  
+```
+
+
+
+### Data
+
+
+```{r qaqc, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Process Unispec Data

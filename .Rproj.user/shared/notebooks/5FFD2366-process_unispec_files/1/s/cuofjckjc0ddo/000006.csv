@@ -1,0 +1,8 @@
+"0","## Sites per Date table to display"
+"0","df_table <- df %>% "
+"0","  select(Date, Site) %>% "
+"0","  distinct() %>% "
+"0","  group_by(Date) %>% "
+"0","  do(Sites = t(.[-1])) %>% "
+"0","  mutate(Sites = paste( unlist(Sites), collapse=','))"
+"0","kable(df_table)"
