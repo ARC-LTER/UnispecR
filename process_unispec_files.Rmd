@@ -36,7 +36,12 @@ This R Markdown document will walk you through the steps to process Unispec-DC d
 
 Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>. For more details on R as a programming language for data analysis, see <https://r4ds.had.co.nz/index.html>.
 
-**To use this notebook INTERACTIVELY**: set `output: html_notebook` in the header at the top of this document. In this mode, it is useful select the **"Preview in Viewer Pane"** option (under the "gear" icon). The preview will then update every time you rerun code chunks and save this file. 
+**To use this notebook INTERACTIVELY**: set `output: html_notebook` in the header at the top of this document. In this mode, you can: 
+
+- Look at the output in the "Viewer" Pane of RStudio (choose **"Preview in Viewer Pane"** option under the "gear" icon). 
+- Clicking the "Preview" button above will also generate a `process_unispe_files.nb.html` file which you can open in your web browser of choice. 
+
+The preview will then update every time you rerun code chunks and save this file. To run all code chunks you can use the keyboard shortcut CTL+ALT+R. 
 
 **To generate a STATIC report**: choose **Knit to HTML** or PDF to generate a document that includes both written content as well as the output of any embedded R code chunks within the document.
 
@@ -50,7 +55,7 @@ Select the folder containing the unispec files you want to process. Run the foll
 # data_path <- rchoose.dir(caption = "Select Unispec files directory")
 
 ## STATIC CODE (use when Knitting)
-data_path  <- "UnispecData/Unispec1/" 
+data_path  <- "UnispecData/Unispec6/" 
 ```
 
 **Chosen Directory**: `r data_path`
@@ -155,7 +160,7 @@ sites <- unlist(site_list)
 dates <- df %>% select(Date) %>% unique() %>% slice(1:n()) %>% c() # list of dates present in data
 
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_sites <- c("SHB1")
+check_sites <- c("MNAT")
 check_dates <- dates[[1]] # necessary to unlist dates vector
 
 ref_check <- ref_data_all %>% 
@@ -264,7 +269,8 @@ For the following code, make sure you select only one date per site. The 5 measu
 
 ```{r plot_spectra_blocks, echo=F}
 # PLOT SELECTION 
-dates <- lubridate::ymd("2018-06-22", "2018-06-25")
+dates <- df %>% select(Date) %>% unique() %>% slice(1:n()) %>% c() # list of dates present in data
+# dates <- lubridate::ymd("2018-06-22", "2018-06-25") # choose your own dates
 sites <- c("HST", "MAT", "LMAT",  "MNAT", "NANT", "WSG", "DHT", "SHB")
 blocks <- c("B1", "B2", "B3", "B4")
 trtmts <- c("N", "NP", CT, NP_gradient) 
@@ -314,7 +320,8 @@ Average plot averages by block. NOTE: Ask Laura what the correct error propogati
 
 ```{r plot_spectra_dates, echo=F}
 # PLOT SELECTION 
-dates <- lubridate::ymd("2018-06-22", "2018-06-25")
+dates <- df %>% select(Date) %>% unique() %>% slice(1:n()) %>% c() # list of dates present in data
+#dates <- lubridate::ymd("2018-06-22", "2018-06-25")
 sites <- c("HST", "MAT", "LMAT",  "MNAT", "NANT", "WSG", "DHT", "SHB")
 blocks <- c("B1", "B2", "B3", "B4")
 trtmts <- c("N", "NP", CT, NP_gradient) 
@@ -374,7 +381,7 @@ Currently, this only works for NDVI, EVI, and EVI2 as I haven't worked out spect
 ```{r ndvi, echo=F}
 
 # SELECTION
-sites <-c("MAT", "DHT", "WSG", "LMAT")
+sites <-c("MAT", "NANT", "MNAT", "LMAT")
 blocks <- c("B1", "B2", "B3", "B4")
 trtmts <- c(CT,"NP", "F10") 
 

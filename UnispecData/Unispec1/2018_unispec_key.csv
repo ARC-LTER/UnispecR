@@ -1,6 +1,6 @@
 Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
-6/22/2018,MAT,"B1, B2, B3, B4",DARK,0,,,,,"Sunny, calm, some thin high clouds",Unsure if dark scan worked correctly?
-6/22/2018,MAT,"B1, B2, B3, B4",REF,1,2,3,4,5,,
+6/22/2018,MAT,"B1, B2, B3, B4",DARK,0,,,,,,Unsure if dark scan worked correctly?
+6/22/2018,MAT,"B1, B2, B3, B4",REF,1,2,3,4,5,"Sunny, calm, some thin high clouds",
 6/22/2018,MAT,B2,P,6,7,8,9,10,,
 6/22/2018,MAT,B2,CT2,11,12,13,14,15,,
 6/22/2018,MAT,B2,CT1,16,17,18,19,20,,
@@ -22,9 +22,9 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 6/22/2018,MAT,B1,N,96,97,98,99,100,,
 6/22/2018,MAT,B1,P,101,102,103,104,105,,
 6/22/2018,MAT,B1,CT1,106,107,108,109,110,,
-6/22/2018,LMAT,"B1, B2, B3, B4",MAT_DARK,0,,,,,"Sunny, calm, some thin high clouds",Dark scan taken from MAT
-6/22/2018,LMAT,"B1, B2, B3",REF,0,1,2,3,4,,
-6/22/2018,LMAT,B4,REF,5,6,7,8,9,,Roughly facing direction of measurements on Block 4
+6/22/2018,LMAT,"B1, B2, B3, B4",MAT_DARK,0,,,,,,Dark scan taken from MAT
+6/22/2018,LMAT,"B1, B2, B3",REF,0,1,2,3,4,"Sunny, calm, some thin high clouds",
+6/22/2018,LMAT,B4,REF,5,6,7,8,9,"Sunny, calm, some thin high clouds",Roughly facing direction of measurements on Block 4
 6/22/2018,LMAT,B1,F2,10,11,12,13,14,,
 6/22/2018,LMAT,B1,F5,15,16,17,18,19,,
 6/22/2018,LMAT,B1,F10,20,21,22,23,24,,
@@ -65,8 +65,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 6/22/2018,WSG1,B1,NP,15,16,17,18,19,,
 6/22/2018,WSG1,B1,N,20,21,22,23,24,,
 6/22/2018,WSG1,B1,CT2,25,26,27,28,29,,
-6/22/2018,WSG23,"B2, B3",DARK,0,,,,,Partial high clouds,
-6/22/2018,WSG23,"B2, B3",REF,1,2,3,4,5,,
+6/22/2018,WSG23,"B2, B3",DARK,0,,,,,,
+6/22/2018,WSG23,"B2, B3",REF,1,2,3,4,5,Partial high clouds,
 6/22/2018,WSG23,B3,NP,6,7,8,9,10,,
 6/22/2018,WSG23,B3,P,11,12,13,14,15,,"These 5 measurements were taken backwards of the ""right"" direction of travel on the maps. "
 6/22/2018,WSG23,B3,N-2,16,17,18,19,20,,Wrong location in N plot
@@ -76,9 +76,9 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 6/22/2018,WSG23,B2,N,36,37,38,39,40,,
 6/22/2018,WSG23,B2,CT,41,42,43,44,45,,
 6/22/2018,WSG23,B2,P,46,47,48,49,50,,
-6/22/2018,DHT,"B1, B2, B3",DARK,0,,,,,Layer of high clouds,
-6/22/2018,DHT,"B1, B2, B3",REF,1,2,3,4,5,,int = 50
-6/22/2018,DHT,"B1, B2, B3",REF-2,6,7,8,9,10,,int = 60
+6/22/2018,DHT,"B1, B2, B3",DARK,0,,,,,,
+6/22/2018,DHT,"B1, B2, B3",REF,1,2,3,4,5,Layer of high clouds,int = 50
+6/22/2018,DHT,"B1, B2, B3",REF-2,6,7,8,9,10,Layer of high clouds,int = 60
 6/22/2018,DHT,B1,NP,11,12,13,14,15,,
 6/22/2018,DHT,B1,P,16,17,18,19,20,,
 6/22/2018,DHT,B1,CT2,21,22,23,24,25,,
@@ -113,14 +113,14 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 6/22/2018,DHT,B3,EXNP-SF,166,167,168,169,170,,
 6/22/2018,DHT,B3,EXNP-LF,171,172,173,174,175,,
 6/22/2018,DHT,B3,P,176,177,178,179,180,,
-6/25/2018,SHB1,B1,DARK,0,,,,,"sunny, some large fluffy clouds",Unispecing the shrub sites is NOT GOOD. Fiberoptic cables are too short for extension. Shrubs are actually taller than extension at SHB1 and shorter at SHB2. This really seems somewhat infeasible with the current method…
-6/25/2018,SHB1,B1,TEST-REF,11,12,13,,,,Ignore this data. Level was not brought so it really probably is not significant.
-6/25/2018,SHB1,B1,NP,1,2,3,4,5,,Ignore this data. Level was not brought so it really probably is not significant.
-6/25/2018,SHB1,B1,P,6,7,8,9,10,,Ignore this data. Level was not brought so it really probably is not significant.
-6/25/2018,SHB1,B1,N,11,12,13,14,15,,Ignore this data. Level was not brought so it really probably is not significant.
-6/25/2018,SHB1,B1,CT2,16,17,18,19,20,,Ignore this data. Level was not brought so it really probably is not significant.
-6/25/2018,HST,"B1, B2, B3, B4",DARK,0,,,,,"Sunny with some large, puffy clouds",
-6/25/2018,HST,"B1, B2, B3, B4",REF,2,3,4,5,6,,"First REF is with too high of an integration time, max'ed out (File Num 1) "
+6/25/2018,SHB1,B1,DARK,0,,,,,,Unispecing the shrub sites is NOT GOOD. Fiberoptic cables are too short for extension. Shrubs are actually taller than extension at SHB1 and shorter at SHB2. This really seems somewhat infeasible with the current method…
+6/25/2018,SHB1,B1,TEST-REF,11,12,13,,,"sunny, some large fluffy clouds",Ignore this data. Bad Reference. Level was not brought so it really probably is not significant.
+6/25/2018,SHB1,B1,NP,1,2,3,4,5,,Ignore this data. Bad Reference. Level was not brought so it really probably is not significant.
+6/25/2018,SHB1,B1,P,6,7,8,9,10,,Ignore this data. Bad Reference. Level was not brought so it really probably is not significant.
+6/25/2018,SHB1,B1,N,11,12,13,14,15,,Ignore this data. Bad Reference. Level was not brought so it really probably is not significant.
+6/25/2018,SHB1,B1,CT2,16,17,18,19,20,,Ignore this data. Bad Reference. Level was not brought so it really probably is not significant.
+6/25/2018,HST,"B1, B2, B3, B4",DARK,0,,,,,,
+6/25/2018,HST,"B1, B2, B3, B4",REF,2,3,4,5,6,"Sunny with some large, puffy clouds","First REF is with too high of an integration time, max'ed out (File Num 1) "
 6/25/2018,HST,B4,NP,7,8,9,10,11,,
 6/25/2018,HST,B4,CT,12,13,14,15,16,,
 6/25/2018,HST,B3,NP,17,18,19,20,21,,
@@ -166,8 +166,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 6/25/2018,MNAT,B1,L,75,76,77,78,79,,
 6/25/2018,MNAT,B1,N,80,81,82,83,84,,
 6/25/2018,MNAT,B1,P,85,86,87,88,89,,
-6/29/2018,MAT,"B1, B2, B3, B4",DARK,0,,,,,"Sunny, calm, some thin high clouds",Unsure if dark scan worked correctly?
-6/29/2018,MAT,"B1, B2, B3, B4",REF,1,2,3,4,5,,
+6/29/2018,MAT,"B1, B2, B3, B4",DARK,0,,,,,,Unsure if dark scan worked correctly?
+6/29/2018,MAT,"B1, B2, B3, B4",REF,1,2,3,4,5,"Sunny, calm, some thin high clouds",
 6/29/2018,MAT,B2,P,6,7,8,9,10,,
 6/29/2018,MAT,B2,CT2,11,12,13,14,15,,
 6/29/2018,MAT,B2,CT1,16,17,18,19,20,,
@@ -188,8 +188,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 6/29/2018,MAT,B1,N,91,92,93,94,95,,
 6/29/2018,MAT,B1,P,96,97,98,99,100,,
 6/29/2018,MAT,B1,CT1,101,102,103,104,105,,
-6/29/2018,LMAT,"B1, B2, B3, B4",MAT_DARK,0,,,,,"Sunny, calm, some thin high clouds",Dark scan taken from MAT
-6/29/2018,LMAT,"B1, B2, B3, B4",REF,180,181,182,183,184,,
+6/29/2018,LMAT,"B1, B2, B3, B4",MAT_DARK,0,,,,,,Dark scan taken from MAT
+6/29/2018,LMAT,"B1, B2, B3, B4",REF,180,181,182,183,184,"Sunny, calm, some thin high clouds",
 6/29/2018,LMAT,"B1, B2, B3, B4",REF-2,185,186,187,188,189,,
 6/29/2018,LMAT,"B1, B2, B3, B4",REF-3,190,191,192,193,194,,
 6/29/2018,LMAT,B1,F2,0,1,2,3,4,,
@@ -327,8 +327,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/3/2018,MNAT,B1,L,88,89,90,91,92,,
 7/3/2018,MNAT,B1,N,93,94,95,96,97,,
 7/3/2018,MNAT,B1,P,98,99,100,101,102,,
-7/13/2018,MAT,"B1, B2, B3, B4",DARK,0,,,,,"mostly sunny, large puffy clouds, patches of cloud cover sun at end",
-7/13/2018,MAT,"B1, B2, B3, B4",REF,0,1,2,3,4,,
+7/13/2018,MAT,"B1, B2, B3, B4",DARK,0,,,,,,
+7/13/2018,MAT,"B1, B2, B3, B4",REF,0,1,2,3,4,"mostly sunny, large puffy clouds, patches of cloud cover sun at end",
 7/13/2018,MAT,B2,P,5,6,7,8,9,,
 7/13/2018,MAT,B2,CT2,10,11,12,13,14,,
 7/13/2018,MAT,B2,CT1,15,16,17,18,19,,
@@ -349,8 +349,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/13/2018,MAT,B1,N,90,91,92,93,94,,
 7/13/2018,MAT,B1,P,95,96,97,98,99,,
 7/13/2018,MAT,B1,CT1,100,101,102,103,104,,
-7/13/2018,LMAT,"B1, B2, B3, B4",DARK,0,,,,,"sunny, puffy clouds building on horizon",
-7/13/2018,LMAT,"B1, B2, B3, B4",REF,1,2,3,4,5,,
+7/13/2018,LMAT,"B1, B2, B3, B4",DARK,0,,,,,,
+7/13/2018,LMAT,"B1, B2, B3, B4",REF,1,2,3,4,5,"sunny, puffy clouds building on horizon",
 7/13/2018,LMAT,B1,F2,6,7,8,9,10,,
 7/13/2018,LMAT,B1,H,11,12,13,14,15,,
 7/13/2018,LMAT,B1,F5,16,17,18,19,20,,
@@ -387,8 +387,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/13/2018,LMAT,B4,H,171,172,173,174,175,,
 7/13/2018,LMAT,B4,NO3,176,177,178,179,180,,
 7/13/2018,LMAT,B4,F10,181,182,183,184,185,,
-7/13/2018,WSG1,B1,LMAT_DARK,0,,,,,"Partly cloudy, large puffy clouds",
-7/13/2018,WSG1,B1,REF,25,26,27,28,29,,Ref for all plots but CT2
+7/13/2018,WSG1,B1,LMAT_DARK,0,,,,,,
+7/13/2018,WSG1,B1,REF,25,26,27,28,29,"Partly cloudy, large puffy clouds",Ref for all plots but CT2
 7/13/2018,WSG1,B1,REF-2,30,31,,,,,Ref for short end of CT2 (direction)
 7/13/2018,WSG1,B1,REF-3,32,33,34,,,,Ref for long end of CT2
 7/13/2018,WSG1,B1,CT1,0,1,2,3,4,,
@@ -396,8 +396,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/13/2018,WSG1,B1,NP,10,11,12,13,14,,
 7/13/2018,WSG1,B1,N,15,16,17,18,19,,
 7/13/2018,WSG1,B1,CT2,20,21,22,23,24,,
-7/13/2018,WSG23,"B2, B3",DARK,0,,,,,"Partly cloudy, large puffy clouds",
-7/13/2018,WSG23,"B2, B3",REF,1,2,3,4,5,,
+7/13/2018,WSG23,"B2, B3",DARK,0,,,,,,
+7/13/2018,WSG23,"B2, B3",REF,1,2,3,4,5,"Partly cloudy, large puffy clouds",
 7/13/2018,WSG23,B3,NP,6,7,8,9,10,,
 7/13/2018,WSG23,B3,P,11,12,13,14,15,,
 7/13/2018,WSG23,B3,N,16,17,18,19,20,,
@@ -406,8 +406,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/13/2018,WSG23,B2,N,31,32,33,34,35,,
 7/13/2018,WSG23,B2,CT,36,37,38,39,40,,
 7/13/2018,WSG23,B2,P,41,42,43,44,45,,
-7/13/2018,DHT,"B1, B2, B3",DARK,0,,,,,"Partly cloudy, large puffy clouds",Mostly sunny until the end
-7/13/2018,DHT,"B1, B2, B3",REF,1,2,3,4,5,,
+7/13/2018,DHT,"B1, B2, B3",DARK,0,,,,,,
+7/13/2018,DHT,"B1, B2, B3",REF,1,2,3,4,5,"Partly cloudy, large puffy clouds",Mostly sunny until the end
 7/13/2018,DHT,B1,NP,6,7,8,9,10,,
 7/13/2018,DHT,B1,P,11,12,13,14,15,,
 7/13/2018,DHT,B1,CT2,16,17,18,19,20,,
@@ -441,8 +441,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/13/2018,DHT,B3,EXNP-SF,156,157,158,159,160,,
 7/13/2018,DHT,B3,EXNP-LF,161,162,163,164,165,,
 7/13/2018,DHT,B3,P,166,167,168,169,170,,
-7/13/2018,HST,"B1, B2, B3, B4",DARK,0,,,,,"Partly cloudy, large puffy clouds",
-7/13/2018,HST,"B1, B2, B3, B4",REF,1,2,3,4,5,,
+7/13/2018,HST,"B1, B2, B3, B4",DARK,0,,,,,,
+7/13/2018,HST,"B1, B2, B3, B4",REF,1,2,3,4,5,"Partly cloudy, large puffy clouds",
 7/13/2018,HST,B4,NP,6,7,8,9,10,,
 7/13/2018,HST,B4,CT,11,12,13,14,15,,
 7/13/2018,HST,B3,NP,16,17,18,19,20,,
@@ -451,8 +451,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/13/2018,HST,B2,CT,31,32,33,34,35,,
 7/13/2018,HST,B1,NP,36,37,38,39,40,,
 7/13/2018,HST,B1,CT,41,42,43,44,45,,
-7/14/2018,NANT,"B1, B2, B3",DARK,0,,,,,"Overcast, thick but mostly uniform layer of clouds",
-7/14/2018,NANT,B3,REF,1,2,3,4,5,,
+7/14/2018,NANT,"B1, B2, B3",DARK,0,,,,,,
+7/14/2018,NANT,B3,REF,1,2,3,4,5,"Overcast, thick but mostly uniform layer of clouds",
 7/14/2018,NANT,"B1, B2",REF,91,92,93,94,95,,
 7/14/2018,NANT,B3,CT,6,7,8,9,10,,
 7/14/2018,NANT,B3,N,11,12,13,14,15,,
@@ -486,8 +486,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/14/2018,MNAT,B1,L,75,76,77,78,79,,
 7/14/2018,MNAT,B1,N,80,81,82,83,84,,
 7/14/2018,MNAT,B1,P,85,86,87,88,89,,
-7/21/2018,MAT,"B1, B2, B3, B4",DARK,0,,,,,"Silghtly hazy, mostly sunny, partly cloudy",Integration time 80 ms
-7/21/2018,MAT,"B1, B2, B3, B4",REF,100,101,102,103,104,,Integration time 50 ms
+7/21/2018,MAT,"B1, B2, B3, B4",DARK,0,,,,,,Integration time 80 ms
+7/21/2018,MAT,"B1, B2, B3, B4",REF,100,101,102,103,104,"Silghtly hazy, mostly sunny, partly cloudy",Integration time 50 ms
 7/21/2018,MAT,"B1, B2, B3, B4",REF-2,105,106,107,108,109,,Integration time 80 ms
 7/21/2018,MAT,B2,P,0,1,2,3,4,,
 7/21/2018,MAT,B2,CT2,5,6,7,8,9,,
@@ -509,8 +509,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/21/2018,MAT,B1,N,85,86,87,88,89,,
 7/21/2018,MAT,B1,P,90,91,92,93,94,,
 7/21/2018,MAT,B1,CT1,95,96,97,98,99,,
-7/21/2018,LMAT,"B1, B2, B3, B4",DARK,0,,,,,"Hazy, slightly overcast",Integration 80 ms
-7/21/2018,LMAT,"B1, B2, B3, B4",REF,1,2,3,4,5,,
+7/21/2018,LMAT,"B1, B2, B3, B4",DARK,0,,,,,,Integration 80 ms
+7/21/2018,LMAT,"B1, B2, B3, B4",REF,1,2,3,4,5,"Hazy, slightly overcast",
 7/21/2018,LMAT,B1,F2,105,106,107,108,109,,
 7/21/2018,LMAT,B1,H,110,111,112,113,114,,
 7/21/2018,LMAT,B1,F5,115,116,117,118,119,,
@@ -625,7 +625,7 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 7/23/2018,HST,B1,CT,41,42,43,44,45,,
 7/22/2018,NANT,"B1, B2, B3",DARK,0,,,,,,
 7/22/2018,NANT,B3,REF,1,2,3,4,5,partly cloudy,
-7/22/2018,NANT,"B1, B2",REF,6,7,8,9,10,,
+7/22/2018,NANT,"B1, B2",REF,6,7,8,9,10,partly cloudy,
 7/22/2018,NANT,B3,CT,16,17,18,19,20,,
 7/22/2018,NANT,B3,N,21,22,23,24,25,,
 7/22/2018,NANT,B3,NP,26,27,28,29,30,,
@@ -778,8 +778,8 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 8/1/2018,DHT,B3,EXNP-SF,101,102,103,104,105,,
 8/1/2018,DHT,B3,EXNP-LF,106,107,108,109,110,,
 8/1/2018,DHT,B3,P,111,112,113,114,115,,
-8/1/2018,NANT,"B1, B2, B3",DARK,0,,,,,"Sunny, clear",
-8/1/2018,NANT,B3,REF,1,2,3,4,5,,
+8/1/2018,NANT,"B1, B2, B3",DARK,0,,,,,,
+8/1/2018,NANT,B3,REF,1,2,3,4,5,"Sunny, clear",
 8/1/2018,NANT,"B1,B2",REF,6,7,8,9,10,,
 8/1/2018,NANT,B3,CT,11,12,13,14,15,,
 8/1/2018,NANT,B3,N,16,17,18,19,20,,
@@ -875,7 +875,7 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 8/11/2018,LMAT,B4,F10,180,181,182,183,184,,
 8/11/2018,NANT,"B1, B2, B3",DARK,0,,,,,,
 8/11/2018,NANT,B3,REF,1,2,3,4,5,sunny with high thin clouds,
-8/11/2018,NANT,"B1, B2",REF,6,7,8,9,10,,
+8/11/2018,NANT,"B1, B2",REF,6,7,8,9,10,sunny with high thin clouds,
 8/11/2018,NANT,B3,CT,11,12,13,14,15,,
 8/11/2018,NANT,B3,N,16,17,18,19,20,,
 8/11/2018,NANT,B3,NP,21,22,23,24,25,,
@@ -889,7 +889,7 @@ Date,Site,Block,Treatment,P1,P2,P3,P4,P5,Weather,Notes
 8/11/2018,NANT,B1,NP,61,62,63,64,65,,
 8/11/2018,NANT,B1,N,66,67,68,69,70,,
 8/11/2018,MNAT,"B1, B2, B3",NANT_DARK,0,,,,,,
-8/11/2018,MNAT,"B1, B2, B3",REF,0,1,2,3,4,,
+8/11/2018,MNAT,"B2, B3",REF,0,1,2,3,4,,
 8/11/2018,MNAT,B1,REF,5,6,7,8,9,,
 8/11/2018,MNAT,B3,P,10,11,12,13,14,,
 8/11/2018,MNAT,B3,NP,19,15,16,17,18,,"First unispec location missed, thus measurements out of order"
