@@ -50,12 +50,14 @@ The preview will then update every time you rerun code chunks and save this file
 
 Select the folder containing the unispec files you want to process. Run the following code chunk interactively in RStudio to set folder via pop-up window. 
 ```{r directory}
-## INTERACTIVE CODE (use when in RStudio)
-# library("rChoiceDialogs") # for interactively selecting file directories
-# data_path <- rchoose.dir(caption = "Select Unispec files directory")
-
-## STATIC CODE (use when Knitting)
-data_path  <- "UnispecData/Unispec6/" 
+if (interactive()) { 
+  ## INTERACTIVE CODE (use when in RStudio)
+  library("rChoiceDialogs") # for interactively selecting file directories
+data_path <- rchoose.dir(caption = "Select Unispec files directory")
+} else { 
+  ## STATIC CODE (use when Knitting)
+  data_path  <- "UnispecData/Unispec6/" 
+}
 ```
 
 **Chosen Directory**: `r data_path`
@@ -66,10 +68,15 @@ This directory should contain both the `.spu` files you wish to process and a co
 Run the following code chunks to load & join keys to data from your chosen directory. 
 
 ## Load Keys 
+Select unispec key files interactively or search within: `r data_path`. 
+
 ```{r key} 
-## Find all file keys 
-### alter search pattern to choose specific key(s)
-key_files <- list.files(path = data_path, pattern = "*_key.csv", full.names = T, recursive = T)
+if (interactive()) {
+  key_files <- rchoose.files() # choose via window
+} else {
+  ## Find all file keys matching search pattern 
+  key_files <- list.files(path = data_path, pattern = "*_key.csv", full.names = T, recursive = T)
+} 
 
 ## Read in data from filekeys 
 key_list <- data_frame(keyname = key_files) %>% # create dataframe
@@ -83,10 +90,17 @@ keys <- unnest(key_list)
 **Chosen Keys**: `r key_files`
 
 ## Load Data
+You can choose to select unispec data files interactively; however, it is usally more convenient to let R search: `r data_path` -- for all `.spu` files. 
 ```{r spu_data, cache.lazy=T}
-## Find .spu files
-### alter data_path or specify Date(s) or Site(s) to read files
-files <- list.files(path = data_path, pattern = ".spu$", full.names = T, recursive=T)
+#interact <- interactive() # T or F value 
+interact <- F # set to F to search for a file name pattern instead of select via window
+
+if (interact) {
+  files <- rchoose.files(filter=c("*.spu")) # choose via window
+} else {
+  ## Find .spu files via search pattern: specify Date(s) or Site(s) to read files
+  files <- list.files(path = data_path, pattern = ".spu$", full.names = T, recursive=T)
+} 
 
 ## Read data from files (can take minutes)
 data_list <- data_frame(filename = files) %>% # create dataframe
@@ -132,11 +146,11 @@ The following code chunk plots all the white reference spectra in your chosen di
 ## Find all white reference files 
 ref_data_all <- df %>% 
   filter(str_detect(Treatment, "REF"))%>% # extract reference data 
-  separate(Block, into = c("BX1", "BX2", "BX3", "BX4"), sep = ",") %>% # expand string entry in "Block", necessary if different ref for different blocks at same site
+  separate(Block, into = c("BX1", "BX2", "BX3", "BX4"), sep = ",") %>% # expand string entry in "Block", necessary if different ref for different blocks at same site 
   gather(Block, BlockString, BX1:BX4) %>% # re-condense into one column
   mutate(Block = str_squish(BlockString), BlockString=NULL) %>% # remove whitespace from Block names introduced by "separate" function
   filter(!is.na(Block)) %>% # remove empty rows for site w/out B3 or B4
-  mutate(CorrectionFactor_REF = ChA/ChB)
+  mutate(CorrectionFactor_REF = ChA/ChB) # calculate correction fact column
 
 ## Plot ALL Correction Factors for quality check 
 cor_factor_plot_all <- ggplot(data = ref_data_all, mapping = aes(x = Wavelength, y = CorrectionFactor_REF)) +
@@ -217,7 +231,7 @@ cor_factor_plot
 ## Output Table of Chosen References
 ref_choice <- df %>% 
   filter(Treatment == "REF") %>% 
-  select(Date, Site, Block, Weather, Notes, Measurement, FileNum) %>% 
+  select(Date, Site, Block, Weather, Notes, Measurement, FileNum, filename) %>% 
   distinct() %>% 
   mutate(Measurement = str_c("P", Measurement))%>% 
   spread(Measurement, FileNum) %>% 
@@ -227,38 +241,43 @@ kable(ref_choice, caption="White Reference Files")
   
 ```
 
-## Apply References
+## Apply References by Key
 Apply your chosen references to actual spectral data to create the tidy dataframe `df_tidy` containing corrected sepectral reflectance values. 
 
 ```{r apply_refs, echo=FALSE}
 ## Average 5 chosen ref measurements per DATE/SITE/BLOCK 
 ref_summary <- ref_data %>% 
-  group_by(Date,Site,Block,Wavelength) %>% # group_by(Date,Site,Block,Wavelength, int) %>% 
-  summarize(ChA_REF = mean(ChA), ChB_REF = mean(ChB), CorrectionFactor_REF = mean(ChA/ChB), int_REF = mean(int), Notes_REF = list(Notes))
+  group_by(Date,Site,Block,Wavelength) %>% 
+  # group_by(Date,Site,Block,Wavelength, int) %>% # to separate integration times
+  summarize(ChA_REF = mean(ChA), ChB_REF = mean(ChB), CorrectionFactor_REF = mean(ChA/ChB), int_REF = mean(int), Notes_REF = str_c(Notes, collapse = "; "), FileNames_REF = str_c(filename,collapse = ", "))
 
 ## Join DATA with REFS 
 df_ref <- inner_join(df, ref_summary) %>% 
-  select(Date, Time, Site, Block, Treatment, Measurement, Wavelength,  int, int_REF, ChB, ChA, ChB_REF, ChA_REF, CorrectionFactor_REF, Weather, Notes, Notes_REF, filename, FileNum, keyname) %>%
+  select(Date, Time, Site, Block, Treatment, Measurement, Wavelength,  int, int_REF, ChB, ChA, ChB_REF, ChA_REF, CorrectionFactor_REF, Weather, Notes, Notes_REF, FileNames_REF, filename, FileNum, keyname) %>%
   mutate(raw = ChB/ChA) %>% # the raw reflectance
   mutate(correct = raw*CorrectionFactor_REF) %>% # this step calculates the corrected reflectance
   gather(Type, Reflectance, raw:correct) 
 
 df_tidy <- df_ref %>% 
   mutate(Site = replace(Site, Site %in% WSG, "WSG")) %>% # rename WSG1 & WSG23 to WSG
-  mutate(Site = replace(Site, Site %in% SHB, "SHB")) %>%  # rename  SHB1 & SHB2 to SHB
-  filter(Type == "correct") %>% # drop raw reflectance
-  select(-Type) 
+  mutate(Site = replace(Site, Site %in% SHB, "SHB"))# %>%  # rename  SHB1 & SHB2 to SHB
+  # filter(Type == "correct") %>% # drop raw reflectance
+  # select(-Type) 
 ```
 
+# Corrected Spectra 
 ## Save Spectral Data
 
 ```{r save_spectra, echo=T}
+save <- F
 
-# SAVE CORRECTED SPECTRA if you want the dataframe or .csv for later
-# unispec_data_2018 <- df_tidy %>% 
-#   filter(Type=="correct") %>% 
-#   select(-Type)
-# save(unispec_data_2018, file = "unispec_data_2018.Rda")
+if (save == T) {
+  # SAVE CORRECTED SPECTRA if you want the dataframe or .csv for later
+  unispec_data <- df_tidy %>%
+    filter(Type=="correct") %>%
+    select(-Type)
+  write_rds(unispec_data, "unispec_data_correct.rds")
+} 
 
 ```
 

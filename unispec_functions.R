@@ -98,7 +98,7 @@ calculate_ndvi <- function(tidydata,  band_defn = "MODIS") {
 }
 
 
-calculate_index <- function(tidydata, band_defn ="MODIS", indices = c("NDVI", "EVI", "PBI_550", "PRI_570", "WBI", "Chl")) {
+calculate_index <- function(tidydata, band_defn ="MODIS", indices = c("NDVI", "EVI",  "WBI", "Chl")) {
   # Default MODIS bands for Red, NIR, Blue
 
   if (band_defn == "ITEX") {
@@ -148,9 +148,9 @@ calculate_index <- function(tidydata, band_defn ="MODIS", indices = c("NDVI", "E
 
 
   index_data <- inner_join(index1_data, index2_data) %>%
-    select(-c(red, blue, nir, other)) %>%
-    select(indices)
-
+    select(-c(red, blue, nir, other))
+    # select(indices)
+  
   return(index_data)
 }
 

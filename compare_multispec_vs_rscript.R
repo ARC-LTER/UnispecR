@@ -46,8 +46,8 @@ calculate_ndvi_process <- function(tidydata, nir = c(820,890), red = c(640, 680)
 }
 
 # LOAD DATA ---------------------------------------------------------------
-load("multispec_data_2018.Rda")
-load("rscript_data_2018.Rda")
+load("UnispecData/multispec_data_2018.Rda")
+load("UnispecData/rscript_data_2018.Rda")
 
 df_multispec <- multispec_data_2018 %>% 
   mutate(ProcessType = "multispec") %>% 
@@ -125,7 +125,7 @@ ggplot(data = ndvi_plot, mapping = aes(x = Date, y = ndvi, color = Type, linetyp
 ### change the following vectors to explore all data over dates
 dates <- df_types %>% select(Date) %>% unique() %>% slice(1:n()) %>% c()
 dates <- dates[[1]]
-sites <-c("WSG") #
+sites <-c("MAT") #
 blocks <- c("B1") # c("B1", "B2", "B3", "B4")
 trtmts <- c("CT1") # c("CT", "NP", "N", "P")
 measures <- c("1", "2", "3", "4", "5")
