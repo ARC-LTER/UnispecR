@@ -17,7 +17,7 @@ read_spu_file <- function(fileName) {
   data <- read.table(file = fileName, skip = 9, col.names = c("Wavelength", "ChB", "ChA"))
   
   # Tag with appropriate metadata
-  data$Site <- str_extract(fileName, "(?<=/)([^/]+)(?=_)") # get string after last / & before _
+  data$Site <- str_extract(fileName, "(?<=/)([A-Z]{3,4}[0-9]*)(?=_)") # get string after last / & before _ 
   # for fileName format "DATE/SITE_FILENUM.spu", e.g. "04AUG2017/DHT_00000.spu"
   data$FileNum <- as.integer(str_extract(fileName, "[0-9]{5}"))
   data$Time <-  lubridate::mdy_hms(str_extract(text[3], "\\d+/\\d+/\\d{4}\\s\\d+:\\d{2}:\\d{2}\\s(PM|AM)"), tz="America/Anchorage")
@@ -43,7 +43,9 @@ read_key_file <- function(key_file) {
                         P2 = col_integer(),
                         P3 = col_integer(),
                         P4 = col_integer(),
-                        P5 = col_integer()
+                        P5 = col_integer(),
+                        Weather = col_character(),
+                        Notes = col_character()
                       )) 
   
   # Consolidate measurements to tidy dataframe

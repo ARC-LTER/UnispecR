@@ -90,7 +90,7 @@ keys <- unnest(key_list)
 **Chosen Keys**: `r key_files`
 
 ## Load Data
-You can choose to select unispec data files interactively; however, it is usally more convenient to let R search: `r data_path` -- for all `.spu` files. 
+You can choose to select unispec data files interactively; however, it is usally more convenient to let R search: `r data_path` -- for all `.spu` files. This step may take several minutes, if you chose a folder containing many files.
 ```{r spu_data, cache.lazy=T}
 #interact <- interactive() # T or F value 
 interact <- F # set to F to search for a file name pattern instead of select via window
@@ -136,6 +136,12 @@ kable(df_table)
 # QAQC
 Quality check unispec data using the following code chunks.
 
+## Check for Max'd Out Spectra (> 65000 AD)
+```{r maxed_pectra, echo=F}
+bad_data <- df %>% filter(ChA > 65000) %>% 
+  group_by(Date, Site, FileNum) %>% unique()
+```
+
 ## Check White References
 White references correct for instrument & cable irregularities. Multiplying by the correction factor (ChA/ChB) smooths out the spectra. If multiple file numbers are listed (typically 5), the correction factors are averaged. 
 
@@ -144,7 +150,7 @@ The following code chunk plots all the white reference spectra in your chosen di
 
 ```{r refs, echo = F, warning=F}
 ## Find all white reference files 
-ref_data_all <- df %>% 
+ref_data_all <- dfs %>% 
   filter(str_detect(Treatment, "REF"))%>% # extract reference data 
   separate(Block, into = c("BX1", "BX2", "BX3", "BX4"), sep = ",") %>% # expand string entry in "Block", necessary if different ref for different blocks at same site 
   gather(Block, BlockString, BX1:BX4) %>% # re-condense into one column

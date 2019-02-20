@@ -99,4 +99,31 @@ df <- inner_join(key_df, tidy_df) %>%
 
 
 
+# Read spu file test code -------------------------------------------------
+
+# Testing readining files due to error in read_spu_file in Site. 
+
+fileName <- files[1]
+# Read metadata from first 9 lines of .spu file
+text <- read_lines(fileName, n_max = 9)
+
+# Get info from filename
+fileInfo <- str_split(text[1], pattern = c('\\\\'))[[1]]
+# works when files saved in default location on PCMIA card, not otherwise
+
+# Read spectral intensity data into dataframe
+data <- read.table(file = fileName, skip = 9, col.names = c("Wavelength", "ChB", "ChA"))
+
+# Tag with appropriate metadata
+data$Site <- str_extract(fileName, "(?<=/)([A-Z]{3,4}[0-9]*)(?=_)") # get string after last / & before _ 
+
+# for fileName format "DATE/SITE_FILENUM.spu", e.g. "04AUG2017/DHT_00000.spu"
+data$FileNum <- as.integer(str_extract(fileName, "[0-9]{5}"))
+data$Time <-  lubridate::mdy_hms(str_extract(text[3], "\\d+/\\d+/\\d{4}\\s\\d+:\\d{2}:\\d{2}\\s(PM|AM)"), tz="America/Anchorage")
+data$Date <- lubridate::date(data$Time)
+# lubridate::date(data$Time) # requires date/time is set correctly on Unispec DC 
+# lubridate::dmy(fileInfo[4]) # works when files saved in default location on PCMIA card
+data$int <- as.numeric(strsplit(text[8], split = " ")[[1]][3])
+data$Temp <- as.numeric(strsplit(strsplit(text[5], split = " ")[[1]][4], split="=")[[1]][2])
+
 
