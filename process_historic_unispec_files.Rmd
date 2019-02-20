@@ -27,8 +27,12 @@ source("unispec_functions.R") # file loads required functions
 ## Useful vectors for standardizing names and filtering data
 WSG <- c("WSG1", "WSG23")
 SHB <- c("SHB1", "SHB2")
-site_list <- list("MAT", "LMAT", "MNAT", "NANT", "DHT", WSG, SHB, "HST")
+HIST <- c("HST")
+HTH <- c("DHT")
+site_list <- list("MAT", "LMAT", "MNAT", "NANT", HTH, WSG, SHB, HIST)
 
+
+## Treatment vectors
 CT <- c("CT","CT1","CT2")
 NP_gradient <- c("F0.5","F1","F2","F5","F10") # for LOF site
 N_types <- c("NO3", "NH4") # for LOF site
@@ -45,7 +49,7 @@ pur_pal <- RColorBrewer::brewer.pal(5, "Purples")
 
 Select the folder containing the unispec files you want to process. Run the following code chunk interactively in RStudio to set folder via pop-up window. 
 ```{r directory}
-interact <- F # interactive() 
+interact <- interactive() 
 
 if (interact) { 
   ## INTERACTIVE CODE (use when in RStudio)
@@ -59,173 +63,96 @@ data_path <- rchoose.dir(caption = "Select Unispec files directory")
 
 **Chosen Directory**: `r data_path`
 
-This directory should contain both the `.spu` files you wish to process and a corresponding `*_unispec_key.csv` file. The key file matches the .spu files to the date, site, block, treatment, plot, & measurement and specifies which white references to use to correct for instrument error. 
 
-# Load Unispec Data 
-Run the following code chunks to load & join keys to data from your chosen directory. 
-
-## Load Keys 
-Select unispec key files interactively or search within: `r data_path`. 
-
-```{r key} 
-if (interact) {
-  key_files <- rchoose.files() # choose via window
-} else {
-  ## Find all file keys matching search pattern 
-  key_files <- list.files(path = data_path, pattern = "*_key.csv", full.names = T, recursive = T)
-} 
-
-## Read in data from filekeys 
-key_list <- tibble(keyname = key_files) %>% # create dataframe
-  mutate(key_contents = map(keyname, function(x) read_key_file(x))) 
-# read_key_file() is a function I wrote located in the file "unispec_functions.R"
-# map function: super useful to apply function to objects without slow "for" loops
-
-## Unpack into usable dataframe 
-keys <- unnest(key_list)
-```
-**Chosen Keys**: `r key_files`
-
-## Load Data
-You can choose to select unispec data files interactively; however, it is usally more convenient to let R search: `r data_path` -- for all `.spu` files. This step may take several minutes, if you chose a folder containing many files.
-
-
-```{r spu_data, cache.lazy=T}
-
-if (interact) {
-  files <- rchoose.files(filter=c("*.spu")) # choose via window
-} else {
-  ## Find .spu files via search pattern: specify Date(s) or Site(s) to read files
-  files <- list.files(path = data_path, pattern = ".spu$", full.names = T, recursive=T)
-} 
-
-## Read data from files (can take minutes)
-data_list <- tibble(filename = files) %>% # create dataframe
-  mutate(file_contents = map(filename, function(x) read_spu_file(x)))
-
-## Unpack into usable dataframe 
-data <- unnest(data_list) %>% 
-  filter(Wavelength >= 400 & Wavelength <= 1000) # trim unreliable wavelengths
-```
-
-
-The following table lists the dates and sites of the files contained in your chosen directory: 
-
-## Join Data & Keys
-```{r join_keys_data}
-## Join all data matching keys dataframe (drops any non-matching data),
-##  by columns (Date, Site, FileNum)
-df <- inner_join(data, keys)  
-
-## Sites per Date table to display
-df_table <- df_2016 %>% 
-  select(Date, Site) %>% 
-  distinct() %>% 
-  group_by(Date) %>% 
-  do(Sites = t(.[-1])) %>% 
-  mutate(Sites = paste( unlist(Sites), collapse=','))
-
-kable(df_table)
-```
-
-
-# Convert 2016 Data
+# Convert Historic Data
 Load historic unispec data (Jim Format).
 
-```{r load_data}
-load("HistoricUnispecData/2016-unispec_data.Rda")
-unispec_data_2016 <- tbl_df(unispec_data)
+```{r unispec_data}
+unispec_data <- read_rds("HistoricUnispecData/2016_unispec_dataframe.rds")
+
 ```
 
 Convert dataframes from Jim format to Ruby format to read into shiny app. 
-```{r convert_data, dependson="load_data"}
-
-### RESAVED DATA CHECKS
+```{r df, dependson="unispec_data"}
+#####
+# Check variables 
 names(unispec_data)
-unispec_data %>% filter(is.na(ChAmax))
 
-## Check FileNum.x == FileNum.y for all rows 
-unispec_data %>% filter(FileNum.x != FileNum.y)
+#####
+# Check for missing spu_filenames
+unispec_data %>% filter(is.na(spu_filename)) %>% select_if(function(x) typeof(x) != "list") 
 
-## Check Site.x == Site.y for all rows 
-unispec_data%>% filter(Site.x != Site.y)
+#####
+## Check for duplicate spu_filenames
+duplicates <- unispec_data %>% arrange(Date, FileNum) %>% 
+  group_by(spu_filename) %>% 
+  filter(n()>1) %>% 
+  ungroup() %>% 
+  select( multispec_filename, spu_filename, FileNum, Replicate, Date, Site, Block, Treatment, Weather)
 
-## Check for missing spu_filename 
-unispec_data %>% filter(is.na(spu_filename))
+duplicates
 
-## Check for large filenumbers 
-### Inconsistent File Number reading due to number at end of site names 
-large_filenums <- unispec_data_2016 %>% 
-  filter(FileNum.x > 500) %>%  # Sites w/numbers at the end mis-read in as part of file number. All > 100000: Unispec-DC measurements only go up to 5 digits. 
-  select(Date, Site.x, Block, key_num.x, FileNum.x, FileNum.y, Spufilename.x, Spufilename.y, Spu_filename)
-large_filenums
+#####
+## Check for large filenumbers :Inconsistent File Number reading due to number at end of site names
+large_filenums <- unispec_data %>% 
+  filter(FileNum > 500) %>%  # Sites w/numbers at the end mis-read in as part of file number. All > 100000: Unispec-DC measurements only go up to 5 digits. 
+  select(Date, Site, Block, FileNum, spu_filename)
 
+large_filenums %>% select(Date, Site) %>% distinct() %>% kable()
 
-#### CLEAN DATA 
-data_2016 <- unispec_data_2016 %>% 
-  ## Condense columns 
-  rename(Site = Site.x) %>% 
-  rename(FileNum = FileNum.x) %>%  # FileNum.x == FileNum.y for all rows 
-  select(-Site.y, -FileNum.y) %>%  # Site.x == Site.y for all rows 
+##### 
+## Check Site Names
+unique(unispec_data$Site) 
+
+## Check Treatment names
+unique(unispec_data$Treatment) 
+
+### Look for weird things (NA's or otherwise)
+unispec_data %>% select_if(function(x) typeof(x) != "list") %>% 
+  arrange(DateTime) %>% 
+  summary()
+```
+
+## Standardize Dataframe
+```{r df, dependson="unispec_data"}
+#### data
+df_data <- unispec_data %>% 
   ## Remove columns 
-  select(-Research_location, -Time) %>% #Research_location is always Toolik; Time has issues (is only a number?)
-  select(-c(ReflecMean, ReflecSERR, Number_ChAmax)) %>%  # not necessary, calculated later using Markdown processing 
-  select(-c(key_num.x, key_num.y, key)) %>% # redundant info to FileNum
-  select(-c(Spufilename.y, Spufilename.x)) %>% # redundant on Spu_filename
-  ## Rename columns
-  rename(Replicate = REP) %>% 
-  rename(int = Integration_ms) %>% 
-  rename(Notes = Remarks) %>% 
-  rename(Multispec_filename = Process_file) %>% 
+  select(-Research_location, -Time) %>% #Research_location is always Toolik; Time is excel format
+  select(-c(ReflecMean, ReflecSERR, Number_ChAmax)) %>%  # not necessary
+  select(-c(processed_filename, spu_filename_full, Remarks)) %>% 
   ## Convert column type
   mutate_at(funs(factor), .vars = c("Site", "Block", "Treatment", "Replicate")) %>% 
   ## Remove rows 
-  filter(!is.na(Spu_filename)) %>% # remove rows w/out spectral data 
-  filter(!Type %in% c("Throwawayscan", "Darkscan", "not_in_process_file")) %>% # remove non-data or reference files 
+  filter(!is.na(spu_filename)) %>% # remove rows w/out spectral data 
+  filter(!Type %in% c("Throwawayscan", "Darkscan", "not_in_process_file")) %>% # remove non-data
   ## Rename rows 
-  mutate(FileNum = FileNum %% 100000) # correct for large filenumbers (>5 digits due to number at end of Site name)
+  mutate(FileNum = FileNum %% 100000) %>%  # correct for large filenumbers (>5 digits due to number at end of Site name)
+  ## Order
+  arrange(DateTime)
 
-data_2016 %>% filter(Site == "WSG") %>% filter(Date %in% c("2016-07-12", "2016-07-13"))
-
-tidy_2016 <- data_2016 %>% # nest index data 
-  gather(key = Index, value = Value, 'NDVI(MODIS)':'ChlIndex') %>% 
-  select(-Spectra) %>% # can't nest w/list column -- remove for now 
-  nest(Index, Value, .key = "Indices") %>% 
-  inner_join(data_2016 %>% select(-c('NDVI(MODIS)':'ChlIndex')))  # rejoin w/Spectra column 
-
-##rename for future chunks 
-tidy_df <- tidy_2016
-
-```
-
-## Standardize Names
-```{r standardize_names, dependson="convert"}
-## Useful vectors for standardizing site names 
-WSG <- c("WSG1", "WSG23")
-SHB <- c("SHB1", "SHB2")
-HST <- c("HIST")
-DHT <- c("HTH")
-
-## Useful vectors for standardizing treatment names
-trtmt_list_df <- tidy_df %>% select(Treatment) %>% unique() %>% pull() # all treatments 
-
-## Look for weird things
-tidy_df %>% select(-Spectra, -Indices) %>% 
-  summary()
-
-## Standardize names
-tidy_df <- tidy_df %>% 
+######## 
+## Standardize Names 
+df <- df_data %>% 
+  # Site Names
   mutate(Site = replace(Site, Site %in% WSG, "WSG")) %>% # rename WSG1 & WSG23 to WSG
   mutate(Site = replace(Site, Site %in% SHB, "SHB")) %>%  # rename  SHB1 & SHB2 to SHB
-  mutate(Site = replace(Site, Site %in% DHT, "DHT")) %>% 
-  mutate(Site = replace(Site, Site %in% HST, "HST"))
+  mutate(Site = replace(Site, Site %in% HTH, "HTH")) %>% 
+  mutate(Site = replace(Site, Site %in% HIST, "HIST"))  %>% 
+  # Block Names
+  mutate(Block = ifelse(Block %in% c("1", "2", "3", "4"), str_c("B", Block), Block)) %>% 
+  mutate_at(vars(Block), .funs = funs(factor))
+  # Treatment Names
+  # mutate(Treatment = ifelse(Treatment %in% CT),"CT", Treatment)) 
+
+
 ```
 
 
 ## List Dates & Sites
-```{r list_table}
+```{r list_table, dependson="df"}
 ## Sites per Date table to display
-df_table <- tidy_df %>% 
+df_table <- df %>% 
   select(Date, Site) %>% 
   distinct() %>% 
   group_by(Date) %>% 
@@ -240,14 +167,16 @@ kable(df_table)
 Quality check unispec data using the following code chunks. 
 
 ## Max'd Out Spectra (> 65000 AD)
-List files that maxed out. 
-```{r maxed_data_files, dependson="convert_data"} 
-maxed_data_files <- tidy_df %>% filter(ChAmax > 65000 | ChBmax > 65000) # list of files w/max'd spectra
+List files that maxed out, in the wavelengths used to calculate MODIS NDVI. 
+```{r maxed_data_files, dependson="df"} 
+maxed_data_files <- df %>% filter(ChAmax > 65000 | ChBmax > 65000) # list of files w/max'd spectra
 
 maxed_width <- maxed_data_files %>% 
   unnest(Spectra) %>%
   filter(ChA > 65000 | ChB > 65000) %>% 
-  group_by(Date, Site, Block, Treatment, Replicate, FileNum, Spu_filename) %>% 
+  filter(Wavelength > 620) %>% # MODIS red lower bound 
+  filter(Wavelength < 876) %>% # MODIS nir upper bound 
+  group_by(Date, Site, Block, Treatment, Replicate, FileNum, spu_filename) %>% 
   summarize(n_maxed = n()) %>%  
   ungroup() # necessary in order to slice rows 
 
@@ -258,21 +187,22 @@ maxed_data_files_bad <- maxed_width %>%
   ungroup() %>%  # necessary inorder to slice rows 
   arrange(Date, Site, Block, Treatment, Replicate)
 
-bad_refs <- maxed_data_files_bad %>% 
+maxed_refs <- maxed_data_files_bad %>% 
   filter(str_detect(Treatment, "REF"))
 
 kable(maxed_data_files_bad)
 
 ```
 
-Plot a subset of maxed out spectra. 
+
+### Plot Subset of maxed out spectra. 
 
 ```{r maxed_spectra_plot}
 print(paste0("Number of maxed data files: ", nrow(maxed_data_files_bad)))
 
 ## Plot max'd spectra 
-first_file <- 121 # choose subset of files to plot 
-last_file <- 140 # > 20 is really slow / scrunched
+first_file <- 1 # choose subset of files to plot 
+last_file <-10 # > 20 is really slow / scrunched
 
 maxed_spectra <- maxed_data_files %>% 
   slice(first_file:last_file) %>% # don't plot too many 
@@ -290,9 +220,9 @@ maxed_spectra_plot
 
 ### Remove Max'd Out Spectra
 Removes maxed spectra from dataframe, and creates file listing removed spectra. 
-```{r remove_maxed_pectra, echo=F}
+```{r df_not_maxed, dependson=c("df", "maxed_data_files") }
 ## Remove max'd data from df
-df_clean <- anti_join(df, bad_maxed_data_files)
+df_clean <- anti_join(df, maxed_data_files_bad)
 
 ## Save CSV of max'd spectra filenames 
 #write_csv(maxed_data_files, "UnispecData/2017/2017_maxed_spu_files.csv")
@@ -305,7 +235,7 @@ White references correct for instrument & cable irregularities. Multiplying by t
 ### List References
 The following code chunk plots all the white reference spectra in your chosen directory.
 
-```{r refs, echo = F, warning=F}
+```{r refs, dependson="df_clean"}
 
 ## Find all white reference data files 
 ref_data_files <- df_clean %>% 
@@ -319,167 +249,146 @@ ref_table <- ref_data_files %>%
   mutate(Sites = paste( unlist(Sites), collapse=','))
 
 kable(ref_table)
+
+## Plot all reference data files 
+ref_data_all <- ref_data_files %>% unnest(Spectra) %>% 
+  mutate(CorrectionFactor = 1/Reflectance) 
+
+ref_plot_all <- ggplot(ref_data_all, aes(x = Wavelength, y = CorrectionFactor)) +
+  geom_line(aes(color=spu_filename)) + theme(legend.position="none")
+
+## Plot all reference mistakes
+ref_data_mistakes <- ref_data_all %>% 
+  filter(CorrectionFactor > 5)
+
+ref_plot_mistakes <- ggplot(ref_data_mistakes, aes(x = Wavelength, y = CorrectionFactor)) +
+  geom_line(aes(color=spu_filename)) 
+
+ref_plot_mistakes
 ```
 
-### Plot References
+### Plot Subset of References 
 ```{r ref_plot}
 ## Plot a subset of reference spectra
 first_file <- 1 # choose subset of files to plot 
-last_file <- 16 # avoid plotting >50 at a time
+last_file <- 10 # avoid plotting >50 at a time
 
 ## Select a subset to plot 
 ref_subset <- ref_data_files %>% 
   slice(first_file:last_file) %>% 
   unnest(Spectra) %>% 
-  mutate(REF_CorrectionFactor = ChA/ChB) %>% 
+  mutate(CorrectionFactor = 1/Reflectance) %>% 
   gather(key = Channel, value = Intensity, ChB, ChA) %>% 
-  gather(key = ref_part, value = CorrectionFactor_Intensity, Intensity, REF_CorrectionFactor)
+  gather(key = ref_part, value = CorrectionFactor_Intensity, Intensity, CorrectionFactor)
   
 ref_plot <- ggplot(data = ref_subset, mapping = aes(x = Wavelength, y = CorrectionFactor_Intensity)) +
-  geom_line(aes(color=Replicate, linetype=Channel)) +
-  facet_grid(ref_part ~ Date + Site + int, scales="free") 
+  geom_line(aes(color=Treatment, linetype=Channel)) +
+  facet_grid(ref_part ~ Date + Site + Treatment + Integration_ms + FileNum, scales="free") 
 
 ref_plot
 
 ```
 Look for correction factors very far from 1.0 or with odd peaks. Edit the key to resolve errors as you go. 
 
-## Plot Check
+### Plot Check
 Run the following code chunk interactively in RStudio to check references at specific sites/dates. 
 ```{r check_refs}
-## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "MNAT"
-check_date <- "2017-08-05" # necessary to unlist dates vector
-first_file <- 0
-last_file <- 12
+## Load raw spu data (to check those that weren't processed) from "read_process_raw_files_vRuby.R"
+raw_data <- read_rds("HistoricUnispecData/2016_raw_spu_dataframe.rds")
 
-ref_check <- data %>% # full dataframe without maxed filtered 
-  filter(Date == check_date) %>% 
-  filter(Site %in% check_site) %>% 
-  #filter(Treatment == "REF") %>% 
+## SPECIFY SITE/DATE/ETC to ZOOM IN ON
+check_site <- "LMAT"
+check_date <- as_date("2016-05-26") # need to be in data format
+first_file <- 0
+last_file <- 100
+
+ref_check <- raw_data %>% # full dataframe without maxed filtered 
+  filter(Date %in% check_date) %>% 
+  filter(Site %in% check_site) %>%  
   filter(FileNum >= first_file) %>%
-  filter(FileNum <= last_file) %>%
-  mutate(Reflectance = ChB/ChA) %>% 
+  filter(FileNum <= last_file) %>% 
+  left_join(df %>% select(-Spectra, -Indices)) %>% 
+  filter(str_detect(Treatment, "REF") | is.na(Treatment))
+  
+plot_check <- ref_check %>% 
+  unnest(Spectra) %>% 
   gather(key = Channel, value = Intensity, ChB, ChA) %>% 
   gather(key = ref_part, value = Reflectance_Intensity, Intensity, Reflectance)
-
+ 
 ## Plot Specified Correction Factors for quality check 
-plot_zoom <- ggplot(data = ref_check, mapping = aes(x = Wavelength, y = Reflectance_Intensity)) +
-  geom_line(aes(color=int, linetype=Channel)) +
-  facet_grid(ref_part ~ Date + Site + FileNum + int, scales="free") 
+plot_zoom <- ggplot(data = plot_check, mapping = aes(x = Wavelength, y = Reflectance_Intensity)) +
+  geom_line(aes(color=Treatment, linetype=Channel)) +
+  facet_grid(ref_part ~ Date + Site + FileNum + Integration_ms, scales="free") 
 
 plot_zoom
 ```
 
-## Time Check
-```{r time_check}
-first_file <- 0
-last_file <- 200
 
-# Select columns to Check
-timedata <- data %>% 
-  filter(Date == check_date) %>% 
-  filter(Site %in% check_site) %>% 
-  filter(FileNum >= first_file) %>%
-  filter(FileNum <= last_file) %>% 
-  select(Site, Date, FileNum, Time, int) %>% 
-  group_by(Time) %>% distinct() 
+## Clean Data: Remove files w/bad references or maxed spectra
+```{r df_clean}
+ref_mistake_files <- ref_data_mistakes %>% select(spu_filename) %>% distinct() %>% pull()
+maxed_files <- maxed_data_files_bad$spu_filename
+mislabeled_files <- duplicates$spu_filename 
 
-timedata$diff <- timedata$Time - lag(timedata$Time)
-time_check <- timedata %>% select(Site, Time, FileNum, diff, int) %>% ungroup
+## Pattern of files to exclude
+problem_files <- str_c(c(maxed_files, ref_mistake_files), collapse = "|")
 
-# Examine dataframe
-time_check
-```
-Look at associated dataframe to check info, specifically: *Weather*, *Notes*, or *int* (Integration Time) columns.
-```{r ref_check_files, echo=F}
+df_problems <- df %>% 
+  mutate(ref_problem = str_detect(ref_filenames, problem_files)) %>% # use str_extract_all to get filenames
+  mutate(file_problem = str_detect(spu_filename, problem_files)) %>% 
+  select(-ChAmax, ChBmax)
 
-## EXAMINE SPECIFIC info: check Integration, Notes, Weather, filename, etc. 
-ref_check_files <- ref_check %>% 
-  select(-c(Wavelength, ChA, ChB, CorrectionFactor_REF, keyname, Time)) %>% 
-  unique()
+df_problems %>% select(Date, Site, Block, Treatment, spu_filename, ref_problem, file_problem)
+df_problems %>% select_if(function(x) typeof(x) != "list") %>% summary()
 
-### View dataframe of ref_check_files
-kable(ref_check_files)
-```
+## Dirty Data
+df_dirty <- df_problems %>% 
+  filter(ref_problem | file_problem)
 
-## Apply White References:
-Based on the above quality check, choose reference files by entering the appropriate file numbers in **`r key_files`** for the rows where the column *Treatment* = **REF**. There are typically 5 reference measurements per *Date* / *Site*. 
+## Clean Data
+df_clean <- df_problems %>% 
+  filter(!ref_problem | is.na(ref_problem)) %>% 
+  filter(!file_problem) %>%  # remove bad files & those with ref problems
+  select(-ref_problem, -file_problem)
 
-Then rerun the **Load Keys**. The following plots your chosen references.
+df_clean %>% select_if(function(x) typeof(x) != "list") %>% summary()
+unique(df_clean$Treatment)
+df_dirty %>% select_if(function(x) typeof(x) != "list") %>% summary()
+unique(df_dirty$Treatment)
 
-```{r ref_table, echo=F}
-options(knitr.kable.NA = '')
-
-## Build REF key 
-ref_keys <- keys %>% 
-  filter(Treatment == "REF") %>% # extract reference data 
-  ## The following separates the Site column into "Site" and "Site_REF"
-  ### Site = the site to which the reference measurements should be applied 
-  ### Site_REF = the site where the reference measurements were actually collected
-  separate(Site, into=c("Site", "Site_REF"), sep = "_", fill="right") %>% 
-  mutate(Site_REF = coalesce(Site_REF, Site)) # if the references were collected at 'Site', the created column Site_REF will be NA. Use coalesce() to fill these NA's with the value of "Site".  
-
-
-## Find REF files for correction factors
-ref_data <- data %>% # in the dataframe "data", the "Site" column is the location where the data was collected 
-  rename(Site_REF = Site) %>% # we thus rename to match 'ref_keys'
-  inner_join(ref_keys) %>% # data & ref_keys are joined by = c("Site_REF", "FileNum", "Date") 
-  ## "Site_REF" is the location where the file (from which the reference correction factor is calculated) actually was collected
-  ## "Site", inherited from ref_keys, is now the location where the correction factor should be applied
-  mutate(CorrectionFactor_REF = ChA/ChB) 
-
-```
-
-### List Chosen References
-```{r ref_choice_list}
-# ## Plot CHOSEN Correction Factors -- to look at spread of reference data
-# cor_factor_plot  <- ggplot(data = ref_data, mapping = aes(x = Wavelength, y = CorrectionFactor_REF)) +
-#   geom_line(aes(color=Replicate, linetype=factor(int))) +
-#   facet_wrap(vars(Date,Site_REF, Block), ncol=4)
-
-
-## Output Table of Chosen References
-ref_choice <- ref_data %>% 
-  select(Date, Site, Site_REF, FileNum, Block, Replicate, Weather, Notes, filename) %>% 
+## List Sites per Date table to display
+df_clean_table <- df_clean %>% 
+  select(Date, Site) %>% 
   distinct() %>% 
-  mutate(Replicate = str_c("P", Replicate))%>% 
-  spread(Replicate, FileNum) %>% 
-  unite(FileNums, P1:P5, sep=",") 
+  group_by(Date) %>% 
+  do(Sites = t(.[-1])) %>% 
+  mutate(Sites = paste( unlist(Sites), collapse=','))
 
-kable(ref_choice, caption="White Reference Files")
+kable(df_clean_table)
+```
+
+## Compile File Key
+Problematic files labeled. 
+```{r unispec_key}
+unispec_key <- df_problems %>% 
+  select(DateTime, Site, Block, Treatment, Replicate, FileNum, spu_filename, Weather, ref_problem, file_problem) %>% 
+  arrange(DateTime)
 
 ```
 
-### Correct with References
-Rerun the **Join Data & keys** sections above to update the `df_clean` dataframe.Apply your chosen references to actual spectral data to create the tidy dataframe `df_tidy` containing corrected sepectral reflectance values.
+## Save Clean Spectral Data
 
-```{r apply_refs, echo=FALSE}
-## Average 5 chosen ref measurements per DATE/SITE/BLOCK 
-ref_summary <- ref_data %>% 
-  ## The following steps expand the "Block" column to create one REF set per Block per Site. This structure is necessary for situtations where different refs are used for different blocks at the same site. 
-  separate(Block, into = c("BX1", "BX2", "BX3", "BX4"), sep = ",") %>% #1: expand string entry in "Block" into separate columns
-  gather(Block, BlockString, BX1:BX4) %>% #2: re-condense into one column, generates correct number of rows per site AND per block
-  mutate(Block = str_squish(BlockString), BlockString=NULL) %>% #3: replace placeholder column names w/"B1-B4". Also removes whitespace from BlockString contents introduced by "separate" function
-  filter(!is.na(Block)) %>% #4: remove empty rows for sites w/out B3 or B4
-  ### The following code group repeated REF measurements, and takes the mean 
-  group_by(Date,Site,Block,Wavelength) %>% 
-  # group_by(Date,Site,Block,Wavelength, int) %>% # to separate integration times
-  summarize(ChA_REF = mean(ChA), ChB_REF = mean(ChB), CorrectionFactor_REF = mean(ChA/ChB), int_REF = mean(int), Notes_REF = str_c(Notes, collapse = "; "), FileNames_REF = str_c(filename,collapse = ", "))
+```{r save_spectra, echo=T}
+clean_unispec_dataframe <- df_clean %>% 
+  rename(spu_spectra = Spectra, multispec_indices = Indices) %>% 
+  select(Date, DateTime, Site, Block, Treatment, Replicate, FileNum, spu_filename, multispec_filename, ref_filenames, Weather, Integration_ms, Temp, Type, multispec_spectra, multispec_indices, spu_spectra)
 
-## Join DATA with REFS 
-df_ref <- inner_join(df_clean, ref_summary) %>% 
-  select(Date, Time, Site, Block, Treatment, Replicate, Wavelength, int, int_REF, ChB, ChA, ChB_REF, ChA_REF, CorrectionFactor_REF, Weather, Notes, Notes_REF, FileNames_REF, filename, FileNum, keyname) %>%
-  mutate(raw = ChB/ChA) %>% # the raw reflectance
-  mutate(correct = raw*CorrectionFactor_REF) %>% # this step calculates the corrected reflectance
-  gather(Type, Reflectance, raw:correct) 
 
-df_tidy <- df_ref %>% 
-  mutate(Site = replace(Site, Site %in% WSG, "WSG")) %>% # rename WSG1 & WSG23 to WSG
-  mutate(Site = replace(Site, Site %in% SHB, "SHB"))# %>%  # rename  SHB1 & SHB2 to SHB
-  # filter(Type == "correct") %>% # drop raw reflectance
-  # select(-Type) 
+# SAVE CORRECTED SPECTRA if you want the dataframe 
+write_rds(clean_unispec_dataframe, path = paste0("HistoricUnispecData/", format(clean_unispec_dataframe$DateTime[1], format="%Y"),"_unispec_dataframe_clean.rds"))
+
 ```
+
 
 # Check Spectral Data
 
@@ -487,29 +396,30 @@ df_tidy <- df_ref %>%
 For the following code, make sure you select only one date per site. The 5 measurements per plot are averaged as a line and one standard deviation above and below shaded. Interactively edit the "PLOT SELECTION" vectors in the code chunk below to investigate specific data.
 
 
-
 ```{r plot_spectra_blocks, echo=F}
 # Recall df_table for list of dates/sites
 kable(df_table) 
 
 #PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_dates <- ymd("2017-07-21", "2017-06-15")
-check_sites <- c("MAT", "LMAT")
+check_dates <- ymd("2016-07-02", "2016-06-23")
+check_sites <- c("MAT", "LMAT", "WSG")
 check_blocks <- c("B1", "B2", "B3", "B4")
 check_trtmts <- c("NP", CT) 
 
 # Data Comparison Format
-df_block <- df_tidy %>% 
+df_block <- df_clean %>% 
   filter(Date %in% check_dates) %>% 
   filter(Site %in% check_sites) %>% 
   filter(Block %in% check_blocks) %>% 
   filter(Treatment %in% check_trtmts) %>% 
+  unnest(Spectra) %>% 
   group_by(Site, Block, Treatment, Date, Wavelength) %>% 
   summarize(
     avg_reflect = mean(Reflectance),
     max_ref = max(Reflectance),
     min_ref = min(Reflectance),
-    sd_reflect = sd(Reflectance)
+    sd_reflect = sd(Reflectance),
+    n = n()
     ) 
 
 ggplot(data = df_block, mapping = aes(x = Wavelength, y = avg_reflect)) +
@@ -544,17 +454,18 @@ Average plot averages by block. NOTE: Ask Laura what the correct error propogati
 
 ```{r plot_spectra_dates, echo=F}
 #PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_dates <- ymd("2017-07-21", "2017-06-15")
+check_dates <- ymd("2016-06-18", "2016-06-23")
 check_sites <- c("MAT", "LMAT")
 check_blocks <- c("B1", "B2", "B3", "B4")
-check_trtmts <- c("NP", CT) 
+check_trtmts <- c("NP", CT, "N", "P") 
 
 # Data Comparison Format
-df_dates <- df_tidy %>% 
+df_dates <- df_clean %>% 
   filter(Date %in% check_dates) %>% 
   filter(Site %in% check_sites) %>% 
   filter(Block %in% check_blocks) %>% 
   filter(Treatment %in% check_trtmts) %>%
+  unnest(Spectra) %>% 
   group_by(Site, Block, Treatment, Date, Wavelength) %>% # average measurements by plot
   summarize(
     avg_reflect = mean(Reflectance),
@@ -596,53 +507,26 @@ ggplot(data = df_dates, mapping = aes(x = Wavelength, y = block_avg_reflect)) +
 ```
 
 
-## Save Corrected Spectral Data
-
-```{r save_spectra, echo=T}
-save <- F
-
-if (save == T) {
-  # SAVE CORRECTED SPECTRA if you want the dataframe or .csv for later
-  unispec_data <- df_tidy %>%
-    filter(Type=="correct") %>%
-    select(-Type)
-  write_rds(unispec_data, "unispec_data_correct.rds")
-} 
-
-```
-
-
 # Check Vegetation Indices
 
 Currently, this only works for NDVI, EVI, and EVI2 as I haven't worked out spectral interpolation yet and the other indices need reflectance at a specific value (not a range). 
 
-## HISTORIC CONVERTED  NDVI data
+## Extract NDVI data
 ```{r convert_ndvi}
 ## Only NDVI data
-ndvi_2016 <- data_2016 %>% 
-  select(-c(ChAmax, ChBmax, Number_ChAmax)) %>% # select just NDVI 
-  select(-c('EVI(MODIS)':'ChlIndex', Spectra)) %>% 
-  rename(NDVI = 'NDVI(MODIS)') %>% 
-  mutate(NDVI = as.numeric(NDVI)) %>% 
-  filter(!Type == "Reference_scan")
+ndvi_data <- df_clean %>%  # select just NDVI 
+  unnest(Indices) %>% 
+  filter(Index == "NDVI(MODIS)") %>% 
+  rename(NDVI = Value) 
 ```
-
-
-
-## Calculate Vegetation Indices 
-```{r calculate_index}
-ndvi_types <- df_tidy %>% # to calculate NDVI
-  calculate_index(indices = "NDVI") # function in "unispec_functions.R"
-```
-
 
 ## Plot NDVI: Site vs. Block
 ```{r ndvi, echo=F}
 #PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_dates <- df_table %>% select(Date) %>% pull()#ymd("2017-06-08", "2017-06-15", "2017-06-26")
-check_sites <- c("MAT", "LMAT")
+check_dates <- ndvi_data %>% select(Date) %>% unique() %>%  pull()#ymd("2017-06-08", "2017-06-15", "2017-06-26")
+check_sites <- c("MAT")
 check_blocks <- c("B1", "B2", "B3", "B4")
-check_trtmts <- c("NP", CT, "P", "N", NP_gradient) 
+check_trtmts <- c("NP", "F10", CT) 
 
 # ndvi_types <- df_tidy %>% # to calculate NDVI 
 #   filter(Date %in% check_dates) %>% 
@@ -651,7 +535,10 @@ check_trtmts <- c("NP", CT, "P", "N", NP_gradient)
 #   filter(Treatment %in% check_trtmts) %>%
 #   calculate_index(indices = "NDVI") # function in "unispec_functions.R"
 
-ndvi_plot <- ndvi_2016 %>% 
+ndvi_plot <- ndvi_data %>% 
+  filter(Date %in% check_dates) %>%
+  filter(Site %in% check_sites) %>%
+  filter(Block %in% check_blocks) %>%
   filter(Treatment %in% check_trtmts) %>%
   group_by(Site, Block, Treatment, Date) %>% 
   summarise(
@@ -664,13 +551,16 @@ ndvi_plot <- ndvi_2016 %>%
     sd_ndvi = sd(sd_ndvi)
   )
 
-ndvi_data <- ndvi_2016 %>% 
-  filter(Treatment %in% check_trtmts)
+ndvi_subset <- ndvi_data %>% 
+  filter(Date %in% check_dates)%>%
+  filter(Site %in% check_sites) %>%
+  filter(Block %in% check_blocks)%>%
+  filter(Treatment %in% check_trtmts) %>% 
+  group_by(Block)
 
-
-ggplot(data = ndvi_data, mapping = aes(x = Date, y = NDVI, color = Treatment)) +
-  geom_point() + 
-  geom_smooth(aes(fill=Treatment)) + 
+ggplot(data = ndvi_subset, mapping = aes(x = Date, y = NDVI, color = Treatment)) +
+  geom_point(aes(shape=Block), position = "jitter") + 
+  geom_smooth(aes(fill=Treatment), method = lm, formula = y ~ splines::bs(x, 3)) + 
   facet_wrap(vars(Site)) + 
   scale_color_manual(values=c("CT" = "forestgreen", "CT1"="darkolivegreen2", "CT2"="darkolivegreen3",
                               "N" = "dodgerblue", "NO3" = "skyblue", "NH4" = "deepskyblue",
@@ -692,10 +582,9 @@ ggplot(data = ndvi_data, mapping = aes(x = Date, y = NDVI, color = Treatment)) +
                               "F10" = pur_pal[5])) 
   
   
-ggplot(data = ndvi_plot, mapping = aes(x = Date, y = avg_ndvi, color=Treatment, fill=Treatment)) +
+plot_errorbar <- ggplot(data = ndvi_plot, mapping = aes(x = Date, y = avg_ndvi, color=Treatment, fill=Treatment)) +
   geom_point() +
   geom_line() + 
-  geom_dotplot(binaxis = "y") +
   geom_errorbar(aes(ymin = avg_ndvi-sd_ndvi, ymax= avg_ndvi + sd_ndvi), width=2) + 
   facet_wrap(vars(Site)) + 
   scale_color_manual(values=c("CT" = "forestgreen", "CT1"="darkolivegreen2", "CT2"="darkolivegreen3",
@@ -708,6 +597,83 @@ ggplot(data = ndvi_plot, mapping = aes(x = Date, y = avg_ndvi, color=Treatment, 
                               "F5" = pur_pal[4],
                               "F10" = pur_pal[5])) 
 ```
+
+
+
+
+## Calculate Indices from Spectra
+```{r df_ndvi}
+# build tibble of #band_defns: instrument, color, min, max
+band_defns <- tribble(
+  ~definition, ~color, ~min, ~max,
+  "ITEX", "red", 560, 600,
+  "ITEX", "nir", 725, 1000,
+  "MODIS", "red", 620, 670, 
+  "MODIS", "nir", 841, 876,
+  "MODIS", "blue", 459,479,
+  "SKYE", "red", 620, 680,
+  "SKYE", "nir", 830, 880,
+  "SKYE", "blue", 455, 480,
+  "ToolikGIS_Drone_2018", "red", 640, 680,
+  "ToolikGIS_Drone_2018", "nir", 820, 890
+)
+
+ndvi_from_spectra <- clean_unispec_dataframe %>% 
+  filter(!str_detect(Treatment, "REF")) %>% 
+  mutate(spu_indices = map(spu_spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = "NDVI")))
+
+df_ndvi  <- ndvi_from_spectra %>% 
+  # mutate(multispec_indices = map(multispec_indices, function(x) filter(x, Index=="NDVI(MODIS)"))) %>% 
+  unnest(spu_indices) %>% 
+  mutate(Index = str_c(Index, "_raw")) %>% 
+  unnest(multispec_indices) %>% 
+  mutate(Index1 = str_c(Index1, "_corrected")) %>% 
+  gather(key = temp, value = Index, Index, Index1) %>% # combine indices into one column 
+  gather(key = temp, value = Value, Value, Value1) %>% 
+  select(-temp) 
+
+```
+
+## Compare Raw vs Corrected NDVI
+```{r ndvi_comp}
+
+#PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
+check_dates <- df_ndvi %>% select(Date) %>% unique() %>%  pull()#ymd("2017-06-08", "2017-06-15", "2017-06-26")
+check_sites <- c("MAT", "LMAT", "HIST")
+check_blocks <- c("B1", "B2", "B3", "B4")
+check_trtmts <- c(CT, "NP") 
+
+
+df_ndvi_subset <- df_ndvi %>% 
+  filter(Date %in% check_dates)%>%
+  filter(Site %in% check_sites) %>%
+  filter(Block %in% check_blocks)%>%
+  filter(Treatment %in% check_trtmts) %>% 
+  filter(str_detect(Index, "NDVI"))
+  
+df_ndvi_summary <- df_ndvi_subset %>% 
+  ## optional: group CT plots
+  mutate(Treatment = replace(Treatment, Treatment %in% CT, "CT")) %>%  
+  ## average data
+  group_by(Site, Block, Treatment, Date, Index) %>% 
+  summarise(
+    avg_ndvi = mean(Value),
+    sd_ndvi = sd(Value)
+  ) %>% 
+  group_by(Site,Treatment,Date,Index) %>% 
+  summarise(
+    avg_ndvi = mean(avg_ndvi),
+    sd_ndvi = sd(sd_ndvi)
+  ) 
+
+ggplot(data = df_ndvi_summary, mapping = aes(x = Date, y = avg_ndvi, color=Index)) +
+  geom_point() +
+  geom_line() + 
+  geom_errorbar(aes(ymin = avg_ndvi-sd_ndvi, ymax= avg_ndvi + sd_ndvi)) +
+  facet_grid(Treatment ~ Site) 
+
+```
+
 
 ## Save Vegetation Index Data
 Append data to yearly r dataframe or .csv file. Write code to read in saved data and remove duplicate rows. >> ASK JIM: I'm not sure what the best data organization system is yet. 

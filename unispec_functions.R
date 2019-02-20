@@ -157,4 +157,37 @@ calculate_index <- function(tidydata, band_defn ="MODIS", indices = c("NDVI", "E
 }
 
 
+calculate_indices <- function(spectra, band_defns, instrument = "MODIS", indices = "NDVI") {
+  # Calculates NDVI, EVI, and EVI2 from dataframe including Wavelength : Spectra 
+  ## inputs: spectra
+  ##         band_defns : wavelengths definining colors 
+  ##         instrument : e.g. MODIS, SKYE, ITEX
+  ##         indicies   : the index to return 
+  ## output: dataframe with Index : Value
+  
+  bands <- band_defns %>% 
+    filter(definition == instrument) 
+  
+  blue <- bands %>% filter(color=="blue") %>% select(min, max) %>% as.numeric()
+  nir <- bands %>% filter(color=="nir") %>% select(min, max) %>% as.numeric()
+  red <- bands %>% filter(color=="red") %>% select(min, max) %>% as.numeric()
+  
+  spectra_bands <- spectra %>% 
+    mutate(color = ifelse(Wavelength >= blue[1] & Wavelength <= blue[2], "blue",
+                          ifelse(Wavelength >= red[1] & Wavelength <= red[2], "red",
+                                 ifelse(Wavelength >= nir[1] & Wavelength <= nir[2], "nir",
+                                        "other")))) %>% 
+    group_by(color) %>% 
+    summarize(Reflectance = mean(Reflectance))
+  
+  index_data <- spectra_bands %>%
+    spread(color, Reflectance) %>% 
+    mutate(NDVI = (nir-red)/(nir+red),
+           EVI = 2.5*((nir-red)/(nir+6*red-7.5*blue + 1)),
+           EVI2 = 2.5*((nir-red)/(nir+2.4*red + 1))) %>% 
+    select_at(indices) %>% 
+    gather(Index, Value, everything())
+  
+  return(index_data) 
+}
 
