@@ -1,3 +1,0 @@
-filename,Date,Site,FileNum,Block,Treatment,Measurement,Weather,Notes,n_maxed
-/home/ruby/UnispecR/UnispecData/2017/2017_June/2017-06-19/HST_00003.spu,2017-06-19,HST,3,"B1, B2, B3, B4",REF,2,NA,NA,7
-/home/ruby/UnispecR/UnispecData/2017/2017_June/2017-06-19/HST_00046.spu,2017-06-19,HST,46,B2,CT,2,NA,NA,19

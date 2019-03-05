@@ -1,2 +1,0 @@
-spu_data.RData
-df_table.RData

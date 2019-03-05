@@ -1,4 +1,8 @@
 .Rproj.user
 *.spu
 *.Rda
+*.rds
 *.xlsx
+*.xls
+*.XLS
+*.rds
