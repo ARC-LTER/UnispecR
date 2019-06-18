@@ -1,0 +1,300 @@
+---
+title: "Compare Multispec vs. R Processing Pipelines"
+author: "Ruby An"
+date: "March 19, 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Required Packages
+```{r setup, echo=F}
+knitr::opts_chunk$set(echo = TRUE)
+
+## Required Packages
+require("tidyverse")
+require("knitr")
+require("lubridate")
+source("unispec_record_functions.R") # file loads required functions
+
+## Vectors
+WSG <- c("WSG1", "WSG23", "WSG2")
+SHB <- c("SHB1", "SHB2")
+
+## Standardize SiteNames
+Site_Names <- list(DH ="HTH", DHT = "HTH", LHTH = "HTH", HTHB = "HTH", HTHPC = "HTH",HIS="HIST", 
+                   LOF = "LMAT",  LOFB = "LMAT", LNB = "LMAT", LOFRB ="LMAT",
+                   MATB="MAT", MATSL= "MAT", MATBK = "MAT", 
+                   MANTB ="MNAT",MNATB ="MNAT", NAMTB = "MNAT", 
+                   NMNT = "NANT", NANTB ="NANT", JULNB ="NANT",NMNTB ="NANT",
+                   LSHB= "SHB", SHBB = "SHB", SHRBB = "SHB", SHRB = "SHB", 
+                   LWSG = "WSG", WSGB = "WSG", WS ="WSG", WSB = "WSG", WSDB = "WSG",
+                   WSG1 = "WSG", WSG23 = "WSG", WSG2 = "WSG",
+                   SHB1 = "SHB", SHB2 = "SHB")
+```
+
+# Read Multispec Data
+```{r}
+
+data_path <- "UnispecData/2018"
+
+# 1. Read in File Key --------------------------------------------------------
+# This gives you the correspondence between each .spu file and the 
+# site / block / plot / treatment / measurement at which it was taken. 
+
+# Find all file keys 
+key_files <- list.files(path = data_path, pattern = "*_key.csv*", full.names = T, recursive = T)
+
+# Read in filekeys 
+key_list <- tibble(keyname = key_files) %>% # create dataframe
+  mutate(key_contents = map(keyname, function(x) read_key_file(x)))
+
+
+keys <- unnest(key_list) # %>% 
+  # mutate(Site = replace(Site, Site %in% WSG, "WSG")) %>% 
+  # mutate(Site = replace(Site, Site %in% SHB, "SHB")) 
+
+
+# 2. Multispec File Lists ----------------------------------------------------
+
+# Create file lists (SITE-YEAR-MONTH-DAY-multispecstate.csv)
+multispec_files <- list.files(path = data_path, pattern = "raw|correct", full.names=T, recursive = T)
+
+bad_files <- c("UnispecData/2018/multispec/Processed/2018-07-03_DHT_correct.csv",
+               "UnispecData/2018/multispec/Processed/2018-07-03_NANT_B3_correct.csv",
+               "UnispecData/2018/multispec/Processed/2018-07-03_NANT_correct.csv",
+               "UnispecData/2018/multispec/Processed/2018-07-03_WSG1_correct.csv",
+               "UnispecData/2018/multispec/Raw/2018-07-03_DHT_raw.csv",
+               "UnispecData/2018/multispec/Raw/2018-07-03_NANT_B3_raw.csv",
+               "UnispecData/2018/multispec/Raw/2018-07-03_NANT_raw.csv",
+               "UnispecData/2018/multispec/Raw/2018-07-03_WSG1_raw.csv",
+               "UnispecData/2018/multispec/Raw/2018-08-01_DHT_raw.csv")
+
+good_files <- multispec_files[!(multispec_files %in% bad_files)]
+# 3. Read in data ---------------------------------------------------------
+
+data_list <- tibble(filename = good_files) %>% # create dataframe
+  mutate(file_contents = map(filename, function(x) read_multispec_file(x)))
+
+data <- unnest(data_list) #%>% 
+  #mutate(Site = replace(Site, Site %in% WSG, "WSG")) %>% 
+  #mutate(Site = replace(Site, Site %in% SHB, "SHB")) 
+
+## Join to File Key to get block, treatment, measurement
+keys_data <- inner_join(keys, data)
+
+multispec_data  <- keys_data %>% 
+  mutate(multispec_filename = filename) %>% 
+  mutate(Status = ifelse(Type == "correct", "multispec_corrected", "multispec_raw")) %>% 
+  select(-c(filename, keyname, Type)) 
+  #filter(!(Treatment %in% c("REF", "DARK"))) %>% # Exclude the reference & dark
+
+multispec_dataframe <- "UnispecData/2018_multispec_dataframe.rds"
+write_rds(multispec_data, path = multispec_dataframe)
+
+```
+
+# Load Multispec & Rscript Data
+
+```{r unispec_data}
+
+# LOAD DATA ---------------------------------------------------------------
+df_rscript <- read_rds("UnispecData/2018_unispec_dataframe_clean.rds") %>% 
+  # Remove columns 
+  select(-raw_indices, -corrected_indices, -DateTime, -Integration_ms, -ref_integration_ms) %>% 
+  # Rename columns 
+  rename(raw = raw_spectra,
+         corrected = corrected_spectra,
+         rscript_ref_filenames = ref_filenames) %>% 
+  gather(key = Status, value = Spectra, raw, corrected)  %>% 
+  # formate filenames
+  mutate(spu_filename = str_remove(spu_filename, "UnispecData/2018/spu/")) %>% 
+  mutate(rscript_ref_filenames = str_remove_all(rscript_ref_filenames, "UnispecData/2018/spu/[0-9]+(-[0-9]+)+/"))
+
+
+df_multispec <- read_rds("UnispecData/2018_multispec_dataframe.rds") %>% 
+  filter(!multispec_filename == "UnispecData/2018/multispec/Processed/2018-07-22_NANT_B1B2_correct.csv") %>% #duplicate multispec file, different references used
+  rename(multispec_ref_filenames = ref_files) %>% 
+  separate(Status, sep = "_", into = c("ProcessType", "Status"), fill = "right") %>% 
+  select(-ProcessType) %>% 
+  unnest(Spectra) %>% 
+  rename(Multispec_Reflectance = Reflectance)
+
+# Standardize Names
+df_rscript$Site <- recode (df_rscript$Site, !!!Site_Names, .default = df_rscript$Site)
+unique(df_rscript$Site)
+df_multispec$Site <- recode (df_multispec$Site, !!!Site_Names, .default = df_multispec$Site)
+unique(df_multispec$Site)
+```
+
+## Interpolate Rscript & Join 
+```{r}
+# Interpolate raw & rscript-corrected data
+df_interp <- df_rscript %>% 
+  filter(Treatment != "DARK") %>% 
+  mutate(Spectra = map(Spectra, function(x) interpolate_spectra(x))) %>% 
+  unnest(Spectra) %>% 
+  rename(Interp_Reflectance = Reflectance)
+
+# Join Multispec & Rscript-Interpolated data
+df_comp <- inner_join(df_multispec, df_interp) %>% 
+  # Absolute Difference between multispec vs rscript interpolated values 
+  mutate(Difference_Reflectance = Multispec_Reflectance - Interp_Reflectance) %>% 
+   # Percentage difference (of reflectance value )between multispec vs rscript interpolated
+  mutate(Difference_Percent = 2*Difference_Reflectance/(Multispec_Reflectance + Interp_Reflectance))
+
+# Summary of Multispec vs Rscript Spectra differences
+df_comp %>% summary()
+
+```
+
+## Save comparison data
+```{r}
+## Nest data for filtering 
+df_comp_nest <- df_comp %>% 
+  nest(Wavelength, Multispec_Reflectance, Interp_Reflectance, Difference_Reflectance, Difference_Percent, .key = Spectra)
+
+## Save data
+filename <- "UnispecData/2018_multispec_vs_rscript.rds"
+write_rds(df_comp_nest, filename)
+```
+
+
+# Spectra Comparison
+
+## Compare White References used
+```{r}
+
+## Check for different references
+df_comp_refs <- df_comp_nest %>% # filter(abs(Difference_Reflectance) > 0.01) %>% 
+  filter(Status == "corrected") %>% 
+  select(Date, Site, Block, multispec_ref_filenames, rscript_ref_filenames) %>% 
+  arrange() %>% 
+  distinct() %>% 
+  mutate(refs_same = map2(multispec_ref_filenames, rscript_ref_filenames, check_same_references)) %>% 
+  mutate(refs_same = unlist(refs_same))
+
+## {Dates, Sites, Blocks} where multispec & rscript refs differ
+df_refs_diff <- df_comp_refs %>% filter(!refs_same) %>% select(-refs_same) 
+```
+
+## Check for Spectra Differences
+```{r}
+## Check for differences in Reflectance Spectra
+df_diff <- df_comp_nest %>% anti_join(df_refs_diff) %>% filter(Status == "corrected") %>% 
+  unnest(Spectra) %>% 
+  filter(abs(Difference_Reflectance) > 0.01) %>%  # check for greater than 1% difference in reflectance
+  ## factor for summaries 
+  mutate_at(vars(Date, Site, Block, Treatment, Replicate, spu_filename, multispec_filename), funs(factor)) %>% 
+  arrange(Difference_Percent)
+
+## List spu_files with multispec vs rscript spectra differences 
+df_diff_files <- df_diff %>% group_by(spu_filename) %>% 
+  summarize(count = n(), avg_wavelength = mean(Wavelength), avg_difference = mean(Difference_Reflectance), percent_difference = mean(Difference_Percent*100))
+
+## Summary of egregiously different data
+df_diff_files
+df_diff %>% summary()
+
+hist(df_diff$Difference_Percent)
+```
+
+## Plot Spectra Differences 
+```{r}
+
+## Plot differences 
+first_file <- 1
+num_files_to_plot <- 3
+
+df_diff_plot <- df_comp_nest %>% inner_join(df_diff_files %>% select(spu_filename)) %>% 
+  arrange(spu_filename) %>% 
+  slice(first_file:(first_file+num_files_to_plot)) %>% 
+  unnest(Spectra) %>% 
+  gather(key = "ProcessType", value = "Value", Multispec_Reflectance, Interp_Reflectance, Difference_Reflectance, Difference_Percent) %>%
+  #filter(ProcessType != "Difference_Percent") %>% 
+  mutate(Unit = ifelse(str_detect(ProcessType, "Difference"), "Difference", "Reflectance"))
+  # separate(ProcessType, sep = "_", into = c("ProcessType", "Unit"))
+
+df_rscript_plot <- df_rscript %>% 
+  inner_join(df_diff_files %>% select(spu_filename)) %>% 
+  arrange(spu_filename) %>% 
+  slice(first_file:(first_file+num_files_to_plot)) %>% 
+  unnest(Spectra) %>% 
+  gather(key = "ProcessType", value = "Value", ChA, ChB, Reflectance) %>% 
+  mutate(Unit = ifelse(str_detect(ProcessType, "Ch"), "Channel", "Reflectance")) 
+
+
+## PLOT SELECTED DATA 
+color_set <- c("ChA" = "skyblue", "ChB" = "lightgreen", "Difference_Reflectance" = "red", 
+               "Interp_Reflectance" = "purple", "Multispec_Reflectance" = "orange", "Reflectance" = "grey")
+ggplot(data = df_diff_plot, mapping = aes(x = Wavelength, y = Value)) +
+  geom_point(data = df_rscript_plot, aes(color=ProcessType, alpha = Status), size = 0.75) +
+  geom_line(aes(color=ProcessType, alpha = Status)) +
+  scale_alpha_manual(values = c(1, 0.3)) +
+  #scale_color_manual(values = color_set) +
+  facet_grid(Unit ~ spu_filename, scales = "free") 
+
+ggplot(data)
+```
+
+
+Main conclusion: Multispec does something beyond solely interpolating the raw values. Linear interpolation in R and multispec raw interpolated files show deviations in spectra. 
+
+However, multispec corrected and r-corrected then interpolated values are (in most but not all) cases very similar [INSERT STATISTIC HERE]. 
+
+Differences usually occurred at [????] Wavelengths. 
+
+# NDVI Comparison
+```{r}
+# NDVI Comparison ----------------------------------------------------------
+### No evidence for difference between NDVI between processing types. 
+### Lines for "multispec" vs "rscript" plot right over one another.
+### Do actual stats on this? repeated measures ANOVA or dependent t-test? 
+
+## PLOT SELECTION over DATES
+sites <-c("MAT") #
+blocks <- c("B1") # c("B1", "B2", "B3", "B4")
+trtmts <- c("CT1") # c("CT", "NP", "N", "P")
+measures <- c("1", "2")
+
+ndvi_types <- df_types %>% 
+  filter(Site %in% sites) %>% 
+  filter(Block %in% blocks) %>% 
+  filter(Treatment %in% trtmts) %>% 
+  calculate_ndvi_process()
+
+ndvi_plot <- ndvi_types
+
+ggplot(data = ndvi_plot, mapping = aes(x = Date, y = ndvi, color = Type, linetype = ProcessType)) +
+  geom_point() +
+  geom_line() + 
+  facet_grid( Measurement ~ Type)
+
+
+## PLOT SELECTION for Individual Date 
+### change the following vectors to explore all data over dates
+dates <- df_types %>% select(Date) %>% unique() %>% slice(1:n()) %>% c()
+dates <- dates[[1]]
+sites <-c("MAT") #
+blocks <- c("B1") # c("B1", "B2", "B3", "B4")
+trtmts <- c("CT1") # c("CT", "NP", "N", "P")
+measures <- c("1", "2", "3", "4", "5")
+
+ndvi_types <- df_types %>% 
+  filter(Date %in% dates) %>% 
+  filter(Site %in% sites) %>% 
+  filter(Block %in% blocks) %>% 
+  filter(Treatment %in% trtmts) %>% 
+  calculate_ndvi_process()
+
+ndvi_plot <- ndvi_types
+
+ggplot(data = ndvi_plot, mapping = aes(x = ProcessType, y=ndvi, fill=Type)) +
+  geom_bar(stat="identity") +
+  facet_grid( Measurement ~ Type)
+```
+

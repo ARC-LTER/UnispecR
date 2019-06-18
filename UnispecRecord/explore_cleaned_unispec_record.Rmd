@@ -1,0 +1,373 @@
+---
+title: "Process LTER Unispec Data"
+author: "Ruby An"
+date: "December 17, 2018"
+output:
+  html_notebook:
+    number_sections: yes
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+This R Markdown document visualizes and does stats on unispec data collected from 2010-2018. 
+
+# Required Packages
+```{r setup, echo=F}
+knitr::opts_chunk$set(echo = TRUE)
+
+## Required Packages
+require("tidyverse")
+require("knitr")
+require("lubridate")
+source("unispec_record_functions.R") # file loads required functions
+```
+
+For now, I am assuming R corrected spectra and multispec corrected spectra are the same. I am only using the multispec corrected spectra, as this is available for all years. 
+
+
+# Load Data
+Load historic unispec data (clean). 
+
+```{r unispec_data}
+df_2014 <- read_rds("UnispecData/2014_unispec_dataframe_clean.rds") %>% 
+  rename(raw_spectra = spu_spectra, 
+         corrected_spectra = multispec_spectra)
+df_2015 <- read_rds("UnispecData/2015_unispec_dataframe_clean.rds") %>% 
+  rename(corrected_spectra = multispec_spectra)
+df_2016 <- read_rds("UnispecData/2016_unispec_dataframe_clean.rds") %>% 
+    rename(raw_spectra = spu_spectra,
+           corrected_spectra = multispec_spectra)
+df_2017 <- read_rds("UnispecData/2017_unispec_dataframe_clean.rds") 
+df_2018 <- read_rds("UnispecData/2018_unispec_dataframe_clean.rds")
+
+
+## Transform for problem check
+df <- df_2017 %>% 
+  rename(Spectra = raw_spectra) %>% 
+  mutate(xlsx_filename = NA) 
+
+unispec_key_fix <- read_key_file("UnispecData/2017/2017_unispec_key.csv")
+
+## FOR NICOLE: Save 2017 NDVI for excel 
+ndvi_for_excel <- df_2017 %>% unnest(corrected_indices) %>% filter(Index == "NDVI") %>% rename(NDVI = Value) %>% select(-Index)
+
+write_csv(ndvi_for_excel, "UnispecData/2017_ndvi_for_excel.csv")
+
+day_averages <- ndvi_for_excel %>% select(Date, Site, Block, Treatment, Replicate, NDVI) %>% 
+  group_by(Date, Site, Block, Treatment) %>% 
+  summarize(mean_ndvi = mean(NDVI))
+
+write_csv(day_averages, "/home/ruby/2017_ndvi_plot_averages.csv")
+
+
+## MISSING REP 1 for 2017 data LMAT 
+ndvi_for_excel %>% filter(Date == "2017-07-31", Site == "LMAT", Block == "B1") %>% 
+  print(n=100)
+
+
+
+
+
+
+```
+
+# Save Data for Shiny Visualization
+```{r, df_shiny} 
+shiny_filename <- paste0("UnispecData/", format(key_info$Date[1], format="%Y"),"_xlsx_data.rds")
+
+write_rds(key_info %>% select(-processed_filename), path = xlsx_filename)
+
+
+```
+# Check Spectral Data
+
+## Plot Spectra: Site vs. Block
+For the following code, make sure you select only one date per site. The 5 measurements per plot are averaged as a line and one standard deviation above and below shaded. Interactively edit the "PLOT SELECTION" vectors in the code chunk below to investigate specific data.
+
+
+```{r plot_spectra_blocks, dependson="unispec_data"}
+# Recall df_table for list of dates/sites
+df_table <- df_clean %>% 
+  select(Date, Site) %>% 
+  distinct() %>% 
+  group_by(Date) %>% 
+  do(Sites = t(.[-1])) %>% 
+  mutate(Sites = paste( unlist(Sites), collapse=','))
+kable(df_table) 
+
+#PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
+check_dates <- ymd("2016-07-02", "2016-06-23")
+check_sites <- c("MAT", "LMAT", "WSG")
+check_blocks <- c("B1", "B2", "B3", "B4")
+check_trtmts <- c("NP", CT) 
+
+# Data Comparison Format
+df_block <- df_clean %>% 
+  filter(Date %in% check_dates) %>% 
+  filter(Site %in% check_sites) %>% 
+  filter(Block %in% check_blocks) %>% 
+  filter(Treatment %in% check_trtmts) %>% 
+  unnest(spu_spectra) %>% 
+  group_by(Site, Block, Treatment, Date, Wavelength) %>% 
+  summarize(
+    avg_reflect = mean(Reflectance),
+    max_ref = max(Reflectance),
+    min_ref = min(Reflectance),
+    sd_reflect = sd(Reflectance),
+    n = n()
+    ) 
+
+ggplot(data = df_block, mapping = aes(x = Wavelength, y = avg_reflect)) +
+  geom_line(aes(color=Treatment)) + 
+  geom_ribbon(aes(ymin=avg_reflect-sd_reflect, ymax=avg_reflect+sd_reflect, fill=Treatment), alpha=0.25) +
+  facet_grid(Date ~ Site + Block ) + 
+  scale_color_manual(values=c("CT" = "forestgreen", "CT1"="darkolivegreen2", "CT2"="darkolivegreen3",
+                              "N" = "dodgerblue", "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = "red2",
+                              "NP" = pur_pal[5],
+                              "F0.5" = pur_pal[1],
+                              "F1" = pur_pal[2],
+                              "F2" = pur_pal[3],
+                              "F5" = pur_pal[4],
+                              "F10" = pur_pal[5])) + 
+  scale_fill_manual(values=c("CT" = "forestgreen", "CT1"="darkolivegreen2", "CT2"="darkolivegreen3",
+                              "N" = "dodgerblue", "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = "red2",
+                              "NP" = pur_pal[5],
+                              "F0.5" = pur_pal[1],
+                              "F1" = pur_pal[2],
+                              "F2" = pur_pal[3],
+                              "F5" = pur_pal[4],
+                              "F10" = pur_pal[5]))
+
+```
+
+
+ 
+## Plot Spectra: Site vs. Date
+Average plot averages by block. NOTE: Ask Laura what the correct error propogation is here.
+
+```{r plot_spectra_dates, echo=F}
+#PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
+check_dates <- ymd("2016-06-18", "2016-06-23")
+check_sites <- c("MAT", "LMAT")
+check_blocks <- c("B1", "B2", "B3", "B4")
+check_trtmts <- c("NP", CT, "N", "P") 
+
+# Data Comparison Format
+df_dates <- df_clean %>% 
+  filter(Date %in% check_dates) %>% 
+  filter(Site %in% check_sites) %>% 
+  filter(Block %in% check_blocks) %>% 
+  filter(Treatment %in% check_trtmts) %>%
+  unnest(spu_spectra) %>% 
+  group_by(Site, Block, Treatment, Date, Wavelength) %>% # average measurements by plot
+  summarize(
+    avg_reflect = mean(Reflectance),
+    max_ref = max(Reflectance),
+    min_ref = min(Reflectance),
+    sd_reflect = sd(Reflectance)
+    )  %>% 
+  group_by(Site, Treatment, Date, Wavelength) %>% # average plots by block
+  summarize(
+    block_avg_reflect = mean(avg_reflect),
+    max_ref = max(avg_reflect),
+    min_ref = min(avg_reflect),
+    sd_reflect = sd(avg_reflect)
+    ) 
+
+ggplot(data = df_dates, mapping = aes(x = Wavelength, y = block_avg_reflect)) +
+  geom_line(aes(color=Treatment)) + 
+  geom_ribbon(aes(ymin=block_avg_reflect-sd_reflect, ymax=block_avg_reflect+sd_reflect, fill=Treatment), alpha=0.25) +
+  facet_grid(Site ~ Date) + 
+  scale_color_manual(values=c("CT" = "forestgreen", "CT1"="darkolivegreen2", "CT2"="darkolivegreen3",
+                              "N" = "dodgerblue", "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = "red2",
+                              "NP" = pur_pal[5],
+                              "F0.5" = pur_pal[1],
+                              "F1" = pur_pal[2],
+                              "F2" = pur_pal[3],
+                              "F5" = pur_pal[4],
+                              "F10" = pur_pal[5])) + 
+  scale_fill_manual(values=c("CT" = "forestgreen", "CT1"="darkolivegreen2", "CT2"="darkolivegreen3",
+                              "N" = "dodgerblue", "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = "red2",
+                              "NP" = pur_pal[5],
+                              "F0.5" = pur_pal[1],
+                              "F1" = pur_pal[2],
+                              "F2" = pur_pal[3],
+                              "F5" = pur_pal[4],
+                              "F10" = pur_pal[5]))
+
+```
+
+
+# Check Vegetation Indices
+
+Currently, this only works for NDVI, EVI, and EVI2 as I haven't worked out spectral interpolation yet and the other indices need reflectance at a specific value (not a range). 
+
+## Extract NDVI data
+```{r convert_ndvi}
+## Only NDVI data
+ndvi_data <- df_clean %>%  # select just NDVI 
+  unnest(multispec_indices) %>% 
+  filter(Index == "NDVI(MODIS)") %>% 
+  rename(NDVI = Value) 
+```
+
+## Plot NDVI: Site vs. Block
+```{r ndvi, echo=F}
+#PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
+check_dates <- ndvi_data %>% select(Date) %>% unique() %>%  pull()#ymd("2017-06-08", "2017-06-15", "2017-06-26")
+check_sites <- c("MAT")
+check_blocks <- c("B1", "B2", "B3", "B4")
+check_trtmts <- c("NP", "F10", CT) 
+
+# ndvi_types <- df_tidy %>% # to calculate NDVI 
+#   filter(Date %in% check_dates) %>% 
+#   filter(Site %in% check_sites) %>% 
+#   filter(Block %in% check_blocks) %>% 
+#   filter(Treatment %in% check_trtmts) %>%
+#   calculate_index(indices = "NDVI") # function in "unispec_functions.R"
+
+ndvi_plot <- ndvi_data %>% 
+  filter(Date %in% check_dates) %>%
+  filter(Site %in% check_sites) %>%
+  filter(Block %in% check_blocks) %>%
+  filter(Treatment %in% check_trtmts) %>%
+  group_by(Site, Block, Treatment, Date) %>% 
+  summarise(
+    avg_ndvi = mean(NDVI),
+    sd_ndvi = sd(NDVI)
+  ) %>% 
+  group_by(Site,Treatment,Date) %>% 
+  summarise(
+    avg_ndvi = mean(avg_ndvi),
+    sd_ndvi = sd(sd_ndvi)
+  )
+
+ndvi_subset <- ndvi_data %>% 
+  filter(Date %in% check_dates)%>%
+  filter(Site %in% check_sites) %>%
+  filter(Block %in% check_blocks)%>%
+  filter(Treatment %in% check_trtmts) %>% 
+  group_by(Block)
+
+ggplot(data = ndvi_subset, mapping = aes(x = Date, y = NDVI, color = Treatment)) +
+  geom_point(aes(shape=Block), position = "jitter") + 
+  geom_smooth(aes(fill=Treatment), method = lm, formula = y ~ splines::bs(x, 3)) + 
+  facet_wrap(vars(Site)) + 
+  scale_color_manual(values=c("CT" = "forestgreen", "CT1"="darkolivegreen2", "CT2"="darkolivegreen3",
+                              "N" = "dodgerblue", "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = "red2",
+                              "NP" = pur_pal[5],
+                              "F0.5" = pur_pal[1],
+                              "F1" = pur_pal[2],
+                              "F2" = pur_pal[3],
+                              "F5" = pur_pal[4],
+                              "F10" = pur_pal[5])) +
+    scale_fill_manual(values=c("CT" = "forestgreen", "CT1"="darkolivegreen2", "CT2"="darkolivegreen3",
+                              "N" = "dodgerblue", "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = "red2",
+                              "NP" = pur_pal[5],
+                              "F0.5" = pur_pal[1],
+                              "F1" = pur_pal[2],
+                              "F2" = pur_pal[3],
+                              "F5" = pur_pal[4],
+                              "F10" = pur_pal[5])) 
+  
+  
+plot_errorbar <- ggplot(data = ndvi_plot, mapping = aes(x = Date, y = avg_ndvi, color=Treatment, fill=Treatment)) +
+  geom_point() +
+  geom_line() + 
+  geom_errorbar(aes(ymin = avg_ndvi-sd_ndvi, ymax= avg_ndvi + sd_ndvi), width=2) + 
+  facet_wrap(vars(Site)) + 
+  scale_color_manual(values=c("CT" = "forestgreen", "CT1"="darkolivegreen2", "CT2"="darkolivegreen3",
+                              "N" = "dodgerblue", "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = "red2",
+                              "NP" = pur_pal[5],
+                              "F0.5" = pur_pal[1],
+                              "F1" = pur_pal[2],
+                              "F2" = pur_pal[3],
+                              "F5" = pur_pal[4],
+                              "F10" = pur_pal[5])) 
+```
+
+
+# Compare Raw|Correct NDVI
+
+## Calculate Indices from Spectra
+```{r df_ndvi}
+# build tibble of #band_defns: instrument, color, min, max
+band_defns <- tribble(
+  ~definition, ~color, ~min, ~max,
+  "ITEX", "red", 560, 600,
+  "ITEX", "nir", 725, 1000,
+  "MODIS", "red", 620, 670, 
+  "MODIS", "nir", 841, 876,
+  "MODIS", "blue", 459,479,
+  "SKYE", "red", 620, 680,
+  "SKYE", "nir", 830, 880,
+  "SKYE", "blue", 455, 480,
+  "ToolikGIS_Drone_2018", "red", 640, 680,
+  "ToolikGIS_Drone_2018", "nir", 820, 890
+)
+
+ndvi_from_spectra <- clean_unispec_dataframe %>% 
+  filter(!str_detect(Treatment, "REF")) %>% 
+  mutate(spu_indices = map(spu_spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = "NDVI")))
+
+df_ndvi  <- ndvi_from_spectra %>% 
+  # mutate(multispec_indices = map(multispec_indices, function(x) filter(x, Index=="NDVI(MODIS)"))) %>% 
+  unnest(spu_indices) %>% 
+  mutate(Index = str_c(Index, "_raw")) %>% 
+  unnest(multispec_indices) %>% 
+  mutate(Index1 = str_c(Index1, "_corrected")) %>% 
+  gather(key = temp, value = Index, Index, Index1) %>% # combine indices into one column 
+  gather(key = temp, value = Value, Value, Value1) %>% 
+  select(-temp) 
+
+```
+
+## Plot NDVI w/Errorbars 
+```{r ndvi_comp}
+
+#PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
+check_dates <- df_ndvi %>% select(Date) %>% unique() %>%  pull()#ymd("2017-06-08", "2017-06-15", "2017-06-26")
+check_sites <- c("MAT", "LMAT", "HIST")
+check_blocks <- c("B1", "B2", "B3", "B4")
+check_trtmts <- c(CT, "NP") 
+
+
+df_ndvi_subset <- df_ndvi %>% 
+  filter(Date %in% check_dates)%>%
+  filter(Site %in% check_sites) %>%
+  filter(Block %in% check_blocks)%>%
+  filter(Treatment %in% check_trtmts) %>% 
+  filter(str_detect(Index, "NDVI"))
+  
+df_ndvi_summary <- df_ndvi_subset %>% 
+  ## optional: group CT plots
+  mutate(Treatment = replace(Treatment, Treatment %in% CT, "CT")) %>%  
+  ## average data
+  group_by(Site, Block, Treatment, Date, Index) %>% 
+  summarise(
+    avg_ndvi = mean(Value),
+    sd_ndvi = sd(Value)
+  ) %>% 
+  group_by(Site,Treatment,Date,Index) %>% 
+  summarise(
+    avg_ndvi = mean(avg_ndvi),
+    sd_ndvi = sd(sd_ndvi)
+  ) 
+
+ggplot(data = df_ndvi_summary, mapping = aes(x = Date, y = avg_ndvi, color=Index)) +
+  geom_point() +
+  geom_line() + 
+  geom_errorbar(aes(ymin = avg_ndvi-sd_ndvi, ymax= avg_ndvi + sd_ndvi)) +
+  facet_grid(Treatment ~ Site) 
+
+```
+

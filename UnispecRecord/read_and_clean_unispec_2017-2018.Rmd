@@ -1,0 +1,344 @@
+---
+title: "Read & Clean 2017 & 2018 data"
+author: "Ruby An"
+date: "June 7, 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Paired with "read_and_clean_unispec_record.R", this file processes the 2017 and 2018 data. They have slightly different file saving formats so need their own function/processes. 
+
+# Setup
+```{r setup, echo=F}
+knitr::opts_chunk$set(echo = FALSE, eval = FALSE, include = FALSE)
+
+## Required Packages
+library("tidyverse")
+library("knitr")
+require(lubridate)
+require(openxlsx)
+require(rChoiceDialogs)
+source("unispec_record_functions.R") # file loads required functions
+
+## Standardize Names 
+# Recode Site to standard names. This should cover must years.
+Site_Names <- list(DHT = "HTH", DH ="HTH", LHTH = "HTH", HTHB = "HTH", HTHPC = "HTH", HST = "HIST", HIS="HIST", 
+                   LOF = "LMAT",  LOFB = "LMAT", LNB = "LMAT", LOFRB ="LMAT",
+                   MATB="MAT", MATSL= "MAT", MATBK = "MAT", 
+                   MANTB ="MNAT",MNATB ="MNAT", NAMTB = "MNAT", 
+                   NMNT = "NANT", NANTB ="NANT", JULNB ="NANT",NMNTB ="NANT",
+                   LSHB= "SHB", SHBB = "SHB", SHRBB = "SHB", SHRB = "SHB", 
+                   LWSG = "WSG", WSGB = "WSG", WS ="WSG", WSB = "WSG", WSDB = "WSG")
+
+## Choose Year: 2017 or 2018
+dir_year <- 2017
+```
+
+
+## Renaming raw files
+Rename files to include parent directory (Date) in filename: "YEAR-MONTH-DAY_SITE_FileNum.spu". Copy the following code and use in the command line (haven't figured out how to run in RStudio yet... some kind of error that "file doesn't exist"). Adjust so that year (date) structure is correct. 
+```{bash}
+
+#!/bin/bash
+for date in 2017-??-??; do
+  pushd "$date"
+  for file in *; do
+    mv "$file" ../"${date}_${file}"
+  done
+  popd
+done
+
+## Removing "dark/ref" suffixes
+for file in *ref*; do
+  mv "$file" 
+done 
+
+```
+
+
+## Reading in raw data
+Generate the following 2 files from raw data:
+  * YEAR_raw_spu_data.rds
+  * YEAR_raw_spu_key.csv
+  
+```{r}
+## Read .spu raw files
+raw_data_path <- rchoose.dir(caption = "Select Raw Data Files Directory")
+spu_files <- list.files(path = raw_data_path, pattern = ".spu$", full.names = T, recursive=T)
+
+# Read all the metadata from the spu files using function read_spufile_metadata; add a variable with the filename
+#  and max of ChA and ChB.  
+spu_metadata <- map_dfr(spu_files, read_spu_file_metadata) %>% 
+  mutate(spu_filename_full = spu_files)
+
+spu_data <- spu_metadata %>% 
+  mutate(Spectra=map(spu_filename_full, function(x) read_spu_file_spectra(x)))
+
+# > Standardize Site Names -----------------------------------------------------
+# Check for different spelling of site names
+unique(spu_data$Site)
+spu_data$Site <- recode (spu_data$Site, !!!Site_Names, .default = spu_data$Site)
+
+# Recheck Site Names
+unique(spu_data$Site)
+
+# spu_dataframe <- read_rds("UnispecData/2016_raw_spu_dataframe.rds") %>% 
+#   select(spu_filename, Site, FileNum, Date, DateTime, Integration_ms, Temp, Remarks, Spectra)
+
+spu_dataframe <- spu_data %>% select(spu_filename, Site, FileNum, Date, DateTime, Integration_ms, Temp, Remarks, Spectra, everything())
+
+# > Set Type of Scan -----------------------------------------------------
+spu_dataframe <- spu_dataframe %>% 
+  mutate(Type = ifelse(grepl("DARKscan",Remarks, fixed=T), "Darkscan",
+                       ifelse(grepl("Datascan,DC",Remarks, fixed=T), "Throwawayscan", NA))) %>% 
+  distinct(DateTime, spu_filename, .keep_all = T)  # duplicate files in 2015 WSG 2014-06-20
+
+# > Extract only Spectral datawithout metadata -----------------------------------------------------
+
+spu_spectra <- spu_dataframe %>% select(spu_filename, DateTime, Spectra)
+
+# > Extract only Spectral Metadata for .csv key -----------------------------------------------------
+spu_key <- spu_dataframe %>% 
+  select(-Spectra, -spu_filename_full) %>% # remove for .csv
+  select(spu_filename, everything()) # set order
+```
+
+### Save .spu data & key 
+```{r, save_raw_data}
+
+# > Extract only Spectral datawithout metadata -----------------------------------------------------
+spu_spectra <- spu_dataframe %>% select(spu_filename, DateTime, Spectra)
+
+## Save raw data as .rds 
+raw_filename <- paste0("UnispecData/", format(spu_dataframe$DateTime[1], format="%Y"),"_raw_spu_data.rds")
+write_rds(spu_spectra, path = raw_filename)
+
+
+# > Extract only Spectral Metadata for .csv key -----------------------------------------------------
+spu_key <- spu_dataframe %>% 
+  select(-Spectra, -spu_filename_full) %>% # remove for .csv
+  select(spu_filename, everything()) # set order
+
+## Save raw metadata key
+raw_keyname <- paste0("UnispecData/", format(spu_dataframe$DateTime[1], format="%Y"),"_raw_spu_key.csv")
+write_csv(spu_key, path = raw_keyname)
+
+```
+
+
+## Load .spu raw data 
+Includes raw spectra and instrument metadata.  
+
+  - 2017 : "UnispecData/2017_raw_spu_data.rds"; "UnispecData/2017_raw_spu_key.csv"
+  
+```{r, load_raw_data, eval = T}
+raw_filename <- paste0("UnispecData/", dir_year, "_raw_spu_data.rds")
+spu_data <- read_rds(raw_filename)
+
+raw_keyname <- paste0("UnispecData/", dir_year, "_raw_spu_key.csv")
+spu_key <- read_csv(raw_keyname) 
+
+```
+
+## Load multispec data
+
+```{r}
+read_rds("UnispecData/2017_multispec_data.rds")
+write_rds(multispec_data, paste0("UnispecData/", dir_year, "_multispec_data.rds"))
+  
+```
+
+## Load Unispec Key 
+```{r, df, dependson=c("load_raw_data", "load_xlsx_data"), eval=TRUE}
+
+unispec_keyname <- paste0("UnispecData/", dir_year, "/", dir_year, "_unispec_key.csv") # manually updated key
+unispec_key <- read_csv(unispec_keyname, skip_empty_rows = T) %>% 
+  mutate(Date = lubridate::mdy(Date)) %>% 
+  gather(key = Replicate, value = FileNum, P1:P5) %>% 
+  filter(!is.na(FileNum)) %>% 
+  mutate(Replicate = as.integer(str_remove(Replicate, pattern = "P"))) %>% 
+  arrange(Date, Site, Block, FileNum) 
+
+spu_dataframe <- full_join(spu_data, spu_key)
+
+## Dataframe w/fixed metadata
+df <- full_join(spu_dataframe, unispec_key) %>% arrange(DateTime) %>% 
+  left_join(multispec_data %>% filter(ProcessType == "correct")) %>% arrange(DateTime)
+
+df$Site <- recode (df$Site, !!!Site_Names, .default = df$Site)
+unique(df$Site)
+
+```
+
+
+# Quality Check Quality Control 
+
+## Zoom Check
+Run the following code chunk interactively in RStudio to check spu_files and metadata at specific sites/dates. 
+```{r plot_zoom, eval=T, echo=F, dependson="df"} 
+
+## SPECIFY SITE/DATE/ETC to ZOOM IN ON
+check_sites <- c("LMAT")
+
+## Possible Dates
+check_dates <- df %>% filter(Site %in% check_sites) %>% pull(Date) %>% unique()
+
+## Which Date
+check_dates <- c("2017-06-08") # necessary to unlist dates vector
+
+df_check <- df %>% # full dataframe not just ref's 
+  filter(format(DateTime, format="%Y-%m-%d") %in% check_dates) %>% # Date is NA for spu_files without 
+  filter(Site %in% check_sites) %>% 
+  arrange(DateTime)  %>% 
+  select(spu_filename, DateTime, Site, Block, Treatment, Replicate, FileNum, Type, Spectra, everything())
+
+## PLOT RAW DATA --for specific File Numbers
+start_file <- 0
+end_file <- 10
+
+df_check_files <- df_check %>% 
+  filter(FileNum >= start_file, FileNum <= end_file) 
+
+df_check_files  %>%  plot_channels()
+
+
+# # PLOT METADATA
+# df_subset <- df_check %>% select(spu_filename) %>% inner_join(df)
+# df_subset %>%
+#   slice(1:10) %>%
+#   plot_reflectances()
+# 
+
+## TIME CHECK
+df_check %>% check_time_difference() %>% mutate(difference = diff) %>%  select(FileNum, difference, Treatment, Replicate, everything()) %>% arrange(DateTime) %>%  print(n=100)
+```
+
+
+## Mis-Labeling 
+
+
+### Discrepancy Checks
+```{r df_check, dependson="df", eval= T, echo=F}
+##### ------------------------- Variable checks 
+
+# Check variables
+df_names <- names(df)
+
+#####
+# Check for Meaningful NA's 
+
+df %>% filter(is.na(DateTime))
+
+df_na <- df %>% filter(is.na(spu_filename) |
+              is.na(Site) |
+              is.na(Block) & !str_detect(Treatment, "REF|DARK|VEG") | # Block NA's should always be REFS or EXTRA
+              is.na(Replicate) & !str_detect(Treatment, "REF"), # Check for replicate NA's that aren't REF
+              Treatment != "EXTRA|VEG|REF") # don't care about EXTRA
+df_na %>% filter(Treatment !="REF") %>% select_if(function(x) typeof(x) != "list") %>% summary()
+
+#####
+## Check for large filenumbers : Inconsistent File Number reading due to number at end of site names
+df_lgfn <- df %>%
+  filter(FileNum > 500) %>%  # Sites w/numbers at the end mis-read in as part of file number. All > 100000: Unispec-DC measurements only go up to 5 digits.
+  select(Date, Site, Block, FileNum, spu_filename)
+df_lgfn
+
+
+#####
+## Check Site Names
+df_sites <- unique(df$Site)
+df_sites
+
+## Check Treatment names
+df_treatments <- unique(df$Treatment)
+df_treatments
+
+### -------------------------------------- SUMMARY CHECKS
+
+## Dataframe 
+df_summary <- df %>% group_by(Site, Date) %>%  summarize(Treatments = str_c(str_replace_na(unique(Treatment)), collapse = ","), Num_Files = n()) 
+df_summary %>% print(n=100)
+
+# Discrepancies  
+## Site vs. Site_filename differences 
+#### should only be Reference files or mislabeled (e.g. MAT extends into LMAT, or NANT continues to MNAT)
+df_site_diff <- unispec_key_fix %>% left_join(spu_key %>% select(-Date, -Type, -FileNum) %>% rename(Site_filename = Site)) %>%   filter(Site != Site_filename) 
+
+df_site_diff %>% 
+  group_by(Date) %>% 
+  summarize(Sites = str_c(unique(Site), collapse = ", "), Sites_filename = str_c(unique(Site_filename), collapse = ", "), Treatments = str_c(str_replace_na(unique(Treatment)), collapse = ","), Num_Files = n())
+
+## Check File Number Pattern:
+#### Num Files per block should be multiples of 5, unless REF or NA
+df_filenum_count <- unispec_key_fix %>% group_by(Site, Date, Block) %>% 
+  summarize(Treatments = str_c(str_replace_na(unique(Treatment)), collapse = ","), Num_Files = n()) %>% 
+  filter(Treatments != "NA") %>% 
+  filter(Num_Files %% 5 != 0) %>% # files per plot
+  filter(!str_detect(Treatments, "REF|NA")) 
+df_filenum_count
+
+df %>% inner_join(df_filenum_count) %>% print(n=100) 
+
+```
+
+Run the following code for Discerpancy check output. 
+```{r, checks, eval = T, echo=F}
+
+# cat(paste0("Dataframe Columns: ", str_c(df_names, collapse = ", ")))
+# cat(paste0("Sites: ", str_c(df_sites, collapse = ", ")))
+# cat(paste0("Treatments: ", str_c(df_treatments, collapse = ", ")))
+# 
+# df_na %>% kable(caption = "NA Metadata")
+# df_lgfn %>% kable(caption = "Large FileNumbers")
+
+df_names
+df_sites
+df_treatments
+
+df_lgfn 
+df_site_diff
+df_filenum_count
+
+df_summary
+
+### Summarize  - look for NA's
+unispec_key_fix %>% select_if(function(x) typeof(x) != "list") %>% summary()
+df %>% select_if(function(x) typeof(x) != "list") %>% summary()
+
+```
+
+### Duplicates 
+Identify duplicates. Fix by editing unispec_key_fix.csv. Only duplicates should be REF files used for other sites. 
+
+```{r duplicates}
+### Check raw spu_files have no duplicates
+nrow(spu_data) == length(unique(spu_data$spu_filename))
+
+## Check for duplicates in key
+unispec_key %>% group_by(Date, Site, Block, Treatment, Replicate, FileNum) %>%
+  filter(n()>1) %>%
+  arrange(Date, Site, FileNum) %>% 
+  print(n=100)
+
+## Check for duplicate in dataframe
+duplicates <- df %>% 
+  group_by(spu_filename) %>%
+  filter(n()>1) %>%
+  ungroup() %>%
+  arrange(DateTime, spu_filename) %>% 
+  select( spu_filename, FileNum, DateTime, Site, Block, Treatment, Replicate, Weather, everything())
+
+# duplicates %>% print(n=200)
+# duplicates %>% filter(!str_detect(Treatment, "REF")) %>% arrange(spu_filename) %>% print(n=100)
+
+duplicates %>% 
+  mutate(Date = coalesce(Date, lubridate::date(DateTime))) %>% 
+  group_by(Date) %>% 
+  summarize(Sites = str_c(unique(Site), collapse = ","), Treatments = str_c(unique(Treatment), collapse = ","), Files  = n()) %>% 
+  kable()
+
+```
+
+  
+  

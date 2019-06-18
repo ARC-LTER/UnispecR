@@ -150,7 +150,7 @@ The following code chunk plots all the white reference spectra in your chosen di
 
 ```{r refs, echo = F, warning=F}
 ## Find all white reference files 
-ref_data_all <- dfs %>% 
+ref_data_all <- df %>% 
   filter(str_detect(Treatment, "REF"))%>% # extract reference data 
   separate(Block, into = c("BX1", "BX2", "BX3", "BX4"), sep = ",") %>% # expand string entry in "Block", necessary if different ref for different blocks at same site 
   gather(Block, BlockString, BX1:BX4) %>% # re-condense into one column

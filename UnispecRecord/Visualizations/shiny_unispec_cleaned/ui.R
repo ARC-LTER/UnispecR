@@ -13,15 +13,19 @@ library(tidyverse)
 library(markdown)
 
 
-# Useful Vectors ----------------------------------------------------------
+# Load Data ----------------------------------------------------------
 #load("unispec_indices_summary_dataframe.Rda") #load dataframe called "index_data"
 index_data <- read_rds("unispec_indices_summary_2014-2018.rds") #load dataframe "index_data"
+
+# Useful Vectors ----------------------------------------------------------
+
 
 site_list <- c("HIST", "MAT", "LMAT", "MNAT", "NANT", "HTH", "WSG", "SHB")
 block_list <- c("1", "2", "3", "4")
 index_list <- c("NDVI", "EVI", "EVI2")
 year_list <- seq(min(index_data$Year), max(index_data$Year), by = 1) 
-# Define UI for application that draws a histogram
+
+# Define UI for application----------------------------------------------------------
 shinyUI(fluidPage(
   
   navbarPage("Arctic LTER Spectral Reflectance Data",

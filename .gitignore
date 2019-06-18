@@ -1,8 +1,5 @@
 .Rproj.user
 *.spu
-*.Rda
-*.rds
-*.xlsx
-*.xls
-*.XLS
+UnispecRecord/UnispecData/*
+*.RData
 *.rds
