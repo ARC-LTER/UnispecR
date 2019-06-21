@@ -16,7 +16,6 @@ library("tidyverse")
 library("knitr")
 source("UnispecProtocol/unispec_protocol_functions.R") # file loads required functions
 
-data_path <-  "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/"
 
 dir_year <- "2019"
 
@@ -79,18 +78,21 @@ done
 Includes raw spectra and instrument metadata.  
   
 ```{r, load_raw_data, eval = T}
+data_path <-  "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/"
+
+data_path <- "UnispecProtocol/example_data/"
 raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
 spu_spectra <- read_rds(raw_filename)
 
 raw_keyname <- paste0(data_path, dir_year, "_raw_spu_key.csv")
 spu_key <- read_csv(raw_keyname)
 
-spu_dataframe_from_file <- full_join(spu_spectra, spu_key) %>% 
+spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
   #mutate(DateTime = ymd_hms(DateTime, tz = "US/Alaska")) %>% 
   mutate(Date = str_extract(spu_filename, pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}")) %>%  # from filename, not DateTime (sometimes discrepancy in unispec instrument time)
 arrange(DateTime)
 
-loaded_files <- spu_dataframe_from_file$spu_filename
+loaded_files <- spu_dataframe$spu_filename
 file_match <- str_c(loaded_files, collapse="|")
 
 ```
@@ -112,20 +114,20 @@ new_spu_files <- str_subset(spu_files, file_match, negate = T)
 spu_metadata <- map_dfr(new_spu_files, read_spu_file_metadata) %>% 
   mutate(spu_filename_full = new_spu_files)
 
-spu_data_all <- spu_metadata %>% 
+spu_data <- spu_metadata %>% 
   mutate(Spectra=map(spu_filename_full, function(x) read_spu_file_spectra(x)))
 
-spu_dataframe <- spu_data_all %>% select(spu_filename, Site, FileNum, Date, DateTime, Integration_ms, Temp, Remarks, Spectra, everything())
+spu_dataframe_new <- spu_data %>% select(spu_filename, Site, FileNum, Date, DateTime, Integration_ms, Temp, Remarks, Spectra, everything())
 
 # > Set Type of Scan -----------------------------------------------------
-spu_dataframe <- spu_dataframe %>% 
+spu_dataframe_new <- spu_dataframe_new %>% 
   mutate(Type = ifelse(grepl("DARKscan",Remarks, fixed=T), "Darkscan",
                        ifelse(grepl("Datascan,DC",Remarks, fixed=T), "Throwawayscan", NA))) %>% 
   distinct(DateTime, spu_filename, .keep_all = T) %>% 
   mutate(Date = as.character(Date))
 
 # > Join to previously collected data -----------------------------------------------------
-spu_dataframe <- spu_dataframe_from_file %>% bind_rows(spu_dataframe)
+spu_dataframe <- spu_dataframe %>% bind_rows(spu_dataframe_new)
 
 ## Standardize Site Names
 unique(spu_dataframe$Site)
@@ -170,6 +172,7 @@ unispec_file_key <- read_csv(file_key, skip_empty_rows = T, col_types = cols(
   Block = col_character(),
   Treatment = col_character(),
   Replicate = col_double(),
+  Location = col_character(),
   FileNum = col_double(),
   Weather = col_character(),
   Notes = col_character()
@@ -209,7 +212,7 @@ file_key_fix <- paste0(data_path, "2019_unispec_file_key_fix.csv")
 
 unispec_file_key_fix <- read_csv(file_key_fix, col_types = cols(
   spu_filename = col_character(),
-  Date = col_date(format = "%m/%d/%Y"),
+  Date = col_character(), # for excel: col_date(format = "%m/%d/%Y"),
   Site = col_character(),
   Block = col_character(),
   Treatment = col_character(),
@@ -234,6 +237,11 @@ df %>%
   summarize(Files = n_distinct(spu_filename)) %>% 
   kable()
 
+## Data summary
+spu_dataframe %>%   group_by(Date, Site) %>% 
+  summarize(Files = n_distinct(spu_filename)) %>% 
+  kable()
+
 ```
 
 ## Key Checks
@@ -242,12 +250,12 @@ df %>%
 ```{r time_check}
 
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "LMAT"
-check_date <- "2019-06-02" # necessary to unlist dates vector
+check_site <- "MNAT"
+check_date <- "2019-06-20" # necessary to unlist dates vector
 
 ## Files 
 first_file <- 0
-last_file <- 300
+last_file <- 600
 
 # Select columns to Check
 timedata <- df %>% 
@@ -272,7 +280,7 @@ time_check %>% print(n=200)
 ```{r check_refs}
 
 first_file <- 0
-last_file <-6
+last_file <-16
 
 data_check <- df %>% 
   filter(Date == check_date) %>% 
@@ -506,11 +514,15 @@ spu_dataframe %>% mutate(Date_unispec = lubridate::date(DateTime)) %>%
   select(Site, Date, Date_unispec) %>% distinct() %>%
   print(n=50)
 
+
 # Missing spu files 
 df %>% filter(!str_detect(Site, "_")) %>% 
   filter(is.na(spu_filename))  %>% 
   select(spu_filename, Site, FileNum, Date, Block, Treatment, Replicate, Notes, key_fix) %>% 
-  print(n=100)
+  group_by(Date, Site) %>% 
+  summarize(Files = n()) %>% 
+  kable()
+  
 
 # Missing DateTime (equivalent to spu file)
 df %>% filter(is.na(DateTime)) %>% 
