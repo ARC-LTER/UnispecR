@@ -61,7 +61,8 @@ if (interact) {
 data_path <- rchoose.dir(caption = "Select Unispec files directory")
 } else { 
   ## STATIC CODE (use when Knitting)
-  data_path  <- "UnispecData/2017" 
+  data_path  <- "UnispecData/2017" # local computer
+  data_path <- "/mnt/c/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2017/spu" # Terrerstrial RA computer 
 }
 ```
 
@@ -128,7 +129,7 @@ Includes raw spectra and instrument metadata.
   - 2017 : "UnispecData/2017_raw_spu_data.rds"; "UnispecData/2017_raw_spu_key.csv"
   
 ```{r, load_raw_data, eval = T}
-raw_filename <- paste0("UnispecData/", dir_year, "_raw_spu_data.rds")
+raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
 spu_data <- read_rds(raw_filename)
 
 raw_keyname <- paste0("UnispecData/", dir_year, "_raw_spu_key.csv")

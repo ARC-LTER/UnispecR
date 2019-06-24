@@ -55,25 +55,7 @@ shinyServer(
       return(sub_data)
     }
     
-    bysite_select <- function(index_data) {
-      sites <- unlist(site_list[as.numeric(input$bysite_sites)])
-      trtmts <- unlist(trtmt_list[as.numeric(input$bysite_trtmts)])
-      
-      sub_data <- index_data  %>% 
-        filter(Site %in% sites) %>% 
-        filter(Treatment %in% trtmts) %>% 
-        filter(Year >= input$bysite_years[1] & Year <= input$bysite_years[2]) %>% 
-        mutate(Year = factor(Year)) %>% 
-        mutate(Block = factor(Block)) %>% 
-        # SUMMARIZE by block and site
-        group_by(Year, DOY, Date, Site, Block, Treatment) %>% 
-        summarize_at(vars(NDVI:EVI2), mean, na.rm=T) %>% 
-        group_by(Year, DOY, Date, Site, Treatment) %>% 
-        group_by(N = n(), add = TRUE) %>% # add number of blocks per site to get Standard Error
-        summarize_at(vars(NDVI:EVI2), funs(mean, sd), na.rm=T) 
-      
-      return(sub_data) 
-    }
+
     
     byblock_select <- function(index_data) {
       sites <- input$byblock_site
