@@ -16,6 +16,11 @@ library("tidyverse")
 library("knitr")
 source("UnispecProtocol/unispec_protocol_functions.R") # file loads required functions
 
+## Data Path
+data_path <-  "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/"
+
+data_path <- "UnispecRecord/UnispecData/2019/"
+
 
 dir_year <- "2019"
 
@@ -78,7 +83,7 @@ done
 Includes raw spectra and instrument metadata.  
   
 ```{r, load_raw_data, eval = T}
-data_path <-  "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/"
+
 
 raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
 spu_spectra <- read_rds(raw_filename)
@@ -926,12 +931,17 @@ write_rds(df_indices, index_filename)
   
 ```
 
-### Plot Check NDVI
+### Load Index Data
 ```{r}
 
 index_data <- read_rds(paste0(data_path, "2019_index_data.rds")) %>% 
     unnest(Indices) %>% spread(Index, Value) %>% 
     mutate(DOY = lubridate::yday(DateTime))
+```
+
+
+### Plot Check NDVI
+```{r}
 
 np_colors <- RColorBrewer::brewer.pal(name = "Greens", n = 5)
 
@@ -944,9 +954,13 @@ check_treatments <- c(CT, "NP")
 check_blocks <- c("B1", "B2", "B3", "B4") 
 which_index <- "NDVI"
 
+
+## PLOT OPTIONS
 aggregate_ctls <- T
+add_points <- F
 
 
+## SERVER 
 index_subset <- index_data %>% 
   filter(DateTime >= check_dates[1] & DateTime <= check_dates[2]) %>% 
   filter(Site %in% check_site) %>%
@@ -956,11 +970,10 @@ index_subset <- index_data %>%
   rename_at(vars(contains(which_index)), funs(sub(which_index, 'index', .)))
 
 index_summary <- index_subset %>%  
+  mutate(Date = lubridate::date(Date)) %>% 
   group_by(DOY, Date, Site, Block, Treatment) %>% 
   summarize_at(vars(index), funs(mean, sd), na.rm=T) %>% 
   group_by(N = n(), add = TRUE) # add number of blocks per site to get Standard Error
-
-
 
 index_site_summary <- index_summary %>% 
   group_by(DOY, Date, Site,Treatment) %>% 
@@ -968,8 +981,8 @@ index_site_summary <- index_summary %>%
   summarize_at(vars(index), funs(mean, sd), na.rm=T) 
   
 
-ggplot(data = index_summary, mapping = aes(x = DOY, y = mean, color=Treatment)) +
-     geom_point(data = index_subset, aes(x=DOY, y = index, color = Treatment),  alpha = 0.4) +
+ggplot(data = index_summary, mapping = aes(x = Date, y = mean, color=Treatment)) +
+    {if(add_points)geom_point(data = index_subset, aes(x=Date, y = index, color = Treatment),  alpha = 0.4)} + # add points for all measurements
     geom_point() + 
     geom_line() + 
     geom_errorbar(aes(ymin = mean - sd/sqrt(N), ymax= mean + sd/sqrt(N))) + 
@@ -984,6 +997,8 @@ ggplot(data = index_summary, mapping = aes(x = DOY, y = mean, color=Treatment)) 
                                 "F10" = np_colors[5]))  + 
     labs(y = which_index) + 
     facet_grid(Site ~ Block) 
+
+
 
 ggplot(data = index_subset, mapping = aes(x = Date, y = NDVI, color = Treatment)) +
   geom_point(aes(shape=Block), position = "jitter") + 

@@ -12,19 +12,40 @@ library(DT)
 library(shiny)
 library(markdown)
 
-index_data <- read_rds("unispec_indices_summary_2014-2018.rds") #load dataframe "index_data"
+index_data <- read_rds("indices_2014-2019.rds") #load dataframe "index_data"
 
 
 ## Useful Objects for Plotting 
-site_list <- c("HIST", "MAT", "LOF", "MNAT", "NANT", "HTH", "WSG", "SHB")
+site_list <- c("HIST", "MAT", "LMAT", "MNAT", "NANT", "HTH", "WSG", "SHB")
 block_list <- c("B1", "B2", "B3", "B4")
 
 CT <- c("CT","CT1","CT2")
-NP <- c("F0.5","F1","F2","F5","F10","NP", "NO3", "NH4")
-trtmt_list <- list(CT, "N", "P", NP)
+NP <- c("F10","NP")
+NP_gradient <- c("F0.5","F1","F2","F5", "F10")
+N_types <- c("NO3", "NH4")
+trtmt_list <- list(CT, "N", "P", NP, NP_gradient, N_types)
 
 ## Formatting vectors 
 np_colors <- RColorBrewer::brewer.pal(5, "YlGnBu")
+np_colors[5] <- "green4"
+
+### TEXT
+Site.text <- c("MAT (1989)", "LMAT (2006)", "HIST (1981)", 
+               "HTH (1989)", "MNAT (1997)", "NANT (1997)", 
+               "SHB (1989)", "WSG (1989)")
+names(Site.text) <- c("MAT", "LMAT", "HIST", "HTH", "MNAT", "NANT",
+                      "SHB", "WSG")
+
+## PLOT OPTIONS
+
+# Color Palettes 
+n_yellow <- rgb(255, 192, 0, maxColorValue = 255)
+p_blue <- rgb(46, 117, 182, maxColorValue = 255)
+np_green <- rgb(112, 173, 71, maxColorValue = 255) #lmat_colors[5] 
+ct_gray <- rgb(175, 171, 171, maxColorValue = 255)
+
+lmat_colors <- c(rgb(226, 240, 217, maxColorValue = 255), rgb(169, 209, 142, maxColorValue = 255), rgb(112, 173, 71, maxColorValue = 255), rgb(84, 130, 53, maxColorValue = 255), rgb(56, 87, 35, maxColorValue = 255))
+
 
 
 # Define server logic required to draw plots
@@ -38,10 +59,12 @@ shinyServer(
     
     ctl_comp_select <- function(index_data) {
       sites <- unlist(site_list[as.numeric(input$ctl_comp_sites)])
+      aggregate_ctls <- input$ctl_comp_aggregate == T
       
       sub_data <- index_data %>%
         filter(Site %in% sites) %>%
         filter(Treatment %in% CT) %>%
+        mutate(Treatment = replace(Treatment, Treatment %in% CT & aggregate_ctls, "CT"), Treatment)  %>% #Choose index to graph
         filter(Year >= input$ctl_comp_years[1] & Year <= input$ctl_comp_years[2]) %>%
         mutate(Year = factor(Year)) %>%
         mutate(Block = factor(Block)) %>%
@@ -55,16 +78,41 @@ shinyServer(
       return(sub_data)
     }
     
+    bysite_select <- function(index_data) {
+      sites <- unlist(site_list[as.numeric(input$bysite_sites)])
+      trtmts <- unlist(trtmt_list[as.numeric(input$bysite_trtmts)])
+      aggregate_ctls <- input$ctl_comp_aggregate == T
+      
+      
+      sub_data <- index_data  %>% 
+        filter(Site %in% sites) %>% 
+        filter(Treatment %in% trtmts) %>% 
+        mutate(Treatment = replace(Treatment, Treatment %in% CT & aggregate_ctls, "CT"), Treatment)  %>%
+        filter(Year >= input$bysite_years[1] & Year <= input$bysite_years[2]) %>% 
+        mutate(Year = factor(Year)) %>% 
+        mutate(Block = factor(Block)) %>% 
+        # SUMMARIZE by block and site
+        group_by(Year, DOY, Date, Site, Block, Treatment) %>% 
+        summarize_at(vars(NDVI:EVI2), mean, na.rm=T) %>% 
+        group_by(Year, DOY, Date, Site, Treatment) %>% 
+        group_by(N = n(), add = TRUE) %>% # add number of blocks per site to get Standard Error
+        summarize_at(vars(NDVI:EVI2), funs(mean, sd), na.rm=T) 
+      
+      return(sub_data) 
+    }
 
     
     byblock_select <- function(index_data) {
       sites <- input$byblock_site
       blocks <- input$byblock_blocks
       trtmts <- unlist(trtmt_list[as.numeric(input$byblock_trtmts)])
+      aggregate_ctls <- input$ctl_comp_aggregate == T
+      
       
       sub_data <- index_data  %>% 
         filter(Site %in% sites) %>% 
         filter(Treatment %in% trtmts) %>% 
+        mutate(Treatment = replace(Treatment, Treatment %in% CT & aggregate_ctls, "CT"), Treatment)  %>%
         filter(Block %in% blocks) %>% 
         filter(Year >= input$byblock_years[1] & Year <= input$byblock_years[2]) %>% 
         mutate(Year = factor(Year)) %>% 
@@ -82,11 +130,14 @@ shinyServer(
       blocks <- input$byplot_blocks
       trtmts <- unlist(trtmt_list[as.numeric(input$byplot_trtmts)])
       measures <- input$byplot_measurement
+      aggregate_ctls <- input$ctl_comp_aggregate == T
+      
       
       # SELECTION - subset of full dataframe
       sub_data <- index_data  %>% 
         filter(Site %in% sites) %>% 
         filter(Treatment %in% trtmts) %>% 
+        mutate(Treatment = replace(Treatment, Treatment %in% CT & aggregate_ctls, "CT"), Treatment)  %>%
         filter(Block %in% blocks) %>% 
         filter(Replicate %in% measures) %>% 
         filter(Year >= input$byplot_years[1] & Year <= input$byplot_years[2]) %>% 
@@ -142,7 +193,10 @@ shinyServer(
         geom_line(aes(linetype=Treatment)) + 
         geom_errorbar(aes(ymin = index_mean - index_sd/sqrt(N) , ymax= index_mean + index_sd/sqrt(N))) + 
         labs(y = which_index) +
-        facet_grid(. ~ Year)
+        facet_grid(. ~ Year) + 
+        scale_color_manual(values = c("SHB" = "orange4", "HIST" = "darkgreen", "MAT" = "green4", "LMAT" = "chartreuse3",
+                                      "WSG" = "dodgerblue2", "MNAT" = "darkorchid", "NANT" = "mediumpurple4", "HTH" = "firebrick"
+                                      ))
       
     })
     
@@ -171,8 +225,9 @@ shinyServer(
                                     "F2" = np_colors[3],
                                     "F5" = np_colors[4],
                                     "F10" = np_colors[5]))  + 
+        theme_gray(base_size=18) +
         labs(y = which_index) + 
-        facet_grid(Site ~ Year) 
+        facet_grid(Site ~ Year, labeller = labeller(Site = Site.text))
       
     })
     
@@ -202,6 +257,7 @@ shinyServer(
                                     "F2" = np_colors[3],
                                     "F5" = np_colors[4],
                                     "F10" = np_colors[5]))  + 
+        theme_gray(base_size = 18) +
         labs(y = which_index) + 
         facet_grid(Block ~ Year) 
       
@@ -233,6 +289,7 @@ shinyServer(
                                     "F2" = np_colors[3],
                                     "F5" = np_colors[4],
                                     "F10" = np_colors[5]))  + 
+        theme_gray(base_size = 18) +
         labs(y = which_index) + 
         facet_grid(Block ~ Year)
       

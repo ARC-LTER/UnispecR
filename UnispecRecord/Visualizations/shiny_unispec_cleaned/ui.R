@@ -14,12 +14,12 @@ library(markdown)
 
 
 # Load Data ----------------------------------------------------------
-index_data <- read_rds("unispec_indices_summary_2014-2018.rds") #load dataframe "index_data"
+index_data <- read_rds("indices_2014-2019.rds") #load dataframe "index_data"
 
 # Useful Vectors ----------------------------------------------------------
 
 
-site_list <- c("HIST", "MAT", "LMAT", "MNAT", "NANT", "DHT", "WSG", "SHB")
+site_list <- c("HIST", "MAT", "LMAT", "MNAT", "NANT", "HTH", "WSG", "SHB")
 block_list <- c("1", "2", "3", "4")
 index_list <- c("NDVI", "EVI", "EVI2")
 year_list <- seq(min(index_data$Year), max(index_data$Year), by = 1) 
@@ -75,21 +75,21 @@ shinyUI(fluidPage(
                                
                                # Input: Checkboxes for Site selection ----
                                checkboxGroupInput("ctl_comp_sites", 
-                                                  h4("Sites (Vegetation Type)"), 
-                                                  choices = list("HIST" = 1,
-                                                                 "MAT"  = 2, 
-                                                                 "LMAT"  = 3,
-                                                                 "MNAT" = 4,
-                                                                 "NANT" = 5,
-                                                                 "HTH"  = 6,
-                                                                 "WSG"  = 7,
-                                                                 "SHB" = 8),
-                                                  selected = 1),
+                                                  h4("Vegetation Type Site (expmt. started)"), 
+                                                  choices = list("HIST (1981)" = 1,
+                                                                 "MAT (1989)"  = 2, 
+                                                                 "LMAT (2006)"  = 3,
+                                                                 "MNAT (1997)" = 4,
+                                                                 "NANT (1997)" = 5,
+                                                                 "HTH (1989)"  = 6,
+                                                                 "WSG (1989)"  = 7,
+                                                                 "SHB (1989)" = 8),
+                                                  selected = c(1,2,3,4,5,6,7,8)),
                                
                                # Input: Radiobuttons to Aggregate CT Plots
                                radioButtons("ctl_comp_aggregate", label = h4("Aggregate CT plots"),
-                                            choices = list("Aggregate" = 1, "Disaggregate" = 2), 
-                                            selected = 2)
+                                            choices = list("Aggregate" = T, "Disaggregate" = F), 
+                                            selected = T)
                         ),
                         
                         column(width = 3,
@@ -138,6 +138,18 @@ shinyUI(fluidPage(
                                            step=1,
                                            sep=""),
                                
+                               p("\n Use the dashboard to select the subset of data to visualize in the plot (above) and dataframe (right).\n"),
+                               p("The panels of the plot are faceted horizontally by Year and vertically by Site."),                               
+                               p("Each panel in the plot shows the Vegetation Index plotted over the summer:
+                                 the x-axis displays the Day of Year (DOY); the y-axis, the chosen vegetation index."),
+                               p("The data is averaged by plot (5 measurements per plot) and then by block (1 to 4 blocks per site).
+                                 The error bars indicate one standard deviation above and below.")   
+                               
+                              
+                        ), 
+                        
+                        column(width = 1,
+                               
                                # Input: Checkboxes for Site selection ----
                                checkboxGroupInput("bysite_sites", 
                                                   h4("Sites"), 
@@ -149,33 +161,31 @@ shinyUI(fluidPage(
                                                                  "HTH"  = 6,
                                                                  "WSG"  = 7,
                                                                  "SHB" = 8),
-                                                  selected = 1),
+                                                  selected = 1)
+                                              
+                        ),
+                        
 
+                        
+                        column(width = 1, 
+                               
                                # Input: Checkboxes for Treatment  ----
                                checkboxGroupInput("bysite_trtmts", 
                                                   h4("Treatments"), 
                                                   choices = list("CT"  = 1,
                                                                  "N"   = 2,
                                                                  "P"   = 3,
-                                                                 "NP"  = 4
+                                                                 "NP"  = 4,
+                                                                 "NP-gradient" = 5,
+                                                                 "N-types" = 6
                                                                  # EXCT, EXNP{LF, SF, NF}, S, L to add 
                                                   ), 
                                                   selected = 1)
-                        ), 
-                        
-                        column(width = 3,
-                               
-                               p("Use the dashboard on the left to select the subset of data to visualize in the plot (above) and dataframe (right)."),
-                               p("The panels of the plot are faceted horizontally by Year and vertically by Site."),                               
-                               p("Each panel in the plot shows the Vegetation Index plotted over the summer:
-                                 the x-axis displays the Day of Year (DOY); the y-axis, the chosen vegetation index."),
-                               p("The data is averaged by plot (5 measurements per plot) and then by block (1 to 4 blocks per site).
-                                 The error bars indicate one standard deviation above and below.")                               
                         ),
                         
-                        column(width = 4, 
-                               
+                        column(width = 4,
                                DT::dataTableOutput("bysite_table")
+                               
                         )
                         
                       )

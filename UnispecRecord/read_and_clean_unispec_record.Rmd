@@ -62,8 +62,8 @@ if (interactive()) {
   dir_year <- str_split(data_path, pattern = "/")[[1]] %>% last()
 } else {
   ## STATIC CODE (use when Knitting)
-  data_path  <- "UnispecData/2015"
-  dir_year <- "2015"
+  data_path  <- "UnispecRecord/UnispecData/"
+  dir_year <- "2014"
 }
 ```
 
@@ -264,13 +264,13 @@ Includes multispec spectral data and index data calculated using .xlsx summary s
   - 2018 :
 
 ```{r, load_xlsx_data, eval = T}
-xlsx_filename <- paste0("UnispecData/", dir_year, "_processed_xlsx_data.rds")
+xlsx_filename <- paste0(data_path, dir_year, "_processed_xlsx_data.rds")
 xlsx_data <- read_rds(xlsx_filename)
 
 multispec_data <- xlsx_data %>% select(spu_filename, xlsx_filename, ref_filenames, multispec_spectra)
 index_data <- xlsx_data %>% select(spu_filename, xlsx_filename, Indices)
 
-xlsx_keyname <- paste0("UnispecData/", dir_year, "_processed_xlsx_key.csv")
+xlsx_keyname <- paste0(data_path, dir_year, "_processed_xlsx_key.csv")
 xlsx_key <- read_csv(xlsx_keyname)
 
 ```
@@ -283,10 +283,10 @@ Includes raw spectra and instrument metadata.
   - 2016 : "UnispecData/2016_raw_spu_data.rds"; "UnispecData/2016_raw_spu_key.csv"
   
 ```{r, load_raw_data, eval = T}
-raw_filename <- paste0("UnispecData/", dir_year, "_raw_spu_data.rds")
+raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
 spu_data <- read_rds(raw_filename)
 
-raw_keyname <- paste0("UnispecData/", dir_year, "_raw_spu_key.csv")
+raw_keyname <- paste0(data_path, dir_year, "_raw_spu_key.csv")
 spu_key <- read_csv(raw_keyname) 
 
 ```
@@ -300,7 +300,7 @@ Includes manually corrected metadata.
   
 
 ```{r, df, dependson=c("load_raw_data", "load_xlsx_data"), eval=TRUE}
-unispec_keyname <- paste0("UnispecData/", dir_year, "_unispec_key.csv") # manually updated key
+unispec_keyname <- paste0(data_path, dir_year, "_unispec_key.csv") # manually updated key
 unispec_key_fix <- read_csv(unispec_keyname, skip_empty_rows = T, col_types = cols(
   spu_filename = col_character(),
   Type = col_factor(),
@@ -353,7 +353,7 @@ check_sites <- c("LMAT")
 check_dates <- df %>% filter(Site %in% check_sites) %>% pull(Date) %>% unique()
 
 ## Which Date
-check_dates <- c("2016-05-26") # necessary to unlist dates vector
+check_dates <- c("2016-07-21") # necessary to unlist dates vector
 
 df_check <- df %>% # full dataframe not just ref's 
   filter(format(DateTime, format="%Y-%m-%d") %in% check_dates) %>% # Date is NA for spu_files without 
@@ -362,8 +362,8 @@ df_check <- df %>% # full dataframe not just ref's
   select(spu_filename, DateTime, Site, Block, Treatment, Replicate, FileNum, Type, Spectra, everything())
 
 ## PLOT RAW DATA --for specific File Numbers
-start_file <- 65
-end_file <- 75
+start_file <- 0
+end_file <- 10
 
 df_check_files <- df_check %>% 
   filter(FileNum >= start_file, FileNum <= end_file) 
@@ -790,11 +790,13 @@ unispec_problem_key <- unispec_problem_key_pre %>%
   summarize(ref_problems = str_c(ref_problem, collapse = "; ")) %>% # collapse to one row per spu_filename
   right_join(unispec_problem_key_pre) %>%  # add the rest of the key info back in
   mutate_at(.vars = c("ref_problems", "dim", "absurd_reflectance", "mislabeled", "missing_spu", "missing_xlsx"), .funs = factor) %>% 
-  mutate(file_problem = any(maxed, dim, absurd_reflectance)) %>% 
+  #mutate(file_problem = any(maxed, dim, absurd_reflectance)) %>% 
+  mutate(file_problem = spu_filename %in% c(maxed_files_bad, dim_files, absurd_files)) %>% 
   select(spu_filename, Type:Weather, missing_spu, missing_xlsx, file_problem, mislabeled, key_fix, maxed, maxed_number, maxed_wavelengths, dim, absurd_reflectance, ref_problems, ref_filenames, xlsx_filename) # order
 
 unispec_problem_key %>%
   mutate_at(funs(factor), .vars = vars(c("Site", "Block", "Treatment", "key_fix", "ref_problems"))) %>% 
+  mutate(file_problem = spu_filename %in% c(maxed_files_bad, dim_files, absurd_files))  %>% 
   summary() 
 ```
 
@@ -802,7 +804,11 @@ unispec_problem_key %>%
 All the information you could ever want in one .csv! 
 ```{r}
 ## Save .csv of file key
-unispec_problem_keyname <- paste0("UnispecData/", format(unispec_problem_key$Date[1], format="%Y"),"_unispec_key_problems.csv")
+unispec_problem_keyname <- paste0(data_path, format(unispec_problem_key$Date[1], format="%Y"),"_unispec_key_problems.csv")
+
+## update file_problem column
+unispec_problem_key <- unispec_problem_key %>%   mutate(file_problem = spu_filename %in% c(maxed_files_bad, dim_files, absurd_files))
+
 write_csv(unispec_problem_key, path = unispec_problem_keyname)
 ```
 
@@ -814,9 +820,9 @@ Full Unispec Problem Keys have been saved for the following years:
   - 2017 :
   - 2018 :
 ```{r}
-key_filename <- paste0("UnispecData/", dir_year, "_unispec_key_problems.csv") # manually updated key
+key_filename <- paste0(data_path, dir_year, "_unispec_key_problems.csv") # manually updated key
 unispec_problem_key <- read_csv(key_filename, skip_empty_rows = T, col_types = cols(ref_problems = col_character())) %>% 
-  mutate_at(.funs = factor, .vars = vars("Site", "Block", "Treatment", "Replicate", "key_fix", "ref_problems"))
+  mutate_at(.funs = factor, .vars = vars("Site", "Block", "Treatment", "Replicate", "key_fix", "ref_problems")) 
 
 unispec_problem_key %>% summary()
 ```
@@ -831,14 +837,14 @@ unispec_dataframe <- unispec_problem_key %>%
   left_join(spu_key %>% select(spu_filename, DateTime, Integration_ms, Temp)) %>% 
   left_join(multispec_data %>% select(spu_filename, multispec_spectra)) 
 
-## Only the data 
+## Only the data  
 unispec_data <- spu_key %>% 
   full_join(spu_data) %>% 
   full_join(multispec_data %>% select(spu_filename, multispec_spectra)) %>% 
   select(-Site, -FileNum, -Date, -Type) # duplicated // already present in unispec_key.csv files 
 
 ## save dataframe w/problem info 
-unispec_filename <- paste0("UnispecData/", format(unispec_data$DateTime[1], format="%Y"),"_unispec_data.rds")
+unispec_filename <- paste0(data_path, format(unispec_data$DateTime[1], format="%Y"),"_unispec_data.rds")
 write_rds(unispec_data, path = unispec_filename)
 ```
 
@@ -852,7 +858,7 @@ Standardized data has been saved for the following years:
   - 2018 :
 
 ```{r}
-df <- read_rds("UnispecData/2015_unispec_dataframe.rds")
+df <- read_rds(paste0(data_path, "2016_unispec_dataframe.rds"))
 
 ```
   

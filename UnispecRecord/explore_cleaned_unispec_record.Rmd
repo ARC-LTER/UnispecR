@@ -75,12 +75,145 @@ ndvi_for_excel %>% filter(Date == "2017-07-31", Site == "LMAT", Block == "B1") %
 
 # Save Data for Shiny Visualization
 ```{r, df_shiny} 
-shiny_filename <- paste0("UnispecData/", format(key_info$Date[1], format="%Y"),"_xlsx_data.rds")
 
-write_rds(key_info %>% select(-processed_filename), path = xlsx_filename)
+## 2014
+## Load new data for shiny
+df_2014 <- read_rds("UnispecRecord/UnispecData/2014_unispec_data.rds") %>% 
+    filter(! multispec_spectra %>% map(is.null) %>% map_lgl(any)) %>% 
+  select(-Spectra) %>% 
+  rename(Spectra = multispec_spectra) %>% 
+  ## Calculate NDVI
+  mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = c("NDVI", "EVI", "EVI2"))))
+
+indices_2014 <- df_2014
+write_rds(indices_2014, "UnispecRecord/UnispecData/2014_index_data.rds")
+
+unispec_problem_key_2014 <- read_csv("UnispecRecord/UnispecData/2014_unispec_key_problems.csv", skip_empty_rows = T, col_types = cols(ref_problems = col_character())) %>% 
+  mutate_at(.funs = factor, .vars = vars("Site", "Block", "Treatment", "Replicate", "key_fix", "ref_problems")) %>% 
+  left_join(read_csv("UnispecRecord/UnispecData/2014_raw_spu_key.csv") %>% select(spu_filename, DateTime))
+
+unispec_data_2014 <- unispec_problem_key_2014 %>% right_join(df_2014)
+
+indices_2014 <- unispec_data_2014 %>%  
+  mutate(Year = as.integer(lubridate::year(DateTime))) %>% 
+  mutate(Date = lubridate::date(DateTime)) %>%
+  mutate(DOY = as.integer(lubridate::yday(Date))) %>% 
+  mutate(Block = as.integer(str_extract(Block, pattern = "[0-9]"))) %>% 
+  mutate(Replicate = as.character(Replicate)) %>% 
+  rename(Time = DateTime) %>% 
+  unnest(Indices) %>% spread(Index, Value) %>% 
+  select(Year, Date, DOY, Time, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2)
+
+indices_2014
+
+## 2015
+## Calculate Index Data from processed dataframe
+df_2015 <- read_rds("UnispecRecord/UnispecData/2015_processed_xlsx_data.rds")
+
+unispec_problem_key_2015 <- read_csv("UnispecRecord/UnispecData/2015_unispec_key_problems.csv", skip_empty_rows = T, col_types = cols(ref_problems = col_character())) %>% 
+  mutate_at(.funs = factor, .vars = vars("Site", "Block", "Treatment", "Replicate", "key_fix", "ref_problems")) %>% 
+  left_join(read_csv("UnispecRecord/UnispecData/2015_raw_spu_key.csv") %>% select(spu_filename, DateTime))
+
+unispec_data_2015 <- unispec_problem_key_2015 %>% 
+  filter(!is.na(Treatment)) %>% 
+  filter(!file_problem) %>% left_join(df_2015) %>%
+  filter(! multispec_spectra %>% map(is.null) %>% map_lgl(any)) %>% 
+  rename(Spectra = multispec_spectra)
+
+indices_2015 <- unispec_data_2015 %>% 
+  ## Calculate NDVI
+  mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = c("NDVI", "EVI", "EVI2"))))
+
+write_rds(path = "UnispecRecord/UnispecData/2015_index_data.rds", indices_2015)
+
+indices_2015 <- indices_2015 %>% 
+  mutate(Year = as.integer(lubridate::year(Date))) %>% 
+  mutate(Date = lubridate::date(Date)) %>%
+  mutate(DOY = as.integer(lubridate::yday(Date))) %>% 
+  mutate(Block = as.integer(str_extract(Block, pattern = "[0-9]"))) %>% 
+  mutate(Replicate = as.character(Replicate)) %>% 
+  rename(Time = DateTime) %>% 
+  unnest(Indices) %>% spread(Index, Value) %>% 
+  select(Year, Date, DOY, Time, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2)
+
+## 2016
+unispec_problem_key_2016 <- read_csv("UnispecRecord/UnispecData/2016_unispec_key_problems.csv", skip_empty_rows = T, col_types = cols(ref_problems = col_character())) %>% 
+  mutate_at(.funs = factor, .vars = vars("Site", "Block", "Treatment", "Replicate", "key_fix", "ref_problems")) %>% 
+  left_join(read_csv("UnispecRecord/UnispecData/2016_raw_spu_key.csv") %>% select(spu_filename, DateTime))
 
 
+indices_2016 <- read_rds("UnispecRecord/UnispecData/2016_index_data.rds") %>% 
+  left_join(unispec_problem_key_2016) %>% 
+  filter(!file_problem)  %>% 
+  mutate(Year = as.integer(lubridate::year(Date))) %>% 
+  mutate(Date = lubridate::date(Date)) %>%
+  mutate(DOY = as.integer(lubridate::yday(Date))) %>% 
+  mutate(Block = as.integer(str_extract(Block, pattern = "[0-9]"))) %>% 
+  mutate(Replicate = as.character(Replicate)) %>% 
+  rename(Time = DateTime) %>% 
+  unnest(Indices) %>% 
+  filter(spu_filename != "jul21lof00006.spu")%>% spread(Index, Value) %>% 
+  select(Year, Date, DOY, Time, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2)
+
+## 2017 
+indices_2017 <- read_rds("UnispecRecord/UnispecData/2017_index_data.rds") %>%
+  mutate(Year = as.integer(lubridate::year(Date))) %>% 
+  mutate(Date = lubridate::date(Date)) %>%
+  mutate(DOY = as.integer(lubridate::yday(Date))) %>% 
+  mutate(Block = as.integer(str_extract(Block, pattern = "[0-9]"))) %>% 
+  mutate(Replicate = as.character(Replicate)) %>% 
+  rename(Time = DateTime) %>% 
+  unnest(Indices) %>% spread(Index, Value) %>% 
+  select(Year, Date, DOY, Time, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2)
+
+## 2018 
+indices_2018 <- read_rds("UnispecRecord/UnispecData/2018_unispec_dataframe_clean.rds") %>%   mutate(Year = as.integer(lubridate::year(Date))) %>% 
+  mutate(Date = lubridate::date(Date)) %>%
+  mutate(DOY = as.integer(lubridate::yday(Date))) %>% 
+  mutate(Block = as.integer(str_extract(Block, pattern = "[0-9]"))) %>% 
+  mutate(Replicate = as.character(Replicate)) %>% 
+  rename(Time = DateTime) %>% unnest(corrected_indices) %>% 
+  spread(Index, Value) %>% 
+  select(Year, Date, DOY, Time, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2) 
+
+## 2019 
+indices_2019 <- read_rds("UnispecRecord/UnispecData/2019/2019_index_data.rds") %>%
+  mutate(Year = as.integer(lubridate::year(Date))) %>% 
+  mutate(Date = lubridate::date(Date)) %>%
+  mutate(DOY = as.integer(lubridate::yday(Date))) %>% 
+  mutate(Block = as.integer(str_extract(Block, pattern = "[0-9]"))) %>% 
+  mutate(Replicate = as.character(Replicate)) %>% 
+  rename(Time = DateTime) %>% 
+  unnest(Indices) %>% spread(Index, Value) %>% 
+  select(Year, Date, DOY, Time, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2) 
+
+## All Data 
+shiny_data <- read_rds("UnispecRecord/Visualizations/shiny_unispec_cleaned/unispec_indices_summary_2014-2018.rds")
+
+shiny_data <- bind_rows(indices_2014, indices_2015, indices_2016, indices_2017, indices_2018, indices_2019) %>% 
+  filter(!is.na(DOY))
+
+## Standardize Names 
+Site_Names <- list(DHT = "HTH", DH ="HTH", LHTH = "HTH", HTHB = "HTH", HTHPC = "HTH", HST = "HIST", HIS="HIST", 
+                   LOF = "LMAT",  LOFB = "LMAT", LNB = "LMAT", LOFRB ="LMAT",
+                   MATB="MAT", MATSL= "MAT", MATBK = "MAT", 
+                   MANTB ="MNAT",MNATB ="MNAT", NAMTB = "MNAT", 
+                   NMNT = "NANT", NANTB ="NANT", JULNB ="NANT",NMNTB ="NANT",
+                   LSHB= "SHB", SHBB = "SHB", SHRBB = "SHB", SHRB = "SHB", 
+                   LWSG = "WSG", WSGB = "WSG", WS ="WSG", WSB = "WSG", WSDB = "WSG", TEST = "LAB2", WSG1 = "WSG", WSG23 = "WSG", SHB1 = "SHB", SHB2 = "SHB")
+
+# Check for different spelling of site names
+unique(shiny_data$Site)
+shiny_data$Site <- recode (shiny_data$Site, !!!Site_Names, .default = shiny_data$Site)
+
+unique(shiny_data$Site)
+
+write_rds(shiny_data, "UnispecRecord/Visualizations/shiny_unispec_cleaned/indices_2014-2019.rds")
+
+
+index_data <- read_rds("UnispecRecord/Visualizations/shiny_unispec_cleaned/indices_2014-2019.rds")
 ```
+
 # Check Spectral Data
 
 ## Plot Spectra: Site vs. Block
