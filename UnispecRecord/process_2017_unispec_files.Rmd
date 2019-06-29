@@ -61,7 +61,8 @@ if (interact) {
 data_path <- rchoose.dir(caption = "Select Unispec files directory")
 } else { 
   ## STATIC CODE (use when Knitting)
-  data_path  <- "UnispecData/2017" # local computer
+  data_path  <- "UnispecRecord/UnispecData/" # local computer
+  dir_year <- "2017"
   data_path <- "/mnt/c/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2017/spu" # Terrerstrial RA computer 
 }
 ```
@@ -132,7 +133,7 @@ Includes raw spectra and instrument metadata.
 raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
 spu_data <- read_rds(raw_filename)
 
-raw_keyname <- paste0("UnispecData/", dir_year, "_raw_spu_key.csv")
+raw_keyname <- paste0(data_path, dir_year, "_raw_spu_key.csv")
 spu_key <- read_csv(raw_keyname) %>% select(-DateTime) # reading error with DateTime zone
 
 spu_dataframe <- full_join(spu_data, spu_key) %>% 
@@ -140,14 +141,14 @@ spu_dataframe <- full_join(spu_data, spu_key) %>%
   mutate(Date = str_extract(spu_filename, pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}")) # from filename, not DateTime (sometimes discrepancy in unispec instrument time)
 
 ### Load multispec data
-multispec_data <- read_rds(paste0("UnispecData/", dir_year, "_multispec_data.rds"))
+multispec_data <- read_rds(paste0(data_path, dir_year, "_multispec_data.rds"))
   
 ```
 
 ### Load Unispec Key 
 ```{r, df, dependson=c("load_raw_data", "load_xlsx_data"), eval=TRUE}
 
-unispec_keyname <- paste0("UnispecData/", dir_year, "/", dir_year, "_unispec_key.csv") # manually updated key
+unispec_keyname <- paste0(data_path, dir_year, "_unispec_key.csv") # manually updated key
 unispec_key <- read_csv(unispec_keyname, skip_empty_rows = T) %>% 
   mutate(Date = lubridate::mdy(Date)) %>% 
   gather(key = Replicate, value = FileNum, P1:P5) %>% 
@@ -198,7 +199,7 @@ write_csv(unispec_file_key, paste0("UnispecData/", dir_year, "_unispec_file_key.
 
 ### Load File Key Fix
 ```{r}
-unispec_file_key <- read_csv(paste0("UnispecData/", dir_year, "_unispec_file_key.csv"), col_types = cols(
+unispec_file_key <- read_csv(paste0(data_path, dir_year, "_unispec_file_key.csv"), col_types = cols(
   spu_filename = col_character(),
   Date = col_character(),
   Site = col_character(),
@@ -214,6 +215,10 @@ unispec_file_key <- read_csv(paste0("UnispecData/", dir_year, "_unispec_file_key
 
 df <- full_join(spu_dataframe, unispec_file_key %>% select(-spu_filename)) %>% arrange(DateTime) %>% 
   mutate_at(.vars = vars(Site, Block, Treatment), .funs = factor)
+
+## Summary Table
+df %>% group_by(Date) %>% 
+  summarize(Sites = str_c(unique(Site), collapse = ", "), FileNum = n())
 ```
 
 
@@ -399,16 +404,48 @@ write_rds(df_processed, processed_spu_filename)
 Quality check unispec data using the following code chunks. 
 
 ## Zoom Checks
+
+### Time Check
+```{r time_check}
+
+## SPECIFY SITE/DATE/ETC to ZOOM IN ON
+check_site <- "NANT"
+check_date <- "2017-08-10" # necessary to unlist dates vector
+
+## Files 
+first_file <- 0
+last_file <- 100
+
+# Select columns to Check
+timedata <- df %>% 
+  filter(Date == check_date) %>% 
+  filter(Site %in% check_site) %>% 
+  filter(FileNum >= first_file) %>%
+  filter(FileNum <= last_file) %>% 
+  select(Site, Date, DateTime, FileNum, Integration_ms) %>% 
+  group_by(DateTime) %>% distinct() 
+
+timedata$diff <- timedata$DateTime - lag(timedata$DateTime)
+
+meta_timedata <- left_join(timedata, unispec_file_key)
+
+time_check <- meta_timedata %>% select(Site, Date, DateTime, FileNum, Block, Treatment, diff, Integration_ms) %>% ungroup()
+
+# Examine dataframe
+time_check %>% print(n=200)
+```
+
+
 ### Plot Check
 Run the following code chunk interactively in RStudio to check references at specific sites/dates. 
 ```{r check_refs}
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "MAT"
-check_date <- "2017-07-13" # necessary to unlist dates vector
-check_treatments <- c("N")
-check_blocks <- c("B1") 
-first_file <- 20
-last_file <- 27
+# check_site <- "MAT"
+# check_date <- "2017-06-08" # necessary to unlist dates vector
+# check_treatments <- c("N")
+# check_blocks <- c("B1") 
+first_file <- 0
+last_file <- 10
 
 data_check <- df %>% # full dataframe without maxed filtered 
   filter(Date == check_date) %>% 
@@ -436,35 +473,7 @@ plot_zoom
 
 ```
 
-### Time Check
-```{r time_check}
 
-## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "LMAT"
-check_date <- "2017-07-13" # necessary to unlist dates vector
-
-## Files 
-first_file <- 0
-last_file <- 200
-
-# Select columns to Check
-timedata <- df %>% 
-  filter(Date == check_date) %>% 
-  filter(Site %in% check_site) %>% 
-  filter(FileNum >= first_file) %>%
-  filter(FileNum <= last_file) %>% 
-  select(Site, Date, DateTime, FileNum, Integration_ms) %>% 
-  group_by(DateTime) %>% distinct() 
-
-timedata$diff <- timedata$DateTime - lag(timedata$DateTime)
-
-meta_timedata <- left_join(timedata, unispec_file_key)
-
-time_check <- meta_timedata %>% select(Site, Date, DateTime, FileNum, Block, Treatment, diff, Integration_ms) %>% ungroup()
-
-# Examine dataframe
-time_check %>% print(n=200)
-```
 Look at associated dataframe to check info, specifically: *Weather*, *Notes*, or *int* (Integration Time) columns.
 ```{r ref_check_files, echo=F}
 

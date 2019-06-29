@@ -3,28 +3,291 @@ title: "2019 Unispec Data Investigations"
 author: "Ruby An"
 date: "June 24, 2019"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+require(tidyverse)
+require(lubridate)
+require(knitr)
+
 ```
 
-## R Markdown
+## Load Data 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+2019 unispec data: updated as summer progresses 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r load_data, echo=F, include =F}
 
-```{r cars}
-summary(cars)
+data_path <- "/home/ruby/UnispecR/UnispecRecord/UnispecData/2019/"
+dir_year <- "2019"
+
+## Raw Data
+raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
+spu_spectra <- read_rds(raw_filename)
+
+raw_keyname <- paste0(data_path, dir_year, "_raw_spu_key.csv")
+spu_key <- read_csv(raw_keyname)
+
+spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
+    #mutate(DateTime = lubridate::ymd_hms(DateTime, tz = "US/Alaska")) %>% 
+  mutate(Date = str_extract(spu_filename, pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}")) %>%  # from filename, not DateTime (sometimes discrepancy in unispec instrument time)
+arrange(DateTime)
+
+## Processed Data 
+processed_dataframe <- read_rds(paste0(data_path, "2019_processed_spu_data.rds")) %>% 
+  mutate(DateTime = lubridate::as_datetime(DateTime, tz="US/Alaska")) 
+
+## Index Data
+index_data <- read_rds(paste0(data_path, "2019_index_data.rds")) %>% 
+  select(spu_filename, DateTime, ref_filenames, Spectra, Indices) 
+
+ndvi_data <- index_data %>% unnest(Indices) %>% 
+  spread(Index, Value) %>% select(-EVI, -EVI2)
+
+## File Key
+unispec_file_key <- read_csv(paste0(data_path, "2019_unispec_field_key.csv")) %>% 
+  full_join(read_csv(paste0(data_path, "2019_raw_spu_key.csv")))
+
+## joined data 
+df <- unispec_file_key %>% left_join(processed_dataframe)
 ```
 
-## Including Plots
+```{r, echo=F}
+## Summary table
+df %>% group_by(Date) %>% 
+  filter(!is.na(Treatment)) %>% 
+  filter(!str_detect(Site, "_")) %>% 
+  summarize(Sites = str_c(str_replace_na(unique(Site)), collapse = ", "), Num_Files = n()) %>% kable
 
-You can also embed plots, for example:
+df %>% group_by(Site, Date) %>% 
+  summarize(Num_files = n()) %>% print(n=50)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Plot Heterogeneity?  
+
+Comparing normal subset of 5 measurements along 5m to 15 measurements along 20m (or 10 measurements along 10m for smaller plots, e.g. WSG).
+
+### Difference in Mean & Variance
+
+```{r, echo=F, message=F}
+all_ndvi <- unispec_file_key %>% 
+  filter(as.character(Date) %in% c("2019-06-21", "2019-06-22", "2019-06-18", "2019-06-19", "2019-06-20")) %>%
+  filter(!str_detect(Treatment, "DARK|REF|EX")) %>% 
+  mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG", Site))  %>% 
+  filter(!str_detect(Block, "EDC")) %>% 
+  left_join(ndvi_data) %>% 
+  mutate(measurement_area = "full_side")
+
+tagged_ndvi <- all_ndvi %>% 
+  filter(str_detect(Location, pattern = "[0-9]S")) %>% 
+  mutate(measurement_area = "tagged_transect")
+
+## Summary tables of FileNumbers 
+tagged_ndvi %>% 
+  group_by(Site, Date) %>% 
+  summarize(Num_files = n()) %>% print(n=50)
+
+all_ndvi %>%  group_by(Site, Date) %>%  
+  summarize(Num_files = n()) %>% print(n=50)
+
+## Differences in Means / Standard Deviation
+all_means <- all_ndvi %>% 
+  group_by(Date, Site, Block, Treatment) %>% 
+  summarise_at(.vars = vars(NDVI), .funs = funs(mean,sd,se=sd(.)/sqrt(n()))) 
+  
+tagged_means <- tagged_ndvi %>% 
+  group_by(Date, Site, Block, Treatment) %>% 
+  summarise_at(.vars = vars(NDVI), .funs = funs(mean,sd,se=sd(.)/sqrt(n()))) %>% 
+  rename(mean_tagged = mean, sd_tagged = sd, se_tagged = se)
+  
+difference_means <- right_join(all_means, tagged_means) %>% 
+  mutate(diff_means = mean - mean_tagged, diff_sd = sd - sd_tagged, diff_se = se - se_tagged) %>% 
+    mutate(Treatment = ifelse(Treatment %in% c("CT1", "CT2", "CT"), "CT", Treatment)) 
+
+
+
+## Plot options
+np_colors <- RColorBrewer::brewer.pal(5, "YlGnBu")
+## PLOT OPTIONS
+# Color Palettes 
+n_yellow <- rgb(255, 192, 0, maxColorValue = 255)
+p_blue <- rgb(46, 117, 182, maxColorValue = 255)
+np_green <- rgb(112, 173, 71, maxColorValue = 255) #lmat_colors[5] 
+ct_gray <- rgb(175, 171, 171, maxColorValue = 255)
+
+lmat_colors <- c(rgb(226, 240, 217, maxColorValue = 255), rgb(169, 209, 142, maxColorValue = 255), rgb(112, 173, 71, maxColorValue = 255), rgb(84, 130, 53, maxColorValue = 255), rgb(56, 87, 35, maxColorValue = 255))
+
+## PLOTS - means 
+ggplot(data = difference_means) + 
+  geom_histogram(aes(x = diff_means, fill = Site), position="stack", binwidth = 0.01)  +
+  labs(title = "Difference in plot mean NDVI -- by site", x = "Mean NDVI (full plot) - Mean NDVI (tagged 5m transect)") + 
+  geom_vline(xintercept = 0) +
+  scale_fill_manual(values = c("SHB" = "orange4", "HIST" = "darkgreen", "MAT" = "green4", "LMAT" = "chartreuse3", "WSG" = "dodgerblue2", "MNAT" = "darkorchid", "NANT" = "mediumpurple4", "DHT" = "firebrick")) + facet_wrap(vars(Site))
+
+ggplot(data = difference_means) + 
+  geom_histogram(aes(x = diff_means, fill = Treatment), position="stack", binwidth = 0.01)  +
+  geom_vline( xintercept =  0)  +
+  labs(title = "Difference in plot mean NDVI -- by Treatment",  x = "Mean NDVI (full plot) - Mean NDVI (tagged 5m transect)") +
+  scale_fill_manual(values=c("CT" = ct_gray, "CT1" = ct_gray, "CT2"= ct_gray, "GH-CT" = ct_gray,
+                              "N" = n_yellow, "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = p_blue,
+                              "S" = "purple1", "L" = "purple2",
+                              "NP" = lmat_colors[5],
+                              "F0.5" = lmat_colors[1],
+                              "F1" = lmat_colors[2],
+                              "F2" = lmat_colors[3],
+                              "F5" = lmat_colors[4],
+                              "F10" = lmat_colors[5])) +
+  facet_wrap(vars(Site))
+
+
+### PLOTS 
+
+ggplot(data = difference_means) + 
+  geom_histogram(aes(x = diff_se, fill = Site), position="stack", binwidth = 0.01)  +
+  labs(title = "Difference in standard error of NDVI -- by site",  x = "se NDVI (full plot) - se NDVI (tagged 5m transect)") + 
+  geom_vline(xintercept = 0) +
+  scale_fill_manual(values = c("SHB" = "orange4", "HIST" = "darkgreen", "MAT" = "green4", "LMAT" = "chartreuse3", "WSG" = "dodgerblue2", "MNAT" = "darkorchid", "NANT" = "mediumpurple4", "DHT" = "firebrick")) + facet_wrap(vars(Site))
+
+ggplot(data = difference_means) + 
+  geom_histogram(aes(x = diff_se, fill = Treatment), position="stack", binwidth = 0.01)  +
+  geom_vline( xintercept =  0)  +
+  labs(title = "Difference in standard error of NDVI -- by Treatment",  x = "se NDVI (full plot) - se NDVI (tagged 5m transect)") +
+  scale_fill_manual(values=c("CT" = ct_gray, "CT1" = ct_gray, "CT2"= ct_gray, "GH-CT" = ct_gray,
+                              "N" = n_yellow, "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = p_blue,
+                              "S" = "purple1", "L" = "purple2",
+                              "NP" = lmat_colors[5],
+                              "F0.5" = lmat_colors[1],
+                              "F1" = lmat_colors[2],
+                              "F2" = lmat_colors[3],
+                              "F5" = lmat_colors[4],
+                              "F10" = lmat_colors[5])) +
+  facet_wrap(vars(Site))
+
+
+# ## site summaries 
+# 
+# site_ndvi_all <- all_ndvi_means %>% 
+#   group_by(Site, Treatment) %>% 
+#   summarise_at(.vars = vars(mean), .funs = funs(mean,sd,se=sd(.)/sqrt(n()))) %>% 
+#   mutate(measurement_area = "full_side")
+# 
+# site_ndvi_tagged <- tagged_means %>% 
+#   group_by(Site, Treatment) %>% 
+#   summarise_at(.vars = vars(mean), .funs = funs(mean,sd,se=sd(.)/sqrt(n()))) %>% 
+#   mutate(measurement_area = "tagged_5m_transect")
+
+
+############################ PLOTS 
+```
+
+
+### Boxplots by Site showing plot differences
+```{r, echo=F, message=F}
+## Boxplot
+boxplot_data <- bind_rows(all_ndvi, tagged_ndvi) 
+
+box_plot_het_function <- function(boxplot_data, check_site, facet_by_block = T, show_all_points = F) {
+  boxplot_subset <- boxplot_data %>% 
+    filter(Site == check_site) 
+  
+  plot <- ggplot(data = boxplot_subset, aes(x=Treatment, y=NDVI, color = measurement_area)) +
+    geom_boxplot() +
+    {if(show_all_points) geom_point(data = boxplot_subset, alpha = 0.5)} +
+    {if(facet_by_block) facet_wrap(vars(Block))} +
+    labs(title = check_site)
+
+  return(plot)
+}
+
+box_plot_het_function(boxplot_data, "LMAT", facet_by_block = T, show_all_points = F)
+
+box_plot_het_function(boxplot_data, "MAT", facet_by_block = T, show_all_points = F)
+
+box_plot_het_function(boxplot_data, "HIST", facet_by_block = T, show_all_points = F)
+
+box_plot_het_function(boxplot_data, "DHT", facet_by_block = T, show_all_points = F)
+
+box_plot_het_function(boxplot_data, "MNAT", facet_by_block = T, show_all_points = F)
+
+box_plot_het_function(boxplot_data, "NANT", facet_by_block = T, show_all_points = F)
+
+box_plot_het_function(boxplot_data, "WSG", facet_by_block = T, show_all_points = F)
+
+
+```
+
+### Seasonal Trend 
+Plot the seasonal trend when including data from whole plot. 
+
+
+```{r, echo = F, message = F, fig.width = 12, fig.height=20}
+#PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
+
+check_trtmts <- c("CT", "F0.5", "F1", "F2", "F5", "F10", "N", "P", "NP")  
+
+
+## PLOT OPTIONS
+# Color Palettes 
+n_yellow <- rgb(255, 192, 0, maxColorValue = 255)
+p_blue <- rgb(46, 117, 182, maxColorValue = 255)
+np_green <- rgb(112, 173, 71, maxColorValue = 255) #lmat_colors[5] 
+ct_gray <- rgb(175, 171, 171, maxColorValue = 255)
+
+lmat_colors <- c(rgb(226, 240, 217, maxColorValue = 255), rgb(169, 209, 142, maxColorValue = 255), rgb(112, 173, 71, maxColorValue = 255), rgb(84, 130, 53, maxColorValue = 255), rgb(56, 87, 35, maxColorValue = 255))
+
+
+### DATA 
+ndvi_plot <- ndvi_data %>% left_join(unispec_file_key) %>% 
+  filter(!str_detect(Block, "EDC")) %>% 
+  filter(!is.na(Treatment)) %>% 
+  filter(!str_detect(Site, "LAB2|SHB2")) %>% 
+    mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG", Site))  %>% 
+  mutate(Treatment = ifelse(Treatment %in% c("CT1", "CT2", "CT"), "CT", Treatment)) %>% 
+  mutate(Treatment = factor(Treatment, levels = check_trtmts)) %>% 
+  group_by(Site, Block, Treatment, Date) %>% 
+  summarise_at(.vars = vars(NDVI), .funs = funs(mean,sd,se=sd(.)/sqrt(n()))) %>% 
+  mutate(measurement_area = "full_side")
+
+ndvi_plot_tagged <- ndvi_data %>% left_join(unispec_file_key) %>% 
+  filter(!str_detect(Block, "EDC")) %>% 
+  filter(!is.na(Treatment)) %>% 
+    filter(str_detect(Location, pattern = "[0-9]S")) %>% 
+  filter(!str_detect(Site, "LAB2|SHB2")) %>% 
+    mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG", Site))  %>% 
+  mutate(Treatment = ifelse(Treatment %in% c("CT1", "CT2", "CT"), "CT", Treatment)) %>% 
+  mutate(Treatment = factor(Treatment, levels = check_trtmts)) %>% 
+  group_by(Site, Block, Treatment, Date) %>% 
+  summarise_at(.vars = vars(NDVI), .funs = funs(mean,sd,se=sd(.)/sqrt(n()))) %>% 
+  mutate(measurement_area = "tagged_transect")
+  
+
+ndvi_comp <- bind_rows(ndvi_plot, ndvi_plot_tagged)
+
+ndvi_ggplot <- ggplot(data = ndvi_comp, mapping = aes(x = Date, y = mean, color=Treatment)) +
+  geom_line(aes(linetype=measurement_area)) + 
+  geom_errorbar( aes(ymin = mean-se, ymax= mean + se, linetype=measurement_area), width=2) + 
+  geom_point(aes(shape=measurement_area)) +
+  facet_grid(Site ~ Block) + 
+  theme_gray(base_size = 14) +
+  scale_color_manual(values=c("CT" = ct_gray, "CT1" = ct_gray, "CT2"= ct_gray,
+                              "N" = n_yellow, "NO3" = "skyblue", "NH4" = "deepskyblue",
+                              "P" = p_blue,
+                              "NP" = lmat_colors[5],
+                              "F0.5" = lmat_colors[1],
+                              "F1" = lmat_colors[2],
+                              "F2" = lmat_colors[3],
+                              "F5" = lmat_colors[4],
+                              "F10" = lmat_colors[5])) +
+  labs(y = "Mean NDVI") 
+
+ndvi_ggplot
+
+```
+

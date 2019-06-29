@@ -1,0 +1,271 @@
+---
+title: "Process LTER Unispec Data"
+author: "Ruby An"
+date: "December 17, 2018"
+output:
+  html_notebook:
+    number_sections: yes
+  html_document:
+    df_print: paged
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+
+## Required Packages
+library("tidyverse")
+library("knitr")
+source("unispec_functions.R") # file loads required functions
+
+## Useful vectors for standardizing names and filtering data
+WSG <- c("WSG1", "WSG23")
+SHB <- c("SHB1", "SHB2")
+site_list <- list("MAT", "LMAT", "MNAT", "NANT", "DHT", WSG, SHB, "HST")
+
+CT <- c("CT","CT1","CT2")
+NP_gradient <- c("F0.5","F1","F2","F5","F10") # for LOF site
+N_types <- c("NO3", "NH4") # for LOF site
+trtmt_list <- list(CT, "N", "P", "NP", NP_gradient, N_types)
+
+## Useful vectors for plotting
+# Color sequences
+pur_pal <- RColorBrewer::brewer.pal(5, "Purples")
+```
+
+# How to use this R Markdown Notebook: 
+
+This R Markdown document walks through processing historic (already collected) unispec data from 2010-2018. 
+
+# Choose Directory
+
+Select the folder containing the unispec files you want to process. Run the following code chunk interactively in RStudio to set folder via pop-up window. 
+```{r directory}
+if (interactive()) { 
+  ## INTERACTIVE CODE (use when in RStudio)
+  library("rChoiceDialogs") # for interactively selecting file directories
+data_path <- rchoose.dir(caption = "Select Unispec files directory")
+} else { 
+  ## STATIC CODE (use when Knitting)
+  data_path  <- "UnispecData/2017_June/" 
+}
+```
+
+**Chosen Directory**: `r data_path`
+
+This directory should contain both the `.spu` files you wish to process and a corresponding `*_unispec_key.csv` file. The key file matches the .spu files to the date, site, block, treatment, plot, & measurement and specifies which white references to use to correct for instrument error. 
+
+# Load Unispec Data 
+Run the following code chunks to load & join keys to data from your chosen directory. 
+
+## Load Keys 
+Select unispec key files interactively or search within: `r data_path`. 
+
+```{r key} 
+if (interactive()) {
+  key_files <- rchoose.files() # choose via window
+} else {
+  ## Find all file keys matching search pattern 
+  key_files <- list.files(path = data_path, pattern = "*_key.csv", full.names = T, recursive = T)
+} 
+
+## Read in data from filekeys 
+key_list <- tibble(keyname = key_files) %>% # create dataframe
+  mutate(key_contents = map(keyname, function(x) read_key_file(x))) 
+# read_key_file() is a function I wrote located in the file "unispec_functions.R"
+# map function: super useful to apply function to objects without slow "for" loops
+
+## Unpack into usable dataframe 
+keys <- unnest(key_list)
+```
+**Chosen Keys**: `r key_files`
+
+## Load Data
+You can choose to select unispec data files interactively; however, it is usally more convenient to let R search: `r data_path` -- for all `.spu` files. This step may take several minutes, if you chose a folder containing many files.
+
+
+```{r spu_data, context="data", cache.lazy=T}
+
+#interact <- interactive() # T or F value 
+interact <- F # set to F to search for a file name pattern instead of select via window
+
+if (interact) {
+  files <- rchoose.files(filter=c("*.spu")) # choose via window
+} else {
+  ## Find .spu files via search pattern: specify Date(s) or Site(s) to read files
+  files <- list.files(path = data_path, pattern = ".spu$", full.names = T, recursive=T)
+} 
+
+## Read data from files (can take minutes)
+data_list <- tibble(filename = files) %>% # create dataframe
+  mutate(file_contents = map(filename, function(x) read_spu_file(x)))
+
+## Unpack into usable dataframe 
+data <- unnest(data_list) %>% 
+  filter(Wavelength >= 400 & Wavelength <= 1000)
+```
+
+
+## Data List 
+The following table lists the dates and sites of the files contained in your chosen directory: 
+```{r df_table, context="data"}
+
+## Join all data matching keys dataframe (drops any non-matching data),
+##  by columns (Date, Site, FileNum)
+df <- inner_join(data, keys) 
+
+## Sites per Date table to display
+df_table <- df %>% 
+  select(Date, Site) %>% 
+  distinct() %>% 
+  group_by(Date) %>% 
+  do(Sites = t(.[-1])) %>% 
+  mutate(Sites = paste( unlist(Sites), collapse=',')) %>% 
+  mutate(Date = as.character(Date))
+
+renderTable(df_table)
+```
+
+# QAQC
+Quality check unispec data using the following interactive shiny widgets. 
+
+## Check for Max'd Out Spectra (> 65000 AD)
+```{r maxed_spectra, echo=F}
+num_maxed <- 5 # keep files where spectra is max'd only at a narrow peak: less than "num_maxed*3.3nm" (e.g. num_maxed=5, 5*3.3nm = 16.5 nm)
+
+maxed_data_files <- df %>% filter(ChA > 65000 | ChB > 65000) %>% # list of files w/max'd spectra
+  group_by(filename, Date, Site, FileNum, Block, Treatment, Measurement, Weather, Notes) %>% 
+  summarize(n_maxed = n()) %>% 
+  filter(n_maxed > 5) %>%  
+  ungroup() # necessary in order to slice rows 
+
+```
+
+### Plot Max'd Spectra
+```{r maxed_spectra_plot, echo=F}
+
+sliderInput("file_range", label = "File Range", 
+            min = 1, max = nrow(maxed_data_files), step=1,
+            value = c(1, min(5, nrow(maxed_data_files))))
+
+renderPlot({
+  maxed_spectra <- left_join(maxed_data_files %>% slice(input$file_range[1]:input$file_range[2]), df, 
+                             by = c("filename", "Date", "Site", "Block", "Treatment", "Measurement", "FileNum")) %>% # all wavelengths 
+    gather(key = Channel, value = Intensity, ChB, ChA) 
+  
+  ## maxed_spectra_plot
+  ggplot(maxed_spectra, aes(x=Wavelength, y= Intensity)) + 
+    geom_line(aes(color=Channel)) + 
+    geom_hline(yintercept = 65000, color="black",linetype=3) + 
+    facet_wrap(vars(Date,Site,Block,Treatment,Measurement), labeller = label_wrap_gen(multi_line=FALSE))
+})
+```
+
+### Remove Max'd Spectra 
+Removes maxed spectra from dataframe, and creates file listing removed spectra. Optionally save a .csv of maxed data files. 
+
+```{r remove_maxed}
+
+## Save CSV of max'd spectra filenames 
+#write_csv(maxed_data_files, "2017_June_maxed_spu_files.csv")
+
+## Remove max'd data from df
+df_clean <- anti_join(df, maxed_data_files)
+```
+
+## Check White References
+White references correct for instrument & cable irregularities. Multiplying by the correction factor (ChA/ChB) smooths out the spectra. If multiple file numbers are listed (typically 5), the correction factors are averaged. 
+
+### Plot All References
+The following code chunk plots all the white reference spectra in your chosen directory over an interactively-specified date range. 
+
+```{r refs}
+## Find all white reference data files 
+ref_data_all <- df_clean %>% 
+  filter(str_detect(Treatment, "REF")) %>% # extract reference data 
+  ## The following steps expand the "Block" column tocreate one REF set per Block per Site -- as in the keys above.
+  separate(Block, into = c("BX1", "BX2", "BX3", "BX4"), sep = ",") %>% #1
+  gather(Block, BlockString, BX1:BX4) %>% #2
+  mutate(Block = str_squish(BlockString), BlockString=NULL) %>% #3
+  filter(!is.na(Block)) %>% #4
+  mutate(CorrectionFactor_REF = ChA/ChB) # calculate correction fact column
+
+## Select a subset to plot 
+ref_dates <- ref_data_all %>% select(Date) %>% 
+  unique() %>% 
+  slice(1:n()) %>% 
+  c() # list of dates present in data 
+```
+
+```{r ref_shiny_plot}
+## SHINY 
+dateRangeInput('dateRange',
+      label = "Date Range",
+      start = first(ref_dates[[1]]), end = first(ref_dates[[1]])+5,
+      min = first(ref_dates[[1]]), max = last(ref_dates[[1]]), format = "yyyy-mm-dd",
+      startview = 'month'
+    )
+
+renderPrint({ ref_dates[[1]] })
+
+renderPlot({
+  ## Plot Correction Factors for quality check 
+  ref_data_plot <- ref_data_all %>% 
+    filter(Date >= input$dateRange[1]) %>%
+    filter(Date <= input$dateRange[2]) %>%  
+    gather(key = Channel, value = Intensity, ChB, ChA, CorrectionFactor_REF) %>% 
+    mutate(Channel = factor(Channel))
+    
+  cor_factor_plot_all <- ggplot(data = ref_data_plot, mapping = aes(x = Wavelength, y = Intensity)) +
+    geom_line(aes(color=Measurement, linetype=Block, alpha=Treatment)) +
+    facet_grid(Channel ~ Date + Site, scales="free") + 
+    scale_alpha_discrete(range=c(1, 0.5)) # set transparency by block
+  
+  cor_factor_plot_all 
+})
+
+
+```
+
+
+Look for correction factors very far from 1.0 or with odd peaks. 
+
+### Plot Zoom Check
+Run the following code chunk interactively in RStudio to check references at specific sites/dates. 
+```{r check_refs}
+# Useful Vectors for filtering
+sites <- df_clean %>% select(Site) %>% unique() %>% pull() # vector of sites present in data
+dates <- df_clean %>% select(Date) %>% unique() %>% pull()  # vector of dates present in data
+
+checkboxGroupInput("ref_sites", label = "Sites",
+                   choices = sites)
+
+checkboxGroupInput("ref_dates", label = "Dates",
+                   choices = dates)
+
+numericInput("first_filenum", label = "First File Number", value = 0)
+numericInput("last_filenum", label = "Last File Number", value = 5)
+
+renderPrint({verbatimTextOutput(str(input$ref_sites))})
+renderPrint({input$ref_dates})
+
+renderPlot({
+  ref_check <- df_clean %>% # full dataframe not just ref's
+    filter(Site %in% input$ref_sites) %>%
+    filter(Date %in% input$ref_dates) %>%
+    filter(Treatment == "REF") %>% 
+    mutate(CorrectionFactor_REF = ChA/ChB)
+
+  ## Plot Specified Correction Factors for quality check
+  cor_factor_plot_zoom <- ggplot(data = ref_check, aes(x = Wavelength, y = CorrectionFactor_REF)) +
+    geom_line(aes(color=Treatment, linetype=Measurement, alpha=Block)) +
+    facet_grid(Site ~ FileNum) +
+    scale_alpha_discrete(range=c(1, 0.25))
+
+  cor_factor_plot_zoom
+})
+
+
+
+```
+

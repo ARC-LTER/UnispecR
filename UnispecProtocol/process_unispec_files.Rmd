@@ -24,7 +24,7 @@ data_path <- "UnispecRecord/UnispecData/2019/"
 
 dir_year <- "2019"
 
-Site_Names <- list(HTH = "DHT", DH ="DHT", LDHT = "DHT", DHTB = "DHT", DHTPC = "DHT", HST = "HIST", HIS="HIST", 
+Site_Names <- list(DHT = "HTH", DH ="HTH", LDHT = "HTH", DHTB = "HTH", DHTPC = "HTH", HST = "HIST", HIS="HIST", 
                    LOF = "LMAT",  LOFB = "LMAT", LNB = "LMAT", LOFRB ="LMAT",
                    MATB="MAT", MATSL= "MAT", MATBK = "MAT", 
                    MANTB ="MNAT",MNATB ="MNAT", NAMTB = "MNAT", 
@@ -84,7 +84,7 @@ Includes raw spectra and instrument metadata.
   
 ```{r, load_raw_data, eval = T}
 
-
+## Raw Data
 raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
 spu_spectra <- read_rds(raw_filename)
 
@@ -96,16 +96,21 @@ spu_dataframe <- full_join(spu_spectra, spu_key) %>%
   mutate(Date = str_extract(spu_filename, pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}")) %>%  # from filename, not DateTime (sometimes discrepancy in unispec instrument time)
 arrange(DateTime)
 
-
-
-## Data summary
+## Raw Data summary
 spu_dataframe %>%   group_by(Date, Site) %>% 
   summarize(Files = n_distinct(spu_filename)) %>% 
   kable()
 
 loaded_files <- spu_dataframe$spu_filename
 file_match <- str_c(loaded_files, collapse="|")
+
+## ## Processed Data
+processed_filename <- paste0(data_path, dir_year, "_processed_spu_data.rds")
+processed_spectra <- read_rds(processed_filename)
+
 ```
+
+
 
 ### Read new .spu data
 Generate the following 2 files from raw data:
@@ -176,13 +181,12 @@ write_csv(spu_key, path = raw_keyname)
 
 
 
-### Read File Key & Join with .spu data
+### Read Field Key & Join with .spu data
 ```{r}
 
-file_key <- paste0(data_path, "2019_unispec_file_key.csv")
+field_key <- paste0(data_path, "2019_unispec_field_key.csv")
 
-unispec_file_key <- read_csv(file_key, skip_empty_rows = T, col_types = cols(
-  spu_filename = col_character(),
+unispec_field_key <- read_csv(field_key, skip_empty_rows = T, col_types = cols(
   Date = col_character(),
   Site = col_character(),
   Block = col_character(),
@@ -204,27 +208,27 @@ spu_dataframe$Site <- recode (spu_dataframe$Site, !!!Site_Names, .default = spu_
 unique(spu_dataframe$Site)
 unique(unispec_file_key$Site)
 
-df <- full_join(spu_dataframe, unispec_file_key %>% select(-spu_filename)) %>% arrange(DateTime) %>% 
+df <- full_join(spu_dataframe, unispec_field_key) %>% arrange(DateTime) %>% 
   mutate_at(.vars = vars(Site, Block, Treatment), .funs = factor)
 
 ```
 
-#### Save joined key
+#### Save Unispec File key
 ```{r}
 
-unispec_file_key_fix <- df %>% 
+unispec_file_key <- df %>% 
   select(spu_filename, Date, Site, Block, Treatment, Replicate, Location, FileNum, Notes, Weather, Type) %>% 
   mutate(key_fix = NA)
 
 
-fix_keyname <- paste0(data_path, dir_year,"_unispec_file_key_fix.csv")
-write_csv(unispec_file_key_fix, path = fix_keyname)
+fix_keyname <- paste0(data_path, dir_year,"_unispec_file_key.csv")
+write_csv(unispec_file_key, path = fix_keyname)
 ```
 
 #### Read key fix
 ```{r}
 
-file_key_fix <- paste0(data_path, "2019_unispec_file_key_fix.csv")
+file_key_fix <- paste0(data_path, "2019_unispec_file_key.csv")
 
 unispec_file_key_fix <- read_csv(file_key_fix, col_types = cols(
   spu_filename = col_character(),
@@ -954,11 +958,9 @@ check_treatments <- c(CT, "NP")
 check_blocks <- c("B1", "B2", "B3", "B4") 
 which_index <- "NDVI"
 
-
 ## PLOT OPTIONS
 aggregate_ctls <- T
 add_points <- F
-
 
 ## SERVER 
 index_subset <- index_data %>% 
@@ -979,7 +981,6 @@ index_site_summary <- index_summary %>%
   group_by(DOY, Date, Site,Treatment) %>% 
   group_by(N = n(), add = TRUE) %>% # add number of blocks per site to get Standard Error
   summarize_at(vars(index), funs(mean, sd), na.rm=T) 
-  
 
 ggplot(data = index_summary, mapping = aes(x = Date, y = mean, color=Treatment)) +
     {if(add_points)geom_point(data = index_subset, aes(x=Date, y = index, color = Treatment),  alpha = 0.4)} + # add points for all measurements
