@@ -174,7 +174,7 @@ write_rds(spu_spectra, path = raw_filename)
 
 # > Extract only Spectral Metadata for .csv key -----------------------------------------------------
 spu_key <- spu_dataframe %>% 
-  select(-Spectra, -spu_filename_full) %>% # remove for .csv
+  select(-Spectra) %>% # remove for .csv
   select(spu_filename, everything()) # set order
 
 ## Save raw metadata key
