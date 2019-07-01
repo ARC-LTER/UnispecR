@@ -10,7 +10,7 @@
 
 read_spu_file_metadata <- function(filename) {
   
-  ruby_year <- str_detect(filename, "UnispecData/2017|UnispecData/2018|UnispecData/2019")
+  ruby_year <- str_detect(filename, "2017|2018|2019")
   
   if (ruby_year) {
     ## Reads a .spu file from 2017 or 2018 
