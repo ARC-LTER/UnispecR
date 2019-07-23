@@ -21,7 +21,7 @@ require(knitr)
 
 ```{r load_data, echo=F, include =F}
 
-data_path <- "/home/ruby/UnispecR/UnispecRecord/UnispecData/2019/"
+data_path <-  "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/"
 dir_year <- "2019"
 
 ## Raw Data
@@ -288,6 +288,84 @@ ndvi_ggplot <- ggplot(data = ndvi_comp, mapping = aes(x = Date, y = mean, color=
   labs(y = "Mean NDVI") 
 
 ndvi_ggplot
+
+```
+
+
+## Drone Comparison
+```{r}
+
+band_defns <- tribble(
+  ~definition, ~color, ~min, ~max,
+  "ITEX", "red", 560, 600,
+  "ITEX", "nir", 725, 1000,
+  "MODIS", "red", 620, 670, 
+  "MODIS", "nir", 841, 876,
+  "MODIS", "blue", 459,479,
+  "SKYE", "red", 620, 680,
+  "SKYE", "nir", 830, 880,
+  "SKYE", "blue", 455, 480,
+  "Greenseeker", "red", 656, 656,
+  "Greenseeker", "nir", 774, 774, 
+  "RapidSCAN", "red", 670, 670,
+  "RapidSCAN", "nir", 780, 780,
+  "RapidSCAN", "red_edge", 730, 730, 
+  "ToolikGIS_Drone_2018", "red", 640, 680,
+  "ToolikGIS_Drone_2018", "nir", 820, 890,
+  "ToolikGIS_MicaSense_2019", "blue", 455, 495,
+  "ToolikGIS_MicaSense_2019", "green", 540, 580,
+  "ToolikGIS_MicaSense_2019", "red", 658, 678,
+  "ToolikGIS_MicaSense_2019", "red_edge", 707, 727,
+  "ToolikGIS_MicaSense_2019", "nir", 800, 880,
+  "ToolikEDC", "red", 560, 680,
+  "ToolikEDC", "nir", 725, 1000
+)
+## Load relevant data
+## 2019-07-15 : LMAT B3, B4
+
+## Processed Data 
+processed_dataframe <- read_rds(paste0(data_path, "2019_processed_spu_data.rds")) %>% 
+  mutate(DateTime = lubridate::as_datetime(DateTime, tz="US/Alaska")) 
+
+## Unispec Field Key
+field_key <- paste0(data_path, "2019_unispec_field_key.csv")
+
+unispec_field_key <- read_csv(field_key, skip_empty_rows = T, col_types = cols(
+  Date = col_character(),
+  Site = col_character(),
+  Block = col_character(),
+  Treatment = col_character(),
+  Replicate = col_double(),
+  Location = col_character(),
+  FileNum = col_double(),
+  Weather = col_character(),
+  Notes = col_character()
+)) ## remove NA rows 
+
+# Confirm spu_dataframe has same Site abbreviation as key
+# > Standardize Site Names -----------------------------------------------------
+# Check for different spelling of site names
+
+unique(spu_dataframe$Site) %>% sort()
+# spu_dataframe$Site <- recode (spu_dataframe$Site, !!!Site_Names, .default = spu_dataframe$Site)
+unique(unispec_field_key$Site) %>% sort()
+
+df <- full_join(spu_dataframe, unispec_field_key) %>% arrange(DateTime) %>% 
+  mutate_at(.vars = vars(Site, Block, Treatment), .funs = factor) %>% 
+  filter(Site %in% c("LMAT", "DHT"))
+
+df_bands <- df %>% 
+  mutate(Bands = map(Spectra, function(x) calculate_spectral_bands(x, band_defns = band_defns, instruments = c("ToolikGIS_MicaSense_2019"))))
+
+
+drone_comp <- df_bands %>% 
+  select(spu_filename, DateTime, Site, Date, Block, Treatment, Replicate, Location, Notes, Weather, Bands) %>% unnest(Bands) %>% 
+  filter(!is.na(Treatment), !str_detect(Treatment, "DARK|REF")) %>% 
+  filter(str_detect(Date, "2019-07-15|2019-07-12")) %>% 
+  mutate(AK_Time = lubridate::with_tz(DateTime, tzone = "US/Alaska"))
+
+
+write_csv(drone_comp, paste0(data_path, "LTER_UnispecData_2019-07-12_2019-07-15_LMAT_DHT.csv"))
 
 ```
 

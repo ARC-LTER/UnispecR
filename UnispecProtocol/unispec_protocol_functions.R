@@ -316,6 +316,40 @@ check_same_references <- function(m, r) {
 
 
 
+calculate_spectral_bands <- function(spectra, band_defns, instruments) {
+  # Calculates spectral bands from dataframe including Wavelength & Reflectance
+  ## inputs: spectra - Wavelength, Reflectance columns
+  ##         band_defns : wavelengths definining colors 
+  ##         instrument : e.g. MODIS, SKYE, ITEX
+  ##         bands   : the spectral bands to return, e.g. red, blue, nir, etc. 
+  ## output: spectra_bands = dataframe with Definition, Band, Averaged Reflectance
+  
+
+  bands <- band_defns %>% 
+    filter(definition %in% instruments)
+  
+  # vector of wavelengths, one set per instrument
+  wavelengths <- seq(300, 1500, by = 1)
+  
+  # dataframe of wavelengths labeled by instrument & color
+  bands_df <- tibble(Wavelength = rep(wavelengths, times = length(instruments)), 
+                     definition = rep(instruments, each = length(wavelengths))) %>% 
+    full_join(bands) %>% 
+    mutate(color_match = ifelse(Wavelength >= min & Wavelength <= max, color, NA)) %>% 
+    select(Wavelength, definition, color_match) %>% 
+    distinct()
+  
+  ## DATA: join to measured spectra 
+  spectra_bands <- full_join(spectra, bands_df) %>% 
+    group_by(definition, color_match) %>% 
+    summarize(average_reflectance = mean(Reflectance)) %>% 
+    filter(!is.na(color_match)) %>% 
+    rename(band = color_match)
+  
+  return(spectra_bands) 
+}
+
+
 calculate_indices <- function(spectra, band_defns, instrument = "MODIS", indices = "NDVI") {
   # Calculates NDVI, EVI, and EVI2 from dataframe including Wavelength : Spectra 
   ## inputs: spectra - Wavelength, Reflectance columns
@@ -348,6 +382,34 @@ calculate_indices <- function(spectra, band_defns, instrument = "MODIS", indices
     gather(Index, Value, everything())
   
   return(index_data) 
+}
+
+plot_spectra <- function(df_subset) {
+  # Plot spectra from a subset of a dataframe
+  
+  plot_check <- df_subset %>%
+    unnest(Spectra) %>%
+    filter(Wavelength > 400, Wavelength < 1000) %>% 
+    gather(key = Channel, value = Intensity, ChB, ChA) %>%
+    gather(key = ref_part, value = Reflectance_Intensity, Intensity, Reflectance)
+  
+  
+  ## Plot Specified Correction Factors for quality check
+  plot_zoom <- ggplot(data = plot_check, mapping = aes(x = Wavelength, y = Reflectance_Intensity)) +
+    geom_line(aes(color=Channel)) +
+    facet_grid(ref_part ~ spu_filename, scales = "free")
+  # 
+  # if("Treatment" %in% names(df_subset)) { # use for datafarmes with and without metadata
+  #   plot_zoom <- plot_zoom + 
+  #     facet_grid(ref_part ~ DateTime + Site + FileNum + Treatment, scales="free")
+  #   
+  # } else {
+  #   plot_zoom <- plot_zoom + 
+  #     facet_grid(ref_part ~ DateTime + Site + FileNum, scales="free")
+  #   
+  # }
+  
+  return(plot_zoom)
 }
 
 

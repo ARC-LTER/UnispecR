@@ -24,13 +24,13 @@ data_path <-  "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terr
 
 dir_year <- "2019"
 
-Site_Names <- list(DHT = "HTH", DH ="HTH", LDHT = "HTH", DHTB = "HTH", DHTPC = "HTH", HST = "HIST", HIS="HIST", 
+Site_Names <- list(DHT = "DHT", DH ="DHT", LDHT = "DHT", DHTB = "DHT", HTH = "DHT", DHTPC = "DHT", HST = "HIST", HIS="HIST", 
                    LOF = "LMAT",  LOFB = "LMAT", LNB = "LMAT", LOFRB ="LMAT",
                    MATB="MAT", MATSL= "MAT", MATBK = "MAT", 
                    MANTB ="MNAT",MNATB ="MNAT", NAMTB = "MNAT", 
                    NMNT = "NANT", NANTB ="NANT", JULNB ="NANT",NMNTB ="NANT",
                    LSHB= "SHB", SHBB = "SHB", SHRBB = "SHB", SHRB = "SHB", 
-                   LWSG = "WSG", WSGB = "WSG", WS ="WSG", WSB = "WSG", WSDB = "WSG", TEST = "LAB2")
+                   LWSG = "WSG", WSGB = "WSG", WS ="WSG", WSB = "WSG", WSDB = "WSG") #TEST = "LAB2"
 
 band_defns <- tribble(
   ~definition, ~color, ~min, ~max,
@@ -63,7 +63,7 @@ Rename files to include parent directory (Date) in filename: "YEAR-MONTH-DAY_SIT
 cd /mnt/c/Users/toolik/"OneDrive - Marine Biological Laboratory/Toolik Terrestrial"/UnispecData/2019
 
 #!/bin/bash
-for date in 2019-06-27; do
+for date in 2019-07-18; do
   pushd "$date"
   for file in *; do
     cp "$file" ../"${date}_${file}"
@@ -96,7 +96,7 @@ raw_keyname <- paste0(data_path, dir_year, "_raw_spu_key.csv")
 spu_key <- read_csv(raw_keyname)
 
 spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
-  mutate(DateTime = lubridate::ymd_hms(DateTime, tz = "US/Alaska")) %>% 
+ # mutate(DateTime = lubridate::ymd_hms(DateTime, tz = "US/Alaska")) %>% 
   mutate(Date = str_extract(spu_filename, pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}")) %>%  # from filename, not DateTime (sometimes discrepancy in unispec instrument time)
 arrange(DateTime)
 
@@ -151,6 +151,7 @@ spu_dataframe <-  spu_dataframe %>% bind_rows(spu_dataframe_new)
 ## Standardize Site Names
 unique(spu_dataframe$Site)
 spu_dataframe$Site <- recode (spu_dataframe$Site, !!!Site_Names, .default = spu_dataframe$Site)
+unique(spu_dataframe$Site)
 
 ## Data summary
 spu_dataframe %>%   group_by(Date, Site) %>% 
@@ -200,17 +201,15 @@ unispec_field_key <- read_csv(field_key, skip_empty_rows = T, col_types = cols(
   FileNum = col_double(),
   Weather = col_character(),
   Notes = col_character()
-)) 
+)) ## remove NA rows 
 
 # Confirm spu_dataframe has same Site abbreviation as key
 # > Standardize Site Names -----------------------------------------------------
 # Check for different spelling of site names
-unique(spu_dataframe$Site)
-spu_dataframe$Site <- recode (spu_dataframe$Site, !!!Site_Names, .default = spu_dataframe$Site)
 
-# Recheck Site Names
-unique(spu_dataframe$Site)
-unique(unispec_field_key$Site)
+unique(spu_dataframe$Site) %>% sort()
+# spu_dataframe$Site <- recode (spu_dataframe$Site, !!!Site_Names, .default = spu_dataframe$Site)
+unique(unispec_field_key$Site) %>% sort()
 
 df <- full_join(spu_dataframe, unispec_field_key) %>% arrange(DateTime) %>% 
   mutate_at(.vars = vars(Site, Block, Treatment), .funs = factor)
@@ -272,7 +271,7 @@ df %>%
 
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
 check_site <- "LMAT"
-check_date <- "2019-06-27" # necessary to unlist dates vector
+check_date <- "2019-06-02" # necessary to unlist dates vector
 
 ## Files 
 first_file <- 0
@@ -294,20 +293,23 @@ meta_timedata <- left_join(timedata, unispec_file_key)
 time_check <- meta_timedata %>% select(Site, Date, DateTime, Block, Treatment, Replicate, FileNum, diff, Integration_ms, Type) %>% ungroup()
 
 # Examine dataframe
-time_check %>% print(n=250)
+time_check %>% print(n=300)
 ```
 
 ### Plot Check
 ```{r check_refs}
 
-first_file <- 150
-last_file <- 160
+first_file <- 0
+last_file <- 15
 
 data_check <- df %>% 
   filter(Date == check_date) %>% 
   filter(Site %in% check_site) %>% 
   filter(FileNum >= first_file) %>%
   filter(FileNum <= last_file)
+
+data_check <- df %>% filter(Site == "LMAT", Date == | Date == "2019
+                            ")
 
 plot_check <- data_check %>% 
   unnest(Spectra) %>% 
@@ -404,7 +406,7 @@ df_missing_refs
 ### Plot References
 ```{r ref_choice_list}
 
-ref_data %>% filter(Spectra %>% map(is.null) %>% map_lgl(any))
+ref_data %>% filter(Spectra %>% map(is.null) %>% map_lgl(any)) %>% select(Date, Site, Block) %>% unique()
 
 ## Build Plot all reference data files
 ref_data_all <- ref_data %>% unnest(Spectra) %>%
@@ -412,9 +414,10 @@ ref_data_all <- ref_data %>% unnest(Spectra) %>%
   mutate(CorrectionFactor = 1/Reflectance)
 
 ref_plot_all <- ggplot(ref_data_all, aes(x = Wavelength, y = CorrectionFactor, group=spu_filename)) +
-  geom_line(aes(color=Integration_ms)) + theme(legend.position="left")
+  geom_line(aes(color=factor(Date > "2019-07-02"))) + theme(legend.position="left")
 
 
+ref_plot_all
 ## Build Plot all reference mistakes
 ref_data_mistakes <- ref_data_all %>%
   filter(CorrectionFactor > 5) %>% 
@@ -424,6 +427,7 @@ ref_data_mistakes <- ref_data_all %>%
 
 ref_plot_mistakes <- ggplot(ref_data_mistakes, aes(x = Wavelength, y = CorrectionFactor)) +
   geom_line(aes(color=spu_filename))
+ref_plot_mistakes
 
 
 ## PLOTS
@@ -434,6 +438,7 @@ ref_plot_all + ggtitle("ALL REFERENCES")
 ## File Lists
 ref_files <- ref_data$spu_filename %>% unique()
 ref_mistakes <- ref_data_mistakes %>% distinct(spu_filename) %>% pull()
+
 
 ```
 
@@ -484,7 +489,9 @@ df_corrected <- df_ref %>%
 corrected_spectra_files <- df_corrected %>% unnest(processed_spectra) %>% filter(!is.na(corrected_reflectance)) %>% select(spu_filename, Date, Site) %>% distinct()
 
 ## missing corrections
-anti_join(df_corrected, corrected_spectra_files) %>% print(n=50)
+anti_join(df_corrected, corrected_spectra_files) %>% 
+  group_by(Date, Site, Block, Treatment) %>% 
+  summarize(Num_Files = n()) %>% print(n=100)
 
 ## Check that no important treatments are left out 
 anti_join(df, df_corrected, by = "spu_filename") %>% pull(Treatment) %>% unique()
@@ -493,7 +500,9 @@ anti_join(df, df_corrected, by = "spu_filename") %>% pull(Treatment) %>% unique(
 #### Plot Check
 ```{r}
 
-df_subset <- df_corrected[100:110, ] %>% 
+df_subset <- df_corrected %>% 
+  filter(Date == "2019-07-12", Site == "LMAT") %>%
+  slice(1:10) %>% 
   unnest(processed_spectra) %>% 
   gather(key = Status, value = Reflectance, raw_reflectance, corrected_reflectance)
   
@@ -654,13 +663,13 @@ Identify duplicates. Fix by editing unispec_key_fix.csv. Only duplicates should 
 
 ```{r duplicates}
 ### Check raw spu_files have no duplicates
-nrow(spu_data) == length(unique(spu_data$spu_filename))
+nrow(spu_dataframe) == length(unique(spu_dataframe$spu_filename))
 
 ## Check for duplicates in key
 unispec_file_key %>% group_by(Date, Site, Block, Treatment, Replicate, FileNum) %>%
+  filter(!(is.na(Site) & is.na(Treatment) & is.na(FileNum))) %>% 
   filter(n()>1) %>%
-  arrange(Date, Site, FileNum) %>% 
-  print(n=100)
+  arrange(Date, Site, FileNum)
 
 ## Check for duplicate in dataframe
 duplicates <- df %>% 
@@ -670,7 +679,7 @@ duplicates <- df %>%
   arrange(DateTime, spu_filename) %>% 
   select( spu_filename, FileNum, DateTime, Site, Block, Treatment, Replicate, Weather, everything())
 
-# duplicates %>% print(n=200)
+ duplicates %>% print(n=200)
 # duplicates %>% filter(!str_detect(Treatment, "REF")) %>% arrange(spu_filename) %>% print(n=100)
 
 duplicates %>% 
@@ -812,7 +821,7 @@ zero_data_narrowed %>% group_by(Date, Site) %>%
 ## Raw Spectra
 absurd_raw_data <- df %>% 
   filter(! Spectra %>% map(is.null) %>% map_lgl(any)) %>% # remove files w/out spu_spectra
-  filter(!str_detect(Treatment, "REF")) %>% # ignore REF files
+  filter(!str_detect(Treatment, "REF|DARK")) %>% # ignore REF files
   unnest(Spectra) %>% # use raw spectra
   filter(Wavelength > 400 & Wavelength < 1000) %>% 
   filter(Reflectance > 1) %>% 
@@ -955,8 +964,8 @@ np_colors <- RColorBrewer::brewer.pal(name = "Greens", n = 5)
 
 
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "MAT"
-check_dates <-  c(lubridate::ymd("2019-06-02"), lubridate::ymd("2019-06-22")) # necessary to unlist dates vector
+check_site <- "TEST"
+check_dates <-  c(lubridate::ymd("2019-07-15"), lubridate::ymd("2019-06-22")) # necessary to unlist dates vector
 CT <- c("CT1", "CT2", "CT")
 check_treatments <- c(CT, "NP")
 check_blocks <- c("B1", "B2", "B3", "B4") 
@@ -1046,3 +1055,87 @@ spec_subset <- df_subset %>% select(-Spectra) %>%
 spec_subset %>% plot_channels() 
   
 ```
+
+## DRONE COMPARISON CODE
+
+```{r}
+refs <- ref_data %>% filter(Date == "2019-07-12", Site == "LMAT")
+
+  plot_check <- refs %>%
+    unnest(Spectra) %>%
+    filter(Wavelength > 400, Wavelength < 1000) %>% 
+    gather(key = Channel, value = Intensity, ChB, ChA) %>%
+    gather(key = ref_part, value = Reflectance_Intensity, Intensity, Reflectance)
+  
+  
+  ## Plot Specified Correction Factors for quality check
+  plot_zoom <- ggplot(data = plot_check, mapping = aes(x = Wavelength, y = Reflectance_Intensity)) +
+    geom_line(aes(color=Channel)) +
+    facet_grid(ref_part ~ spu_filename, scales = "free")
+
+plot_zoom
+  
+
+df_corrected %>% filter(Date == "2019-07-12", Site == "LMAT")
+
+```
+
+## REFERENCE QUALITY CHECK ON LMAT
+```{r}
+lmat_ref_check <- df %>% filter(Site == "LMAT", str_detect(Treatment, "REF")) %>% 
+  unnest(Spectra) %>%
+  filter(Wavelength > 400, Wavelength < 1000) %>% 
+  gather(key = Channel, value = Intensity, ChB, ChA)  %>%
+    gather(key = ref_part, value = Reflectance_Intensity, Intensity, Reflectance)
+  
+
+ggplot(data = lmat_ref_check, mapping = aes(x=Wavelength, y=Reflectance_Intensity)) +
+  geom_line(aes(linetype=Channel, color = factor(Integration_ms))) + 
+  facet_grid(ref_part ~ Date, scales = "free")
+```
+
+## CABLE CHECK 2019-07-15
+```{r}
+df_check <- df %>% filter(Site == "TEST", Date == "2019-07-15")
+
+
+## DARKSERIES
+df_check %>% filter(Block == "DARKSERIES")
+
+## CABLE-MOTION
+### PLOT CHANNELS
+plot_check <- df_check %>% filter(Block == "CABLE-MOTION" | Block == "CABLE-COMPARE") %>%
+   unnest(Spectra) %>%
+  filter(Wavelength > 400, Wavelength < 1000) %>% 
+  gather(key = Channel, value = Intensity, ChB, ChA)
+
+ggplot(data = plot_check, mapping = aes(x=Wavelength, y=Intensity)) +
+  geom_line(aes(linetype=Channel, color = spu_filename)) + 
+  facet_grid(Channel ~ Treatment, scales = "free")
+
+### PLOT CORRECTION FACTOR
+plot_check_reflectance <- df_check %>% filter(Block == "CABLE-MOTION" | Block == "CABLE-COMPARE") %>%
+   unnest(Spectra) %>%
+  filter(Wavelength > 400, Wavelength < 1000) 
+
+ggplot(data = plot_check_reflectance, mapping = aes(x=Wavelength, y=1/Reflectance)) +
+  geom_line(aes(color = spu_filename)) + 
+  facet_grid(Integration_ms ~ Treatment, scales = "free")
+  
+
+## CABLE-NDVI
+plot_check <- df_check %>% filter(Block == "CABLE-NDVI") %>% 
+  unnest(Spectra) %>%
+  filter(Wavelength > 400, Wavelength < 1000)
+
+ggplot(data = plot_check, mapping = aes(x=Wavelength, y=Reflectance)) +
+  geom_line(aes(color = spu_filename)) + 
+  facet_grid(Location ~ Treatment, scales = "free")
+
+ndvi_check <- df_check %>% filter(Block == "CABLE-NDVI", Location == "DRYAS") %>% 
+    mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = c("NDVI", "EVI", "EVI2"))))
+
+ndvi_check %>% unnest(Indices) %>% filter(Index == "NDVI") %>% select(Site, FileNum, Block, Treatment, Value)
+
+```
+
