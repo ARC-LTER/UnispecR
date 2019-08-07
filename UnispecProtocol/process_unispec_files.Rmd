@@ -63,7 +63,7 @@ Rename files to include parent directory (Date) in filename: "YEAR-MONTH-DAY_SIT
 cd /mnt/c/Users/toolik/"OneDrive - Marine Biological Laboratory/Toolik Terrestrial"/UnispecData/2019
 
 #!/bin/bash
-for date in 2019-07-18; do
+for date in 2019-08-05; do
   pushd "$date"
   for file in *; do
     cp "$file" ../"${date}_${file}"
@@ -270,8 +270,8 @@ df %>%
 ```{r time_check}
 
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "LMAT"
-check_date <- "2019-06-02" # necessary to unlist dates vector
+check_site <- "WSG1"
+check_date <- "2019-07-31" # necessary to unlist dates vector
 
 ## Files 
 first_file <- 0
@@ -308,8 +308,6 @@ data_check <- df %>%
   filter(FileNum >= first_file) %>%
   filter(FileNum <= last_file)
 
-data_check <- df %>% filter(Site == "LMAT", Date == | Date == "2019
-                            ")
 
 plot_check <- data_check %>% 
   unnest(Spectra) %>% 
@@ -322,7 +320,7 @@ plot_check <- data_check %>%
 
 ## Plot Specified Correction Factors for quality check 
 plot_zoom <- ggplot(data = plot_check, mapping = aes(x = Wavelength, y = Reflectance_Intensity)) +
-  geom_line(aes(color=Treatment, linetype=Channel)) +
+  geom_line(aes(color=Integration_ms, linetype=Channel)) +
   facet_grid(ref_part ~ Date + Site + FileNum + Integration_ms, scales="free") 
 
 plot_zoom
@@ -501,7 +499,7 @@ anti_join(df, df_corrected, by = "spu_filename") %>% pull(Treatment) %>% unique(
 ```{r}
 
 df_subset <- df_corrected %>% 
-  filter(Date == "2019-07-12", Site == "LMAT") %>%
+  filter(Date == "2019-07-31", Site == "LMAT") %>%
   slice(1:10) %>% 
   unnest(processed_spectra) %>% 
   gather(key = Status, value = Reflectance, raw_reflectance, corrected_reflectance)
@@ -931,10 +929,13 @@ Currently, this only works for NDVI, EVI, and EVI2 as I haven't worked out spect
 
 ### Calculate Indices
 ```{r}
+
+df_processed %>%  filter( Spectra %>% map(is.null) %>% map_lgl(any)) # remove files w/out spu_spectra
+
 df_indices <- unispec_file_key_fix %>% 
   filter(!is.na(Treatment)) %>% 
   filter(!str_detect(Treatment, "REF|DARK")) %>% 
-  left_join(df_processed) %>% 
+  inner_join(df_processed) %>% 
   ## Format for calculuating indices
   unnest(Spectra) %>% 
   select(-ChB, -ChA, -raw_reflectance, -CorrectionFactor) %>% 
@@ -954,6 +955,31 @@ write_rds(df_indices, index_filename)
 index_data <- read_rds(paste0(data_path, "2019_index_data.rds")) %>% 
     unnest(Indices) %>% spread(Index, Value) %>% 
     mutate(DOY = lubridate::yday(DateTime))
+```
+
+## Calculate INDICES for new spu files
+```{r}
+new_files <- spu_dataframe_new$spu_filename
+
+df_processed_new <- df_processed %>% filter(spu_filename %in% new_files)
+
+indices_new <- unispec_file_key_fix %>% 
+  filter(!is.na(Treatment)) %>% 
+  filter(!str_detect(Treatment, "REF|DARK")) %>% 
+  inner_join(df_processed_new) %>% 
+  ## Format for calculuating indices
+  unnest(Spectra) %>% 
+  select(-ChB, -ChA, -raw_reflectance, -CorrectionFactor) %>% 
+  rename(Reflectance = corrected_reflectance) %>% 
+  nest(Wavelength, Reflectance,.key = Spectra) %>%
+  ## Calculate NDVI
+  mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = c("NDVI", "EVI", "EVI2"))))
+
+## SAVE UPDATED INDICES
+indices_all <- bind_rows(df_indices, indices_new)
+index_filename <- paste0(data_path, dir_year, "_index_data.rds")
+write_rds(indices_all, index_filename)
+  
 ```
 
 
@@ -1056,7 +1082,9 @@ spec_subset %>% plot_channels()
   
 ```
 
-## DRONE COMPARISON CODE
+## MINI 2019 Investigations 
+
+### DRONE COMPARISON CODE
 
 ```{r}
 refs <- ref_data %>% filter(Date == "2019-07-12", Site == "LMAT")
@@ -1080,7 +1108,7 @@ df_corrected %>% filter(Date == "2019-07-12", Site == "LMAT")
 
 ```
 
-## REFERENCE QUALITY CHECK ON LMAT
+### REFERENCE QUALITY CHECK ON LMAT
 ```{r}
 lmat_ref_check <- df %>% filter(Site == "LMAT", str_detect(Treatment, "REF")) %>% 
   unnest(Spectra) %>%
@@ -1094,7 +1122,7 @@ ggplot(data = lmat_ref_check, mapping = aes(x=Wavelength, y=Reflectance_Intensit
   facet_grid(ref_part ~ Date, scales = "free")
 ```
 
-## CABLE CHECK 2019-07-15
+### CABLE CHECK 2019-07-15
 ```{r}
 df_check <- df %>% filter(Site == "TEST", Date == "2019-07-15")
 
