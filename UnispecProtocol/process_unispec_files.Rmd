@@ -63,7 +63,7 @@ Rename files to include parent directory (Date) in filename: "YEAR-MONTH-DAY_SIT
 cd /mnt/c/Users/toolik/"OneDrive - Marine Biological Laboratory/Toolik Terrestrial"/UnispecData/2019
 
 #!/bin/bash
-for date in 2019-08-05; do
+for date in 2019-08-07; do
   pushd "$date"
   for file in *; do
     cp "$file" ../"${date}_${file}"
