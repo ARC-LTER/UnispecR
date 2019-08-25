@@ -63,7 +63,7 @@ Rename files to include parent directory (Date) in filename: "YEAR-MONTH-DAY_SIT
 cd /mnt/c/Users/toolik/"OneDrive - Marine Biological Laboratory/Toolik Terrestrial"/UnispecData/2019
 
 #!/bin/bash
-for date in 2019-08-07; do
+for date in 2019-08-16; do
   pushd "$date"
   for file in *; do
     cp "$file" ../"${date}_${file}"
@@ -72,11 +72,6 @@ for date in 2019-08-07; do
 done
 
   mv *.spu spu/
-
-## Removing "dark/ref" suffixes
-for file in *ref*; do
-  mv "$file" 
-done 
 
 ```
 
@@ -123,7 +118,7 @@ Generate the following 2 files from raw data:
   
 ```{r}
 ## Read .spu raw files
-raw_data_path <- paste0(data_path, "spu")
+raw_data_path <- paste0(data_path, "raw_spu_files")
 spu_files <- list.files(path = raw_data_path, pattern = ".spu$", full.names = T, recursive=T)
 new_spu_files <- str_subset(spu_files, file_match, negate = T)
 
@@ -221,7 +216,8 @@ df <- full_join(spu_dataframe, unispec_field_key) %>% arrange(DateTime) %>%
 
 unispec_file_key <- df %>% 
   select(spu_filename, Date, Site, Block, Treatment, Replicate, Location, FileNum, Notes, Weather, Type) %>% 
-  mutate(key_fix = NA)
+  mutate(key_fix = NA) %>% 
+  distinct(spu_filename, .keep_all = T)
 
 
 fix_keyname <- paste0(data_path, dir_year,"_unispec_file_key.csv")
@@ -270,8 +266,8 @@ df %>%
 ```{r time_check}
 
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "WSG1"
-check_date <- "2019-07-31" # necessary to unlist dates vector
+check_site <- "MNAT"
+check_date <- "2019-08-16" # necessary to unlist dates vector
 
 ## Files 
 first_file <- 0
@@ -284,7 +280,7 @@ timedata <- df %>%
   filter(FileNum >= first_file) %>%
   filter(FileNum <= last_file) %>% 
   select(Site, Date, DateTime, FileNum, Integration_ms, Type) %>% 
-  group_by(DateTime) %>% distinct() 
+  distinct(DateTime, .keep_all = T)
 
 timedata$diff <- timedata$DateTime - lag(timedata$DateTime)
 
@@ -293,14 +289,14 @@ meta_timedata <- left_join(timedata, unispec_file_key)
 time_check <- meta_timedata %>% select(Site, Date, DateTime, Block, Treatment, Replicate, FileNum, diff, Integration_ms, Type) %>% ungroup()
 
 # Examine dataframe
-time_check %>% print(n=300)
+time_check %>% print(n=400)
 ```
 
 ### Plot Check
 ```{r check_refs}
 
-first_file <- 0
-last_file <- 15
+first_file <-0
+last_file <- 23
 
 data_check <- df %>% 
   filter(Date == check_date) %>% 
