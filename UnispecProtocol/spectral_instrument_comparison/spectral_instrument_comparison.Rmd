@@ -21,6 +21,7 @@ library("tidyverse")
 library("knitr")
 
 data_path <- "C:/Users/toolik/Desktop/UnispecR/UnispecProtocol/spectral_instrument_comparison/"
+data_path <- "/home/ruby/UnispecR/UnispecProtocol/spectral_instrument_comparison/"
 
 
 band_defns <- tribble(

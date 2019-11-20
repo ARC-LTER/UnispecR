@@ -316,20 +316,22 @@ check_same_references <- function(m, r) {
 
 
 
-calculate_spectral_bands <- function(spectra, band_defns, instruments) {
+
+
+calculate_spectral_bands <- function(spectra, band_defns, instruments = c("MODIS")) {
   # Calculates spectral bands from dataframe including Wavelength & Reflectance
-  ## inputs: spectra - Wavelength, Reflectance columns
+  ## inputs: spectra - Wavelength, Reflectance columns, requires interpolation to 1nm
   ##         band_defns : wavelengths definining colors 
   ##         instrument : e.g. MODIS, SKYE, ITEX
   ##         bands   : the spectral bands to return, e.g. red, blue, nir, etc. 
   ## output: spectra_bands = dataframe with Definition, Band, Averaged Reflectance
   
-
+  
   bands <- band_defns %>% 
     filter(definition %in% instruments)
   
   # vector of wavelengths, one set per instrument
-  wavelengths <- seq(300, 1500, by = 1)
+  wavelengths <- seq(300, 1200, by = 1)
   
   # dataframe of wavelengths labeled by instrument & color
   bands_df <- tibble(Wavelength = rep(wavelengths, times = length(instruments)), 
@@ -339,8 +341,13 @@ calculate_spectral_bands <- function(spectra, band_defns, instruments) {
     select(Wavelength, definition, color_match) %>% 
     distinct()
   
-  ## DATA: join to measured spectra 
-  spectra_bands <- full_join(spectra, bands_df) %>% 
+  # interpolated spectra to 1nm 
+  interp <- approx(x = spectra$Wavelength, y = spectra$Reflectance, 
+                   xout = seq(300,1200, by = 1), method = "linear")
+  spectra_interp <- tibble(Wavelength = interp$x, Reflectance = interp$y)
+  
+  ## DATA: join to interpolated spectra 
+  spectra_bands <- full_join(spectra_interp, bands_df) %>% 
     group_by(definition, color_match) %>% 
     summarize(average_reflectance = mean(Reflectance)) %>% 
     filter(!is.na(color_match)) %>% 
@@ -348,6 +355,18 @@ calculate_spectral_bands <- function(spectra, band_defns, instruments) {
   
   return(spectra_bands) 
 }
+
+# # Calcualte individual color bands
+# spectral_band_data <- spu_data %>% mutate(Bands = map(Spectra, function(x) calculate_spectral_bands(x, band_defns = band_defns, instrument = c("MODIS", "ITEX", "ToolikEDC"))))
+# 
+# # Calculate indices from color bands
+# spectral_band_data %>% unnest(Bands) %>% # unnest the "Band" tibble to individual rows
+#   spread(key = band, value = average_reflectance) %>% # spread the Bands into their own columns
+#   mutate(NDVI = (nir-red)/(nir+red), # calculate vegetation indices of your choice as new columns
+#          EVI = 2.5*((nir-red)/(nir+6*red-7.5*blue + 1)),
+#          EVI2 = 2.5*((nir-red)/(nir+2.4*red + 1))) %>% 
+#   select(spu_filename, definition, NDVI) # select relevant columns 
+
 
 
 calculate_indices <- function(spectra, band_defns, instrument = "MODIS", indices = "NDVI") {
