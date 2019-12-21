@@ -179,7 +179,7 @@ calculate_spectral_bands <- function(spectra, band_defns, instruments) {
                      definition = rep(instruments, each = length(wavelengths))) %>% 
     full_join(bands) %>% 
     mutate(color_match = ifelse(Wavelength >= min & Wavelength <= max, color, NA)) %>% 
-    select(Wavelength, definition, color_match) %>% 
+    select(Wavelength, definition, color_match) %>%
     distinct()
   
   ## DATA: join to measured spectra 
@@ -255,9 +255,10 @@ spu_data <- spu_metadata %>%
 
 
 ## Standardize Dataframe
-unispec_dc_data <- spu_data %>% select(spu_filename, Site, FileNum, Date, DateTime, Integration_ms, Temp, Remarks, Spectra, everything()) ## METADATA
+unispec_dc_data <- spu_data %>% select(spu_filename, Site, FileNum, Date, DateTime, Integration_ms, Temp, Remarks, Spectra, everything()) %>%  ## METADATA
+  rename(FILENAME = spu_filename)
 
-unispec_dc_dataframe <- unispec_dc_filekey %>% full_join(unispec_dc_spectra) %>% 
+unispec_dc_dataframe <- unispec_dc_filekey %>% full_join(unispec_dc_data) %>% 
   mutate(NOTES = as.character(NOTES)) 
 
 
@@ -377,6 +378,8 @@ asd_dataframe <- asd_filekey %>%
 
 ## Calculate NDVI 
 
+
+
 ```
 
 
@@ -411,12 +414,18 @@ multispec_df$LOCATION <- recode (multispec_df$LOCATION_LONG, !!!Location_Names, 
 
 scanners$LOCATION <- recode(scanners$LOCATION, !!!Location_Names, .default = scanners$LOCATION)
 
+# Write this to .rds dataframe to read-in later 
+multispec_bands_name <- "UnispecProtocol/spectral_instrument_comparison/spec_synthesis_multispec_band_df.rds"
+write_rds(multispec_df, multispec_bands_name)
+
 ```
 
 ### Plot full spectra
 
 Plots full spectra for ASD and Unispec's. 
 ```{r, echo = F, message = F}
+
+multispec_df <- read_rds(multispec_bands_name)
 
 multispec_df_plot <- multispec_df %>% unnest(Spectra) %>% 
   filter(nchar(LOCATION) == 2) %>% # exclude whole plot Unispec-DC and ASD measurements
@@ -463,12 +472,18 @@ ggplot(ndvi_df, aes(x=INSTRUMENT, y = NDVI)) +
 
 ```
 
+### METHOD comp: Unispec-DC vs ASD
+```{r}
+
+```
+
+
 ## Seasonal Trend Comparison (2017, 2018, 2019)
 
 Comparison between EDC Unispec-SC and LTER Unispec-DC data. 
 
 ```{r}
-## Load processed data
+## Load processed data, currently for Toolik RA computer only 
 hst_data_path <- "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/"
 
 

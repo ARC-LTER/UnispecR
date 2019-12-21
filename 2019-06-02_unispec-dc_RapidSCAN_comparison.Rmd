@@ -1,0 +1,193 @@
+---
+title: 'Rapidscan vs Unispec-DC: 2019-06-02'
+author: "Ruby An"
+date: "December 19, 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(tidyverse)
+require("knitr")
+source("UnispecProtocol/unispec_protocol_functions.R") # file loads required functions
+
+interpolate_spectra <- function(spectra) {
+  # interpolates unispec spectra to 1nm 
+  # input: dataframe with Wavelength & Reflectance columns
+  # output: dataframe with Wavelength (every 1 nm) & Reflectance columns 
+  #spectra <- spectra[[1]]
+  
+  is.null(spectra)
+  interp <- approx(x = spectra$Wavelength, y = spectra$Reflectance, 
+                   xout = seq(400,1000, by = 1), method = "linear")
+  spectra_interp <- tibble(Wavelength = interp$x, Reflectance = interp$y)
+  
+  return(spectra_interp)
+}
+```
+
+
+## Overview 
+These measurements were taken to (1) compare Unispec-DC, RapidSCAN, and Greenseeker NDVI measurements and (2) assess plot heterogeneity early season. 
+
+## Description of Sampling 
+
+
+- UNISPEC METHOD: unispec measurements taken in normal direction (downslope to upslope) at normal 5 points of LTER measurements + 4 extra measurements between (25 measurements total, except when mistakes made, see Notes column). Thes 5 points are marked by silver tags on the boardwalk, and are typically located at the 10-15m location of the plot on the North side towards the lake (measured downslope to upslope). Measurements are taken 0.5 m into the plot (length of unispec monopod arm).
+
+- GREENSEEKER METHOD: one circular motion rotation at same height/area as unispec. Swipe is taken by holding down the trigger and walking along the 5m transect; 
+
+- RAPIDSCAN METHOD: held in same location as unispec downfacing foreoptic, scan for approx. 3 seconds. Swipe taken by walking with RapidSCAN along 5m transect (silver tags). 
+
+```{r, echo = F}
+band_defns <- tribble(
+  ~definition, ~color, ~min, ~max,
+  "ITEX", "red", 560, 600,
+  "ITEX", "nir", 725, 1000,
+  "MODIS", "red", 620, 670, 
+  "MODIS", "nir", 841, 876,
+  "MODIS", "blue", 459,479,
+  "SKYE", "red", 620, 680,
+  "SKYE", "nir", 830, 880,
+  "SKYE", "blue", 455, 480,
+  "Greenseeker", "red", 656, 656,
+  "Greenseeker", "nir", 774, 774, 
+  "RapidSCAN", "red", 670, 670,
+  "RapidSCAN", "nir", 780, 780,
+  "RapidSCAN", "red_edge", 730, 730, 
+  "ToolikGIS_Drone_2018", "red", 640, 680,
+  "ToolikGIS_Drone_2018", "nir", 820, 890,
+  "ToolikGIS_MicaSense_2019", "blue", 455, 495,
+  "ToolikGIS_MicaSense_2019", "green", 540, 580,
+  "ToolikGIS_MicaSense_2019", "red", 658, 678,
+  "ToolikGIS_MicaSense_2019", "red_edge", 707, 727,
+  "ToolikGIS_MicaSense_2019", "nir", 800, 880,
+  "ToolikEDC", "red", 560, 680,
+  "ToolikEDC", "nir", 725, 1000
+)
+
+kable(band_defns)
+```
+
+
+## Data Summary  
+This section includes hidden code chunks to undertake preliminary processing of data. If of interest, see R Markdown document. 
+
+The two relevant dataframes this produces are:
+
+1. "2019-06-02_scanner_ndvi.csv". This includes Greenseeker and Rapidscan data. 
+2. "2019-06-02_unispec_ndvi.csv". This includes Unispec-DC NDVI calculated using MODIS, Rapidscan, and Greenseeker band definitions (see above). 
+
+```{r, read_in_data, include=F }
+
+# Set directory 
+path <- "spectral_instrument_comparison/2019-06-02/"
+
+# >>>>>>>>>>>>>>>>>> Greenseeker and RapidSCAN data 
+scanner_data <- read_csv("spectral_instrument_comparison/2019-06-02/2019-06-02_LMAT_spectral-instrument-comparison.csv")
+
+write_csv(scanner_data, "spectral_instrument_comparison/2019-06-02/2019-06-02_scanner_ndvi.csv")
+
+
+# >>>>>>>>>>>>>>>>>> UNISPEC DATA 
+unispec_file_key <- read_csv("spectral_instrument_comparison/2019-06-02/2019-06-02_LMAT_unispec_file_key.csv")
+
+# Read .spu raw files
+raw_data_path <- paste0(path, "raw_spu_files")
+spu_files <- list.files(path = raw_data_path, pattern = ".spu$", full.names = T, recursive=T)
+
+# Read spu_metadata (integration time, temp, datetime, etc.) 
+spu_metadata <- map_dfr(spu_files, read_spu_file_metadata) %>% 
+  mutate(spu_filename_full = spu_files)
+
+# Read spectral data ==> Dataframe of raw spp spectra
+spu_data <- spu_metadata %>% 
+  # Read in spectral data
+  mutate(Spectra=map(spu_filename_full, function(x) read_spu_file_spectra(x))) %>% 
+  # Order columns 
+  select(spu_filename, Site, FileNum, Date, DateTime, Integration_ms, Temp, Remarks, Spectra, everything())
+
+## Join file metadata to spu data 
+raw_data <- full_join(unispec_file_key, spu_data)
+
+# Select references 
+ref_data <- raw_data %>% filter(Treatment == "REF")
+
+## Average 5 chosen ref measurements per DATE/SITE/BLOCK 
+ref_summary <- ref_data %>% 
+  ## The following steps expand the "Block" column to create one REF set per Block per Site. This structure is necessary for situtations where different refs are used for different blocks at the same site. 
+  separate(Block, into = c("BX1", "BX2", "BX3", "BX4"), sep = ",") %>% #1: expand string entry in "Block" into separate columns -- NOTE: this step throws a "Warning: Expected 4 pieces." for sites w/less than 4 blocks
+  gather(Block, BlockString, BX1:BX4) %>% #2: re-condense into one column, generates correct number of rows per site AND per block
+  mutate(Block = str_squish(BlockString), BlockString=NULL) %>% #3: replace placeholder column names w/"B1-B4". Also removes whitespace from BlockString contents introduced by "separate" function
+  filter(!is.na(Block)) %>% #4: remove empty rows for sites w/out B3 or B4
+  ### Unnest Spectra & calculate
+  unnest(Spectra) %>% 
+  filter(Wavelength > 400, Wavelength < 1000) %>% 
+  mutate(CorrectionFactor = 1/Reflectance) %>% 
+  ### The following code group repeated REF measurements, and takes the mean 
+  group_by(Date,Site,Block,Wavelength) %>% 
+  # group_by(Date,Site,Block,Wavelength, Integration_ms) %>% # to separate integration times
+  summarize(ChA_REF = mean(ChA), ChB_REF = mean(ChB), CorrectionFactor = mean(ChA/ChB), int_REF = mean(Integration_ms), Notes_REF = str_c(Notes, collapse = "; "), ref_filenames = str_c(spu_filename,collapse = ", "))
+
+# Apply references to raw spu data ==> Dataframe of corrected spu spectra 
+corrected_data <- raw_data %>% 
+  filter(!str_detect(Treatment, "REF|DARK")) %>% 
+  unnest(Spectra) %>% 
+  filter(Wavelength > 400, Wavelength < 1000) %>% 
+  left_join(ref_summary) %>% 
+  select(Date, DateTime, Site, Block, Treatment, Replicate, spu_filename, FileNum, Integration_ms, Weather, Notes, Notes_REF, ref_filenames, int_REF, Wavelength, ChB, ChA, ChB_REF, ChA_REF, CorrectionFactor) %>%
+  mutate(raw_reflectance = ChB/ChA) %>% # the raw reflectance
+  mutate(Reflectance = raw_reflectance*CorrectionFactor) %>%  # the corrected reflectance
+  nest(Wavelength:Reflectance, .key = Spectra) %>% 
+  # interpolate Specta to 1nm 
+  mutate(interpolated_spectra = map(Spectra, .f = interpolate_spectra)) # Spectra must have "Reflectance" column
+
+# Calculate Spectral Bands 
+band_data <- corrected_data %>% 
+  # requires interpolated spectra
+  mutate(Bands = map(interpolated_spectra, function(x) calculate_spectral_bands(x, band_defns = band_defns, instrument = c("MODIS", "Greenseeker", "RapidSCAN")))) 
+
+# Save spectral band data to load later 
+write_rds(band_data, path = "spectral_instrument_comparison/2019-06-02/2019-06-02_unispec_spectral_bands.rds")
+
+# Calculate NDVI data 
+ndvi_data <- band_data %>% unnest(Bands) %>% 
+  spread(key = band, value = average_reflectance) %>% 
+  mutate(NDVI = (nir-red)/(nir+red))
+
+
+# Save NDVI data
+write_csv(ndvi_data %>% select(spu_filename, Date, Site, Block, Treatment, Replicate, definition, NDVI), path = "spectral_instrument_comparison/2019-06-02/2019-06-02_unispec_ndvi.csv")
+```
+
+
+
+# Quick Plots
+
+This boxplot shows the NDVI per plot. Plot identity (treatment) on the x-axis. NDVI on the y-axis. Please note that the number of samples in each of the bar plots is different, mainly 5 per each Rapidscan and Greenseeker and 20 for the unispec. >> you might consider only including some unispec measurements, etc. real stats have not been done! 
+```{r, echo=F}
+
+d1 <- ndvi_data %>% mutate(Replicate = as.character(Replicate)) %>% 
+  select(Date, Site, Block, Treatment, Replicate, definition, NDVI, Notes) %>% 
+  mutate(instrument = "Unispec-DC") %>% 
+  filter(definition == "RapidSCAN") # only rapidscan definition considered, can alter to also look at greenseeker 
+
+d2 <- scanner_data %>% 
+  select(-spu_filenames, -Unispec_NDVI) %>% 
+  rename(RapidSCAN = Rapidscan) %>% 
+  gather(RapidSCAN, Greenseeker, key = definition, value = NDVI) %>% 
+  mutate(instrument = definition) %>% 
+  filter(definition == "RapidSCAN")
+
+ndvi_df <- rbind(d1, d2)
+
+  
+## PLOT IT
+ggplot(ndvi_df, aes(x=Treatment, y = NDVI)) +
+  geom_boxplot(aes(fill=instrument)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+

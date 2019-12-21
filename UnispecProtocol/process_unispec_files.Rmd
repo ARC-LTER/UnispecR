@@ -19,7 +19,8 @@ source("UnispecProtocol/unispec_protocol_functions.R") # file loads required fun
 ## Data Path
 data_path <-  "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/"
 
-#data_path <- "UnispecRecord/UnispecData/2019/"
+## for Ruby's chromebook 
+data_path <- "UnispecRecord/UnispecData/2019/"
 
 
 dir_year <- "2019"
@@ -53,6 +54,8 @@ band_defns <- tribble(
   "ToolikEDC", "nir", 725, 1000
 )
 
+
+
 ```
 
 
@@ -63,7 +66,7 @@ Rename files to include parent directory (Date) in filename: "YEAR-MONTH-DAY_SIT
 cd /mnt/c/Users/toolik/"OneDrive - Marine Biological Laboratory/Toolik Terrestrial"/UnispecData/2019
 
 #!/bin/bash
-for date in 2019-08-16; do
+for date in 2019-06-02; do
   pushd "$date"
   for file in *; do
     cp "$file" ../"${date}_${file}"
@@ -266,12 +269,12 @@ df %>%
 ```{r time_check}
 
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "MNAT"
-check_date <- "2019-08-16" # necessary to unlist dates vector
+check_site <- "LMAT"
+check_date <- "2019-06-02" # necessary to unlist dates vector
 
 ## Files 
 first_file <- 0
-last_file <- 600
+last_file <- 153
 
 # Select columns to Check
 timedata <- df %>% 
@@ -296,7 +299,7 @@ time_check %>% print(n=400)
 ```{r check_refs}
 
 first_file <-0
-last_file <- 23
+last_file <- 13
 
 data_check <- df %>% 
   filter(Date == check_date) %>% 
