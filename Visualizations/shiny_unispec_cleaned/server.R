@@ -12,7 +12,7 @@ library(DT)
 library(shiny)
 library(markdown)
 
-index_data <- read_rds("indices_2014-2019.rds") #load dataframe "index_data"
+index_data <- read_rds("indices_2014-2019.updated.rds") #load dataframe "index_data"
 
 
 ## Useful Objects for Plotting 

@@ -91,7 +91,7 @@ raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
 spu_spectra <- read_rds(raw_filename)
 
 raw_keyname <- paste0(data_path, dir_year, "_raw_spu_key.csv")
-spu_key <- read_csv(raw_keyname)
+spu_key <- read_csv(raw_keyname) # remove -spu_filename_full column for 2019 
 
 spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
  # mutate(DateTime = lubridate::ymd_hms(DateTime, tz = "US/Alaska")) %>% 
@@ -156,8 +156,6 @@ spu_dataframe %>%   group_by(Date, Site) %>%
   summarize(Files = n_distinct(spu_filename)) %>% 
   kable()
 
-
-
 ```
 
 ### Save .spu data & key 
@@ -189,17 +187,7 @@ write_csv(spu_key, path = raw_keyname)
 
 field_key <- paste0(data_path, "2019_unispec_field_key.csv")
 
-unispec_field_key <- read_csv(field_key, skip_empty_rows = T, col_types = cols(
-  Date = col_character(),
-  Site = col_character(),
-  Block = col_character(),
-  Treatment = col_character(),
-  Replicate = col_double(),
-  Location = col_character(),
-  FileNum = col_double(),
-  Weather = col_character(),
-  Notes = col_character()
-)) ## remove NA rows 
+unispec_field_key <- read_csv(field_key, skip_empty_rows = T) ## remove NA rows 
 
 # Confirm spu_dataframe has same Site abbreviation as key
 # > Standardize Site Names -----------------------------------------------------
@@ -989,10 +977,10 @@ np_colors <- RColorBrewer::brewer.pal(name = "Greens", n = 5)
 
 
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "TEST"
-check_dates <-  c(lubridate::ymd("2019-07-15"), lubridate::ymd("2019-06-22")) # necessary to unlist dates vector
+check_site <- "LMAT"
+check_dates <-  c(lubridate::ymd("2019-06-01"), lubridate::ymd("2019-08-22")) # necessary to unlist dates vector
 CT <- c("CT1", "CT2", "CT")
-check_treatments <- c(CT, "NP")
+check_treatments <- c(CT, "F0.5", "F1", "F2", "F5", "F10")
 check_blocks <- c("B1", "B2", "B3", "B4") 
 which_index <- "NDVI"
 
@@ -1007,7 +995,7 @@ index_subset <- index_data %>%
   filter(Block %in% check_blocks) %>% 
   filter(Treatment %in% check_treatments) %>% 
   mutate(Treatment = replace(Treatment, Treatment %in% CT & aggregate_ctls, "CT"), Treatment)  %>% #Choose index to graph
-  rename_at(vars(contains(which_index)), funs(sub(which_index, 'index', .)))
+  rename_at(vars(contains(which_index)), list( ~ sub(which_index, 'index', .)))
 
 index_summary <- index_subset %>%  
   mutate(Date = lubridate::date(Date)) %>% 
@@ -1015,10 +1003,10 @@ index_summary <- index_subset %>%
   summarize_at(vars(index), funs(mean, sd), na.rm=T) %>% 
   group_by(N = n(), add = TRUE) # add number of blocks per site to get Standard Error
 
-index_site_summary <- index_summary %>% 
-  group_by(DOY, Date, Site,Treatment) %>% 
-  group_by(N = n(), add = TRUE) %>% # add number of blocks per site to get Standard Error
-  summarize_at(vars(index), funs(mean, sd), na.rm=T) 
+# index_site_summary <- index_summary %>% 
+#   group_by(DOY, Date, Site, Treatment) %>% 
+#   group_by(N = n(), add = TRUE) %>% # add number of blocks per site to get Standard Error
+#   summarize_at(vars(index), funs(mean, sd), na.rm=T) 
 
 ggplot(data = index_summary, mapping = aes(x = Date, y = mean, color=Treatment)) +
     {if(add_points)geom_point(data = index_subset, aes(x=Date, y = index, color = Treatment),  alpha = 0.4)} + # add points for all measurements
@@ -1039,7 +1027,7 @@ ggplot(data = index_summary, mapping = aes(x = Date, y = mean, color=Treatment))
 
 
 
-ggplot(data = index_subset, mapping = aes(x = Date, y = NDVI, color = Treatment)) +
+ggplot(data = index_subset, mapping = aes(x = Date, y = index, color = Treatment)) +
   geom_point(aes(shape=Block), position = "jitter") + 
   geom_smooth(aes(fill=Treatment), method = lm, formula = y ~ splines::bs(x, 3)) + 
   facet_wrap(vars(Site)) + 
@@ -1063,10 +1051,10 @@ ggplot(data = index_subset, mapping = aes(x = Date, y = NDVI, color = Treatment)
                               "F10" = np_colors[5])) 
 
   
-ggplot(data = index_subset,aes(x=Date, y=NDVI)) +
+ggplot(data = index_subset,aes(x=Date, y=index)) +
   geom_point(aes(color=Treatment, shape = Block)) 
 
-ggplot(data = index_subset, aes(x=FileNum,y=NDVI, fill=Block)) +
+ggplot(data = index_subset, aes(x=FileNum,y=index, fill=Block)) +
   geom_bar(stat="identity") + facet_wrap(vars(Block), scales = "free_x")
 
 ggplot(data = index_subset, aes(x=Date,y=Value)) +

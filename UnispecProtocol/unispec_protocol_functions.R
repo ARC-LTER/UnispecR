@@ -4,6 +4,29 @@
 # REVISED: 2019-06-17
 
 
+# OBJECTS -----------------------------------------------------------------
+
+band_defns <- tribble(
+  ~definition, ~color, ~min, ~max,
+  "ITEX", "red", 560, 600,
+  "ITEX", "nir", 725, 1000,
+  "MODIS", "red", 620, 670, 
+  "MODIS", "nir", 841, 876,
+  "MODIS", "blue", 459,479,
+  "SKYE", "red", 620, 680,
+  "SKYE", "nir", 830, 880,
+  "SKYE", "blue", 455, 480,
+  "ToolikGIS_Drone_2018", "red", 640, 680,
+  "ToolikGIS_Drone_2018", "nir", 820, 890,
+  "ToolikGIS_MicaSense_2019", "blue", 455, 495,
+  "ToolikGIS_MicaSense_2019", "green", 540, 580,
+  "ToolikGIS_MicaSense_2019", "red", 658, 678,
+  "ToolikGIS_MicaSense_2019", "red_edge", 707, 727,
+  "ToolikGIS_MicaSense_2019", "near_ir", 800, 880,
+  "ToolikEDC", "red", 560, 680,
+  "ToolikEDC", "nir", 725, 1000
+)
+
 
 
 # FUNCTIONS ---------------------------------------------------------------
@@ -16,11 +39,11 @@ read_spu_file_metadata <- function(filename) {
     ## Reads a .spu file from 2017 or 2018 
     
     # Filename metadata
-    filename_metadata <- unlist(str_split(filename, pattern = "/")) %>% last() %>% str_split("_") %>% unlist()
-    Site <- filename_metadata[2]
-    Date <- filename_metadata[1]
+    # filename_metadata <- unlist(str_split(filename, pattern = "/")) %>% last() %>% str_split("_") %>% unlist()
+    # Site <- filename_metadata[2]
+    # Date <- filename_metadata[1]
     
-    FileNum <- as.integer(str_extract(filename_metadata[3], "\\d{5}")) # extract 5 digits
+    #FileNum <- as.integer(str_extract(filename, "\\d{5}")) # extract 5 digits
     
     # Extract info from the file itself, reading metadata from first 9 lines. Create a dataframe
     text <- read_lines(filename, n_max=9)
@@ -34,7 +57,7 @@ read_spu_file_metadata <- function(filename) {
     Spufilename <- unlist(str_split(filename, pattern = "/")) %>% last()
     
     # Metadata 
-    metaData <- tibble(Site=Site, FileNum=FileNum, Date=Date, DateTime=DateTime, Integration_ms=Integration_ms,
+    metaData <- tibble(Date=Date, DateTime=DateTime, Integration_ms=Integration_ms,
                        Temp=Temp, Remarks=Remarks, spu_filename=Spufilename )
     
   } else {
