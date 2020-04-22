@@ -7,25 +7,54 @@ editor_options:
   chunk_output_type: console
 ---
 
-## Required Packages
+## Required R Packages and R files
+  
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 ## Required Packages
 library("tidyverse")
 library("knitr")
-source("UnispecProtocol/unispec_protocol_functions.R") # file loads required functions
+library(rChoiceDialogs)
+library(lubridate)
 
+## Functions file  
+
+function_file <-"unispec_protocol_functions.R"
+if (!file.exists(function_file)) {
+  function_file<-rchoose.files(caption = "Select file:unispec_protocol_functions.R")
+  }
+source(function_file) # file loads required functions
+```
+## Data directories, date and key files
+  * Sample date in yyyy-mm-dd form.
+  
+  * Base folder where the yearly files are stored. Should be OneDrive. The structure is year/spu_orig/yyyy-mm-dd  where yyyy-mm-dd is sample date.
+  
+  * Key file with Date	Site	Block	Treatment 	Replicate	Location 	FileNum	Notes	Weather
+  
+
+```{r}
 ## Session Date
-session_date <- "2019-08-05"
+session_date <- "2019-06-08"
 
-## for Ruby's chromebook 
-data_path <- paste0("UnispecRecord/UnispecData/2019_unispec_data/", session_date, "/")
+## use the working directory as starting folder
+data_path <-file.path(getwd(),year(session_date))
 
-## use data stored outside of git directory 
-data_path <- paste0("/home/ruby/UnispecData/2019_unprocessed_unispec_data/", session_date, "/")
+## Check if directory exist
+if (!dir.exists(data_path)) {data_path <- rchoose.dir(caption = "Select Unispec Data directory")}
 
+# ## for Ruby's chromebook 
+# data_path <- paste0("UnispecRecord/UnispecData/2019_unispec_data/", session_date, "/")
+# 
+# ## use data stored outside of git directory 
+# data_path <- paste0("/home/ruby/(UnispecData/2019_unprocessed_unispec_data/", session_date, "/")
 
+## Field key file 
+field_key <- file.path(data_path,paste0(year(session_date),"_unispec_field_key.csv"))
+
+## Check if file exist
+if (!file.exists(field_key)) {data_path <- rchoose.files(caption = "Select field key file")}
 
 ```
 
@@ -69,17 +98,20 @@ spu_dataframe %>%   group_by(Date, Site) %>%
 
 
 ### Read Field Key 
+Note that the format of the Date in the csv key file needs to be yyyy-mm-dd
+
 ```{r}
 
-field_key_files <- list.files(path = data_path, pattern = "key.csv$", full.names = T, recursive=T)
+# field_key_files <- list.files(path = data_path, pattern = "field_key.csv$", full.names = T, recursive=T)
+# 
+# field_keys <- map_dfr(field_key_files, read_csv)
+# 
+# 
+# ## quick cheat: use full field key for 2019
+# field_key <- "C:\\Users\\jl01596\\Documents\\UnispecData\\2019/2019_unispec_field_key.csv"
 
-field_keys <- map_dfr(field_key_files, read_csv)
-
-
-## quick cheat: use full field key for 2019
-field_key <- "/home/ruby/UnispecData/2019_unprocessed_unispec_data/2019_unispec_field_key.csv"
-
-field_keys <- read_csv(field_key, skip_empty_rows = T) %>% ## remove NA rows 
+# field keys for this session
+field_keys <- read_csv(field_key, skip_empty_rows = T, col_types = "Dcccdcdcc") %>% ## remove NA rows 
   filter(Date == session_date)
 
 # Confirm spu_dataframe has same Site abbreviation as key
@@ -89,7 +121,7 @@ field_keys <- read_csv(field_key, skip_empty_rows = T) %>% ## remove NA rows
 
 unique(spu_dataframe$Site) %>% sort()
 # spu_dataframe$Site <- recode (spu_dataframe$Site, !!!Site_Names, .default = spu_dataframe$Site)
-unique(unispec_field_key$Site) %>% sort()
+unique(field_keys$Site) %>% sort()
 
 df <- left_join(spu_dataframe, field_keys) %>% arrange(DateTime) %>% 
   mutate_at(.vars = vars(Site, Block, Treatment), .funs = factor)
@@ -220,6 +252,8 @@ dim_data %>% group_by(Date, Site) %>%
 
 # File List
 dim_files <- dim_data$spu_filename
+View(dim_data)
+message("Primarily Darkscans should show up.")
 ```
 
 
@@ -330,6 +364,7 @@ time_check <- meta_timedata %>% select(Site, Date, DateTime, Block, Treatment, R
 
 # Examine dataframe
 time_check %>% select(Date, Site, Block, Treatment, Location, diff, Integration_ms) %>% print(n=200)
+view(time_check)
 ```
 
 ##### Mis-Labeling 
