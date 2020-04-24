@@ -3,3 +3,5 @@
 UnispecRecord/UnispecData/*
 *.RData
 *.rds
+.Rhistory
+UnispecRecord/.Rhistory
