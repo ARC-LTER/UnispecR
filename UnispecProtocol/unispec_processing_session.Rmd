@@ -14,21 +14,44 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Required Packages
 library("tidyverse")
 library("knitr")
-source("UnispecProtocol/unispec_protocol_functions.R") # file loads required functions
+library(rChoiceDialogs)
+library(lubridate)
 
+## Functions file  
+
+function_file <-"unispec_protocol_functions.R"
+if (!file.exists(function_file)) {
+  function_file<-rchoose.files(caption = "Select file:unispec_protocol_functions.R")
+  }
+source(function_file) # file loads required functions
+```
+## Data directories, date and key files
+
+  * Session_date in yyyy-mm-dd form.
+  
+  * data_path is year folder where the session files are stored. The structure is year/spu_orig/yyyy-mm-dd  where yyyy-mm-dd is sample date. Should be on OneDrive.
+  
+  * Field Key file with header "Date,Site,Block,Treatment,Replicate,Location,FileNum,Notes,Weather".  File name convention is year_unispec_field_key.csv
+  
+```{r}
 ## Session Date
-session_date <- "2019-08-05"
+session_date <- "2019-06-08"
+session_year <- year(session_date)
 
-## for Ruby's chromebook 
-data_path <- paste0("UnispecRecord/UnispecData/2019_unispec_data/", session_date, "/")
+## use the working directory as starting folder
+data_path <-file.path(getwd(),session_year)
 
-## use data stored outside of git directory 
-data_path <- paste0("/home/ruby/UnispecData/2019_unprocessed_unispec_data/", session_date, "/")
+## Check if directory exist and use it as the working directory
+if (!dir.exists(data_path) & grepl(session_year,data_path)) {data_path <- rchoose.dir(caption = "Select Unispec Data directory")}
+setwd(data_path)
 
+## Field key file 
+field_key <- file.path(data_path,paste0(session_year,"_unispec_field_key.csv"))
 
+## Check if file exist
+if (!file.exists(field_key)) {field_key <- rchoose.files(caption = "Select field key file")}
 
 ```
-
 
 ## Digitize Data Locally 
 
@@ -71,15 +94,7 @@ spu_dataframe %>%   group_by(Date, Site) %>%
 ### Read Field Key 
 ```{r}
 
-field_key_files <- list.files(path = data_path, pattern = "key.csv$", full.names = T, recursive=T)
-
-field_keys <- map_dfr(field_key_files, read_csv)
-
-
-## quick cheat: use full field key for 2019
-field_key <- "/home/ruby/UnispecData/2019_unprocessed_unispec_data/2019_unispec_field_key.csv"
-
-field_keys <- read_csv(field_key, skip_empty_rows = T) %>% ## remove NA rows 
+field_keys <- read_csv(field_key, skip_empty_rows = T, col_types = "Dcccdcdcc") %>% ## remove NA rows 
   filter(Date == session_date)
 
 # Confirm spu_dataframe has same Site abbreviation as key
@@ -89,7 +104,7 @@ field_keys <- read_csv(field_key, skip_empty_rows = T) %>% ## remove NA rows
 
 unique(spu_dataframe$Site) %>% sort()
 # spu_dataframe$Site <- recode (spu_dataframe$Site, !!!Site_Names, .default = spu_dataframe$Site)
-unique(unispec_field_key$Site) %>% sort()
+unique(field_keys$Site) %>% sort()
 
 df <- left_join(spu_dataframe, field_keys) %>% arrange(DateTime) %>% 
   mutate_at(.vars = vars(Site, Block, Treatment), .funs = factor)
