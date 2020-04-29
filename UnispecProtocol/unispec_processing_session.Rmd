@@ -2,9 +2,17 @@
 title: "Process Unispec Files"
 author: "Ruby An"
 date: "6/17/2019"
+
 output: html_document
 editor_options: 
   chunk_output_type: console
+  
+params:
+  
+  function_file: unispec_protocol_functions.R
+  session_date: 2019-06-08
+  data_path: !r getwd ()
+  
 ---
 
 ## Required Packages
@@ -19,11 +27,11 @@ library(lubridate)
 
 ## Functions file  
 
-function_file <-"unispec_protocol_functions.R"
-if (!file.exists(function_file)) {
-  function_file<-rchoose.files(caption = "Select file:unispec_protocol_functions.R")
+
+if (!file.exists(params$function_file)) {
+  params$function_file<-rchoose.files(caption = "Select file:unispec_protocol_functions.R")
   }
-source(function_file) # file loads required functions
+source(params$function_file) # file loads required functions
 ```
 ## Data directories, date and key files
 
@@ -35,14 +43,15 @@ source(function_file) # file loads required functions
   
 ```{r}
 ## Session Date
-session_date <- "2019-06-08"
-session_year <- year(session_date)
 
-## use the working directory as starting folder
-data_path <-file.path(getwd(),session_year)
+session_year <- year(params$session_date)
+
+## use the params$data_path as starting folder
+data_path <- params$data_path
 
 ## Check if directory exist and use it as the working directory
-if (!dir.exists(data_path) & grepl(session_year,data_path)) {data_path <- rchoose.dir(caption = "Select Unispec Data directory")}
+if (!dir.exists(data_path) || !grepl(session_year,data_path)) {
+  data_path <- rchoose.dir(caption = "Select Unispec Data directory")}
 setwd(data_path)
 
 ## Field key file 
@@ -58,8 +67,9 @@ if (!file.exists(field_key)) {field_key <- rchoose.files(caption = "Select field
 ### Read in spu_files 
   
 ```{r}
-## Make a character vector of all .spu raw files in folder
-spu_files <- list.files(path = data_path, pattern = ".spu$", full.names = T, recursive=T)
+## Make a character vector of all .spu raw files in current session date folder
+spu_folder <- file.path(data_path,params$session_date)
+spu_files <- list.files(path = spu_folder, pattern = ".spu$", full.names = T, recursive=T)
 
 # Read metadata text lines (9) from the spu files
 spu_filedata <- map_dfr(spu_files, read_spu_file_metadata)
@@ -95,7 +105,7 @@ spu_dataframe %>%   group_by(Date, Site) %>%
 ```{r}
 
 field_keys <- read_csv(field_key, skip_empty_rows = T, col_types = "Dcccdcdcc") %>% ## remove NA rows 
-  filter(Date == session_date)
+  filter(Date == params$session_date)
 
 # Confirm spu_dataframe has same Site abbreviation as key
 
@@ -283,9 +293,9 @@ absurd_raw_data <- df %>%
   filter(!str_detect(Treatment, "REF|DARK")) %>% # ignore REF files
   unnest(Spectra) %>% # use raw spectra
   filter(Wavelength > 400 & Wavelength < 1000) %>% 
-  filter(Reflectance > 1) %>% 
-  nest(Wavelength, ChA, ChB, Reflectance, .key = Spectra)
-
+  filter(Reflectance > 1) %>%
+  nest(Spectra = c(Wavelength, ChA, ChB, Reflectance))
+  
 absurd_raw_files <- absurd_raw_data$spu_filename
 
 absurd_raw_data %>% group_by(Date, Site) %>% 
@@ -299,7 +309,7 @@ absurd_data <- df_corrected %>%
   select(-(ChB:raw_reflectance)) %>%  # remove unnecessary Wavelength specific rows 
   filter(Wavelength > 400 & Wavelength < 1000) %>% 
   filter(corrected_reflectance > 1) %>% 
-  nest(Wavelength, corrected_reflectance, .key = corrected_spectra)
+  nest(Spectra = c(Wavelength, ChA, ChB, Reflectance))
 
 ## Summary
 absurd_data %>% group_by(Date, Site) %>% 
@@ -731,7 +741,7 @@ df_indices <- df %>% select(-Spectra) %>%
   ## Calculate NDVI
   mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = c("NDVI", "EVI", "EVI2"))))
   
-index_filename <- paste0(data_path, session_date, "_index_data.rds")
+index_filename <- paste0(data_path, params$session_date, "_index_data.rds")
 write_rds(df_indices, index_filename)
 
 
