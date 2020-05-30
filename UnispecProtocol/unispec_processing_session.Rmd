@@ -10,7 +10,7 @@ editor_options:
 params:
   
   function_file: unispec_protocol_functions.R
-  session_date: 2019-06-08
+  session_date: 2019-08-02
   data_path: !r getwd ()
   
 ---
@@ -25,14 +25,86 @@ library("knitr")
 library(rChoiceDialogs)
 library(lubridate)
 
-## Functions file  
-
+## Functions file  ## Decide to include functions in processing session for now. 
 
 if (!file.exists(params$function_file)) {
   params$function_file<-rchoose.files(caption = "Select file:unispec_protocol_functions.R")
   }
 source(params$function_file) # file loads required functions
 ```
+
+## R Functions
+```{r functions, include = F}
+read_spu_file_metadata <- function(filename) {
+  # DESCRIPTION: Reads first 9 text lines in .spu files 
+  # INPUT: .spu file -- collected using PPSystems UnispecDC
+  # OUTPUT: dataframe with 15 columns on instrument status, scan settings, max/min value
+
+    # Extract info from the file itself, reading metadata from first 9 lines. Create a dataframe
+    text <- read_lines(filename, n_max=9)
+    
+    # Line 1: Extract the file name in the spu file as a check. Some file names have spaces 
+    spu_filename <- str_replace(text[1],".*[\\\\]([A-z0-9.]\\s*)","\\1") %>% # extract filename
+      str_replace("\"","") # removes trailing quote at end of line 
+    FileNum <- str_extract(spu_filename, "\\d{5}") %>% as.numeric() # from 5 digits in filename
+    
+    # Line 2: 
+    Remarks <- str_split(text[2], pattern = " ")[[1]] # split by "space"
+    ScanType <- str_split(Remarks[7], pattern = "=")[[1]][2] 
+    DarkscanID <- str_extract(text[2], "Dark=.+.spu")
+    Remarks <- text[2]
+    
+    # Line 3: 
+    DateTime <-  lubridate::mdy_hms(text[3], tz="America/Anchorage")
+    
+    # Line 4: Limits -- range of spectra measured
+    Limits <- str_extract(text[4], "\\d+.\\d.+\\d") 
+    
+    # Line 5: 
+    Temperature <- as.numeric(strsplit(strsplit(text[5], split = " ")[[1]][4], split="=")[[1]][2])
+    Battery <- str_extract(text[5], "BattV=\\d+.\\d+")
+    Aux <- str_extract(text[5], "A\\d=.+\\d")
+    
+    # Line 6-9: 
+    Minimum <- str_extract(text[6], "\\d+.+\\d") # Walvelength, ChB min
+    MinValue_nm <- str_split(Minimum, boundary("word"))[[1]][1] # Wavelength
+    MinValue <- str_split(Minimum, boundary("word"))[[1]][2] # ChB AD
+    
+    Maximum <- str_extract(text[7], "\\d+.+\\d") # Walvelength, ChB max
+    MaxValue <- str_split(Maximum, boundary("word"))[[1]][2]
+    MaxValue_nm <- str_split(Maximum, boundary("word"))[[1]][1]
+
+    Integration <- as.numeric(strsplit(text[8], split = " ")[[1]][3])
+    NumberScans <- str_extract(text[9], "\\d+")
+    
+    # Truncated Filename - use as SCANID to join to other dataframes
+    spu_filename <- unlist(str_split(filename, pattern = "/")) %>% last()
+    
+    # Metadata 
+    metadata <- tibble(spu_filename, DateTime, FileNum, ScanType, Integration, NumberScans,MinValue_nm, MinValue, MaxValue_nm, MaxValue, Limits, Temperature, Battery, Aux, DarkscanID, Remarks)
+
+  # Print filenames while reading 
+  print(spu_filename) # use for error checking
+  
+  return(metadata)
+}
+
+
+read_spu_file_spectra <- function(filename) {
+  # DESCRIPTION: For a generic .spu file regardless of name, extract spectral data
+  # INPUT: Unispec-DC .spu file
+  # OUTPUT: dataframe of spectral data with 3 columns Wavelength, ChB, ChA
+  
+  # Read spectral intensity data into dataframe
+  data <- read.table(file = filename, skip = 9, col.names = c("Wavelength", "ChB", "ChA"))
+  
+  return(data)
+}
+
+```
+
+
+
 ## Data directories, date and key files
 
   * Session_date in yyyy-mm-dd form.
@@ -55,7 +127,7 @@ if (!dir.exists(data_path) || !grepl(session_year,data_path)) {
 setwd(data_path)
 
 ## Field key file 
-field_key <- file.path(data_path,paste0(session_year,"_unispec_field_key.csv"))
+field_key <- file.path(data_path,paste0(session_year,"_unispec_coordinate_key.csv"))
 
 ## Check if file exist
 if (!file.exists(field_key)) {field_key <- rchoose.files(caption = "Select field key file")}
@@ -64,7 +136,8 @@ if (!file.exists(field_key)) {field_key <- rchoose.files(caption = "Select field
 
 ## Digitize Data Locally 
 
-### Read in spu_files 
+
+### Read .SPU files 
   
 ```{r}
 ## Make a character vector of all .spu raw files in current session date folder
@@ -837,41 +910,3 @@ unispec_problem_key %>%
 ```
 
 
-
-### Upload Index Data
-```{r}
-
-index_data_2019 <- read_rds("/home/ruby/UnispecR/UnispecRecord/UnispecData/2019/2019_index_data.rds") %>% 
-    unnest(Indices) %>% spread(Index, Value) %>% 
-    mutate(DOY = lubridate::yday(DateTime))
-
-## Make a character vector of all .spu raw files in folder
-index_files <- list.files(path = "/home/ruby/UnispecData/2019_unprocessed_unispec_data/", pattern = "index_data.rds$", full.names = T, recursive=T)
-
-# Read metadata text lines (9) from the spu files
-index_filedata.shiny <- map_dfr(index_files, read_rds) %>%  select(DateTime, Site, Block, Treatment, Replicate, FileNum, Indices) %>% 
-  unnest(Indices) %>% 
-  
-  # Spread Indices 
-  group_by_at(vars(-Value)) %>%  # WEIRD WORK AROUND FOR SPREADING PROBLEM: group by everything other than the value column. 
-  mutate(row_id=1:n()) %>% ungroup() %>%  # build group index
-  spread(Index, Value) %>% 
-  select(-row_id) %>%  # drop the index
-  
-  # Add the right dates 
-  select(DateTime, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2) %>% 
-  mutate(Year = lubridate::year(DateTime), Date = lubridate::date(DateTime), DOY = lubridate::yday(DateTime))
-
-index_data_2019.shiny <- index_data_2019 %>% 
-  select(DateTime, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2) %>% 
-  mutate(Year = lubridate::year(DateTime), Date = lubridate::date(DateTime), DOY = lubridate::yday(DateTime))
-
-index_data_2019.all.shiny <- bind_rows(index_data_2019.shiny, index_filedata.shiny) %>%  
-  mutate(Block = as.numeric(str_extract(Block, "\\d"))) %>% 
-  mutate(Replicate = as.character(Replicate))
-
-index_data_update <- index_data %>% bind_rows(index_data_2019.all.shiny)
-
-write_rds(index_data_update, "/home/ruby/UnispecR/Visualizations/shiny_unispec_cleaned/indices_2014-2019.updated.rds")
-
-```

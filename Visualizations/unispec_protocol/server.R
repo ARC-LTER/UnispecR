@@ -7,6 +7,7 @@
 #    http://shiny.rstudio.com/
 #
 
+library(tidyverse)
 library(shiny)
 
 ## Data 
@@ -26,7 +27,7 @@ trtmt_list <- list(CT, "N", "P", NP)
 np_colors <- RColorBrewer::brewer.pal(5, "YlGnBu")
 
 
-# Define server logic required to draw a histogram
+# Define server logic 
 shinyServer(function(input, output) {
     
     

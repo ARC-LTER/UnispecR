@@ -32,6 +32,10 @@ band_defns <- tribble(
 # FUNCTIONS ---------------------------------------------------------------
 
 read_spu_file_metadata <- function(filename) {
+  # DESCRIPTION: Reads in metadata from .spu files 
+  # Metadata frome filename -- based on file naming convention. This will differ for different years. 
+  # Metadata from first 9 rows of text in the .spu file 
+  
   
   ruby_year <- str_detect(filename, "2017|2018|2019")
   
@@ -398,7 +402,9 @@ calculate_indices <- function(spectra, band_defns, instrument = "MODIS", indices
   ##         band_defns : wavelengths definining colors 
   ##         instrument : e.g. MODIS, SKYE, ITEX
   ##         indicies   : the index to return 
-  ## output: dataframe with Index : Value
+  ## output: Index - name of vegetation index
+  ##         BandDefinition - name of "instrument" or spectral band definition used
+  ##         Value - value of index, with the band definition used. 
   
   bands <- band_defns %>% 
     filter(definition == instrument) 
@@ -421,7 +427,11 @@ calculate_indices <- function(spectra, band_defns, instrument = "MODIS", indices
            EVI = 2.5*((nir-red)/(nir+6*red-7.5*blue + 1)),
            EVI2 = 2.5*((nir-red)/(nir+2.4*red + 1))) %>% 
     select_at(indices) %>% 
-    gather(Index, Value, everything())
+    gather(Index, Value, everything()) %>% 
+    
+    # Add Spectral Band Definition convention
+    mutate(BandDefinition = instrument) %>% 
+    select(Index, BandDefinition, Value)
   
   return(index_data) 
 }
