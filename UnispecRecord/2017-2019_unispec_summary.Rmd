@@ -2,15 +2,14 @@
 title: "Unispec Notes & Summaries"
 author: "Ruby An"
 date: "5/4/2020"
-output: html_notebook
+output:
+  html_notebook
 params:
-  
-  
+  data_path: /home/ruby/UnispecData/2019/
   function_file: unispec_protocol_functions.R
-  session_date: 2019-06-08
-  data_path: "/home/ruby/UnispecData/2019/"
-editor_options: 
-  chunk_output_type: console
+  session_date: '2019-06-08'
+editor_options:
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +19,7 @@ library(rChoiceDialogs)
 library(knitr)
 
 knitr::opts_chunk$set(echo = TRUE)
-## use the params$data_path as starting folder
+## use the params$data_path as starting folder. DATA PATH should be to UNISPEC DATA folder. The files should be read-in from there. This should match the One-Drive file format. 
 data_path <- params$data_path
 
 ```
@@ -29,136 +28,165 @@ data_path <- params$data_path
 
 This is an R Markdown document. This document provides an overview of the Unispec Data collected by terrestrial RA Ruby An in 2017, 2018, and 2019. 
 
-#### Notes on 2017 Data Collection
+### Notes on 2017 Data Collection
 Unispec Data was collected approximately weekly. 
 
 On -- the XXX foreoptic broke (Ruby stepped on it). Look for inconsistenies here. 
 
-#### Notes on 2018 Data Collection
+#### 2017 Data File Descriptions
+
+### Notes on 2018 Data Collection
 Unispec data was collected when weather permitted, weekly if possible. The summer was exceptionally rainy and vegetation was often wet, restricting the possible sampling times. At the end of the season, silver circular tags were nailed to the boardwalk at each unispec location (where line-segment perpendicular to the edge of the plot hit the boardwalk). This location was determined by measuring with a string and measuring tape between the wooden stakes marking each 5m segment of the plot. 
 
 Drone data was collected in 2018 in conjunction with unispec measurements -----; however, this drone data turned out to be unusable due to a calibration error of the drone sensor. 
 
-#### Notes on 2019 Data Collection
+##### 2018 Data File Descriptions
+
+### Notes on 2019 Data Collection
 Unispec data was collected approximately weekly. The LMAT & MAT sites given highest priority, the historic and wet sedge least so. The Shrub sites were only unispec'd once  On ---- 15 scans were made per plot for comparison purposes. On ---- the default number of scans per plot was increased from 5 to 10 for all sites. It took a couple tries to land on "the most efficient" 10 spots to take the scans, so there is some variability over the course of the summe on where these "additional" measurements were made in each plot. By --- this was standardized. 
+
 
 #### 2019 Data File Descriptions
 The data collected in 2019 is saved in the following 4 files.  
 
-  1. 2019_raw_spu_data.rds
-  2. 2019_raw_spu_key.csv
-  3. 2019_processed_spu_data.rds
-  4. 2019_index_data.csv 
+  1. 2019_raw_spu_metadata.csv (instrument settings per .spu file)
+  2. 2019_raw_spu_data.rds (raw spectra)
+  3. 2019_processed_spu_data.rds (corrected spectra)
+  4. 2019_index_data.csv (calculated vegetation indices)
   
 Metadata correspondence key of scan (.spu file) to sample location. 
 
   5. 2019_unispec_coordinate_key.csv (no spu_filename column)
   6. 2019_unispec_file_key.csv (spu_filename column) 
   
-  
 Summary file for analysis
 
-  7. 2019_reflectance_summaries.rds
+  7. 2019_unispec_data_summary.rds
+  
 
-
-```{r load_data, echo=FALSE}
+```{r load_data, echo=FALSE, include =F}
+## Load 2019 data from files
 
 dir_year <- "2019"
 
-## Field Key 
-field_key <- paste0(data_path, "2019_updated_unispec_coordinate_key.csv")
-
-# frome google
-unispec_field_key <- read_sheet("https://docs.google.com/spreadsheets/d/1pgxU2FW7AjVFFokRF2SKjErp13DkgLbhOqZYBqbv2tA/edit#gid=1538721792")
-
-unispec_field_key <- read_csv(field_key, skip_empty_rows = T) %>%  ## remove NA rows 
-  mutate(Date = as.character(Date)) # to join with spu_dataframe, same type
-
-## File Key 
-file_key <- paste0(data_path, "2019_processed_unispec_file_key.csv")
-
-unispec_file_key <- read_csv(file_key, skip_empty_rows = T) %>%  ## remove NA rows 
-  mutate(Date = as.character(Date)) # to join with spu_dataframe, same type
-
 ## Raw Data
-raw_filename <- paste0(data_path, dir_year, "_raw_spectra.rds")
+raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
 spu_spectra <- read_rds(raw_filename)
-
-raw_keyname <- paste0(data_path, dir_year, "_raw_spectra_file_metadata.csv")
-spu_key <- read_csv(raw_keyname) # remove -spu_filename_full column for 2019 
+  
+# Raw Metadata  
+raw_keyname <- paste0(data_path, dir_year, "_raw_spu_metadata.csv")
+spu_key <- read_csv(raw_keyname) %>% mutate(DateTime = with_tz(DateTime, "US/Alaska")) 
 
 ## Processed Data
-processed_filename <- paste0(data_path, dir_year, "_processed_spectra.rds")
-processed_spectra <- read_rds(processed_filename)
+processed_filename <- paste0(data_path, dir_year, "_processed_spu_data.rds")
+processed_spectra <- read_rds(processed_filename) 
 
 ## Index Data
-index_filename <- paste0(data_path, dir_year, "_processed_veg-indices.csv")
-index_data <- read_csv(index_filename)
+index_filename <- paste0(data_path, dir_year, "_index_data.csv")
+index_data <- read_csv(index_filename) %>% mutate(DateTime = with_tz(DateTime, "US/Alaska"))
 
 
-## DATA SUMMARIES 
-spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
- # mutate(DateTime = lubridate::ymd_hms(DateTime, tz = "US/Alaska")) %>% 
-  mutate(Date = str_extract(spu_filename, pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}")) %>%  # from filename, not DateTime (sometimes discrepancy in unispec instrument time). Keep as character, to avoid joining errors w/other dataframes
-arrange(DateTime)
+## File Key 
+key_filename <- paste0(data_path, dir_year, "_unispec_file_key.csv")
 
-## Dataframe for analysis 
-df_analysis <- index_data %>% nest(Indices = c("Index", "BandDefinition", "Value")) %>% 
-  left_join(processed_spectra) %>% 
-  left_join(unispec_file_key) %>% arrange(DateTime)
+unispec_file_key <- read_csv(key_filename, skip_empty_rows = T)
 
-## Save dataframe
-# write_rds(df_analysis, "/home/ruby/UnispecData/2019/2019_reflectance_summaries.rds")
+## Summary File 
+df_analysis <- read_rds(paste0(data_path, dir_year,"_unispec_data_summary.rds"))
+```
 
-## Dataframe for Shiny Visualization
-(
-  shiny_dataframe <- index_data %>% 
-    select(-BandDefinition) %>% 
-    spread(Index, Value) %>% 
-    left_join(unispec_file_key) %>% 
-    
-    # Check for tag
-    filter(str_detect(ScanLocation, pattern = "[0-9]S")) %>% 
-    
-    # Format for shiny
-    rename(Replicate = ScanRep) %>% 
-    select(DateTime, Date, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2) %>% 
-    mutate(Year = lubridate::year(DateTime), 
-           Date = lubridate::ymd(Date), 
-           DOY = lubridate::yday(DateTime)) %>% 
-    rename(Time = DateTime) %>% 
-    mutate(Block = as.numeric(str_extract(Block, "\\d"))) %>% 
-    mutate(Replicate = as.character(Replicate)) %>% 
-    
-    # Standardize Site names
-    mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG", Site))  %>% 
-    mutate(Site = ifelse(Site %in% c("DHT"), "HTH", Site))
+#### 2019 Data File Summaries
+```{r, echo=F, message=F}
+## This chunk of code tallies the number of files in the raw, processed, and index data dataframes and displays the output in a table. 
 
-      
-)
-  
 ## Raw Data summary
-spu_dataframe %>%   group_by(Date, Site) %>%
-  summarize(Files = n_distinct(spu_filename)) %>%
-  kable()
+
+spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
+  mutate(DateTime = with_tz(DateTime, "US/Alaska")) %>% 
+  
+  # Add Date & ARC-LTER Site
+  mutate(Date = lubridate::date(DateTime)) %>% 
+  mutate(Site = str_extract(spu_filename, "([A-Z]{3,8}[0-9]*)(?=_)")) %>% # DOES NOT WORK FOR "MAT-SH" measurements
+  mutate(Site = ifelse(str_detect(spu_filename, "MAT-SH"), "MAT-SH", Site))
+
+raw_files <- spu_dataframe %>%   group_by(Date, Site) %>%
+  summarize(Raw_Files = n_distinct(spu_filename))
 
 ## Processed Data summary
-left_join(processed_spectra, spu_key) %>%   group_by(Date, Site) %>%
-  summarize(Files = n_distinct(spu_filename)) %>%
-  kable()
+processed_files <- left_join(processed_spectra, spu_key) %>%
+  
+  # Add Date & ARC-LTER Site
+  mutate(DateTime = with_tz(DateTime, "US/Alaska")) %>% 
+  mutate(Date = lubridate::date(DateTime)) %>% 
+  mutate(Site = str_extract(spu_filename, "([A-Z]{3,8}[0-9]*)(?=_)")) %>% # DOES NOT WORK FOR "MAT-SH" measurements
+  mutate(Site = ifelse(str_detect(spu_filename, "MAT-SH"), "MAT-SH", Site)) %>% 
+  
+  ## Summarize
+  group_by(Date, Site) %>%
+  summarize(Processed_Files = n_distinct(spu_filename))
 
 ## Index Data summary
-left_join(index_data, spu_key) %>%   group_by(Site, Date) %>% left_join(unispec_file_key %>% select(-Date)) %>%
-  summarize(Files = n_distinct(spu_filename), Blocks = str_c(sort(unique(Block)), collapse = ","), Treatments = str_c(sort(unique(Treatment)), collapse = ",")) %>% 
-  filter(Site == "HIST")
-  kable()
+index_files <- left_join(index_data, spu_key) %>%   
+  
+  # Add Date & ARC-LTER Site
+  mutate(DateTime = with_tz(DateTime, "US/Alaska")) %>% 
+  mutate(Date = lubridate::date(DateTime)) %>% 
+  mutate(Site = str_extract(spu_filename, "([A-Z]{3,8}[0-9]*)(?=_)")) %>% # DOES NOT WORK FOR "MAT-SH" measurements
+  mutate(Site = ifelse(str_detect(spu_filename, "MAT-SH"), "MAT-SH", Site)) %>% 
+  
+  ## Summarize
+  group_by(Date, Site) %>%
+  summarize(Index_Files = n_distinct(spu_filename))
+
+## DISPLAY
+kable(full_join(raw_files, processed_files) %>% full_join(index_files) %>% arrange(Date, Site) %>% 
+        # filter by things
+        filter(Site == "LMAT"))
+
+
+```
+
+
+
+Code chunks:
+
+  1. Correct Spectra
+  2. Calculate Indices
+  3. Format data for analyses / storage
+  4. Format data for visualization
   
 
-## Analysis dataframe summary
-df_analysis %>% group_by(Date, Site) %>% left_join(unispec_file_key %>% select(-Date)) %>% 
-  summarize(Files = n_distinct(spu_filename), Blocks = str_c(sort(unique(Block)), collapse = ","), Treatments = str_c(sort(unique(Treatment)), collapse = ",")) %>% 
-  kable()
+## Data for Shiny
+```{r, echo=F}
+## Subset of Data for Shiny Visualization
+# (
+#   shiny_dataframe <- index_data %>% 
+#     select(-BandDefinition) %>% 
+#     spread(Index, Value) %>% 
+#     left_join(unispec_file_key) %>% 
+#     
+#     # Check for tag
+#     filter(str_detect(ScanLocation, pattern = "[0-9]S")) %>% 
+#     
+#     # Format for shiny
+#     rename(Replicate = ScanRep) %>% 
+#     select(DateTime, Date, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2) %>% 
+#     mutate(Year = lubridate::year(DateTime), 
+#            # Date = lubridate::ymd(Date), 
+#            Date = 
+#            DOY = lubridate::yday(DateTime)) %>% 
+#     rename(Time = DateTime) %>% 
+#     mutate(Block = as.numeric(str_extract(Block, "\\d"))) %>% 
+#     mutate(Replicate = as.character(Replicate)) %>% 
+#     
+#     # Standardize Site names
+#     mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG", Site))  %>% 
+#     mutate(Site = ifelse(Site %in% c("DHT"), "HTH", Site))
+# 
+#       
+# )
 
+## Code for Randy 
 
 ```
 

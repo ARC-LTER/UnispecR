@@ -31,6 +31,7 @@ For now, I am assuming R corrected spectra and multispec corrected spectra are t
 Load historic unispec data (clean). 
 
 ```{r unispec_data}
+setwd("/home/ruby/UnispecR/UnispecRecord/")
 df_2014 <- read_rds("UnispecData/2014_unispec_dataframe_clean.rds") %>% 
   rename(raw_spectra = spu_spectra, 
          corrected_spectra = multispec_spectra)
@@ -41,6 +42,8 @@ df_2016 <- read_rds("UnispecData/2016_unispec_dataframe_clean.rds") %>%
            corrected_spectra = multispec_spectra)
 df_2017 <- read_rds("UnispecData/2017_unispec_dataframe_clean.rds") 
 df_2018 <- read_rds("UnispecData/2018_unispec_dataframe_clean.rds")
+
+df_2019 <- read_rds("UnispecData/2019_unispec_dataframe_clean.rds")
 
 
 ## Transform for problem check

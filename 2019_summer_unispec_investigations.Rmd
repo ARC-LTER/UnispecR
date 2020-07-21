@@ -323,11 +323,11 @@ band_defns <- tribble(
   "RapidSCAN", "red_edge", 730, 730, 
   "ToolikGIS_Drone_2018", "red", 640, 680,
   "ToolikGIS_Drone_2018", "nir", 820, 890,
-  "ToolikGIS_MicaSense_2019", "blue", 455, 495,
-  "ToolikGIS_MicaSense_2019", "green", 540, 580,
-  "ToolikGIS_MicaSense_2019", "red", 658, 678,
-  "ToolikGIS_MicaSense_2019", "red_edge", 707, 727,
-  "ToolikGIS_MicaSense_2019", "nir", 800, 880,
+  "MicaSense_2019", "blue", 455, 495,
+  "MicaSense_2019", "green", 540, 580,
+  "MicaSense_2019", "red", 658, 678,
+  "MicaSense_2019", "red_edge", 707, 727,
+  "MicaSense_2019", "nir", 800, 880,
   "ToolikEDC", "red", 560, 680,
   "ToolikEDC", "nir", 725, 1000
 )
@@ -378,5 +378,28 @@ drone_comp <- df_bands %>%
 
 write_csv(drone_comp, paste0(data_path, "LTER_UnispecData_2019-07-12_2019-07-15_LMAT_DHT.csv"))
 
+
+
+# Drone Data for Randy - June 2020 -----------------------------------------------------
+# Check for different spelling of site names
+
+data_path <- "/home/ruby/UnispecData/2019/"
+dir_year <- "2019"
+df_analysis <- read_rds(paste0(data_path, dir_year,"_unispec_data_summary.rds"))
+
+data <- df_analysis %>% filter(Site == "LMAT") %>% 
+  filter(Date > "2019-07-01") %>% 
+  filter(Date <= "2019-07-15") %>% 
+  filter(!(Treatment %in% c("REF", "DARK"))) %>% 
+  select(-Indices) %>% 
+  mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MicaSense_2019", indices = "NDVI")))
+
+
+data %>% select(Date, Site, Block, Treatment, ScanRep, Plot.x, Plot.y, Indices) %>% 
+  unnest(Indices) %>% 
+  select(-Index) %>% 
+  rename(NDVI = Value) %>% 
+  write_csv("2019-07-02-15_ ARC-LTER_LMAT_unispec-NDVI.csv")
+  
 ```
 

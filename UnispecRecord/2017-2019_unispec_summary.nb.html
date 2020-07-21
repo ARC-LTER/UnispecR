@@ -1757,28 +1757,33 @@ summary {
 <div id="description" class="section level2">
 <h2>Description</h2>
 <p>This is an R Markdown document. This document provides an overview of the Unispec Data collected by terrestrial RA Ruby An in 2017, 2018, and 2019.</p>
-<div id="notes-on-2017-data-collection" class="section level4">
-<h4>Notes on 2017 Data Collection</h4>
+<div id="notes-on-2017-data-collection" class="section level3">
+<h3>Notes on 2017 Data Collection</h3>
 <p>Unispec Data was collected approximately weekly.</p>
 <p>On – the XXX foreoptic broke (Ruby stepped on it). Look for inconsistenies here.</p>
+<div id="data-file-descriptions" class="section level4">
+<h4>2017 Data File Descriptions</h4>
 </div>
-<div id="notes-on-2018-data-collection" class="section level4">
-<h4>Notes on 2018 Data Collection</h4>
+</div>
+<div id="notes-on-2018-data-collection" class="section level3">
+<h3>Notes on 2018 Data Collection</h3>
 <p>Unispec data was collected when weather permitted, weekly if possible. The summer was exceptionally rainy and vegetation was often wet, restricting the possible sampling times. At the end of the season, silver circular tags were nailed to the boardwalk at each unispec location (where line-segment perpendicular to the edge of the plot hit the boardwalk). This location was determined by measuring with a string and measuring tape between the wooden stakes marking each 5m segment of the plot.</p>
 <p>Drone data was collected in 2018 in conjunction with unispec measurements —–; however, this drone data turned out to be unusable due to a calibration error of the drone sensor.</p>
+<div id="data-file-descriptions-1" class="section level5">
+<h5>2018 Data File Descriptions</h5>
 </div>
-<div id="notes-on-2019-data-collection" class="section level4">
-<h4>Notes on 2019 Data Collection</h4>
+</div>
+<div id="notes-on-2019-data-collection" class="section level3">
+<h3>Notes on 2019 Data Collection</h3>
 <p>Unispec data was collected approximately weekly. The LMAT &amp; MAT sites given highest priority, the historic and wet sedge least so. The Shrub sites were only unispec’d once On —- 15 scans were made per plot for comparison purposes. On —- the default number of scans per plot was increased from 5 to 10 for all sites. It took a couple tries to land on “the most efficient” 10 spots to take the scans, so there is some variability over the course of the summe on where these “additional” measurements were made in each plot. By — this was standardized.</p>
-</div>
-<div id="data-file-descriptions" class="section level4">
+<div id="data-file-descriptions-2" class="section level4">
 <h4>2019 Data File Descriptions</h4>
 <p>The data collected in 2019 is saved in the following 4 files.</p>
 <ol style="list-style-type: decimal">
-<li>2019_raw_spu_data.rds</li>
-<li>2019_raw_spu_key.csv</li>
-<li>2019_processed_spu_data.rds</li>
-<li>2019_index_data.csv</li>
+<li>2019_raw_spu_metadata.csv (instrument settings per .spu file)</li>
+<li>2019_raw_spu_data.rds (raw spectra)</li>
+<li>2019_processed_spu_data.rds (corrected spectra)</li>
+<li>2019_index_data.csv (calculated vegetation indices)</li>
 </ol>
 <p>Metadata correspondence key of scan (.spu file) to sample location.</p>
 <ol start="5" style="list-style-type: decimal">
@@ -1787,76 +1792,16 @@ summary {
 </ol>
 <p>Summary file for analysis</p>
 <ol start="7" style="list-style-type: decimal">
-<li>2019_reflectance_summaries.rds</li>
+<li>2019_unispec_data_summary.rds</li>
 </ol>
 <!-- rnb-text-end -->
+<!-- rnb-text-begin -->
+</div>
+<div id="data-file-summaries" class="section level4">
+<h4>2019 Data File Summaries</h4>
+<!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-output-begin eyJkYXRhIjoiUGFyc2VkIHdpdGggY29sdW1uIHNwZWNpZmljYXRpb246XG5jb2xzKFxuICBEYXRlID0gXHUwMDFiWzM0bWNvbF9kYXRlKGZvcm1hdCA9IFwiXCIpXHUwMDFiWzM5bSxcbiAgU2l0ZSA9IFx1MDAxYlszMW1jb2xfY2hhcmFjdGVyKClcdTAwMWJbMzltLFxuICBCbG9jayA9IFx1MDAxYlszMW1jb2xfY2hhcmFjdGVyKClcdTAwMWJbMzltLFxuICBUcmVhdG1lbnQgPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgU2NhblJlcCA9IFx1MDAxYlszMm1jb2xfZG91YmxlKClcdTAwMWJbMzltLFxuICBTY2FuTG9jYXRpb24gPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgUGxvdC54ID0gXHUwMDFiWzMybWNvbF9kb3VibGUoKVx1MDAxYlszOW0sXG4gIFBsb3QueSA9IFx1MDAxYlszMm1jb2xfZG91YmxlKClcdTAwMWJbMzltLFxuICBGaWxlTnVtID0gXHUwMDFiWzMybWNvbF9kb3VibGUoKVx1MDAxYlszOW0sXG4gIE5vdGVzID0gXHUwMDFiWzMxbWNvbF9jaGFyYWN0ZXIoKVx1MDAxYlszOW0sXG4gIFdlYXRoZXIgPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bVxuKVxuUGFyc2VkIHdpdGggY29sdW1uIHNwZWNpZmljYXRpb246XG5jb2xzKFxuICBzcHVfZmlsZW5hbWUgPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgRGF0ZSA9IFx1MDAxYlszNG1jb2xfZGF0ZShmb3JtYXQgPSBcIlwiKVx1MDAxYlszOW0sXG4gIFNpdGUgPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgQmxvY2sgPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgVHJlYXRtZW50ID0gXHUwMDFiWzMxbWNvbF9jaGFyYWN0ZXIoKVx1MDAxYlszOW0sXG4gIFNjYW5SZXAgPSBcdTAwMWJbMzJtY29sX2RvdWJsZSgpXHUwMDFiWzM5bSxcbiAgU2NhbkxvY2F0aW9uID0gXHUwMDFiWzMxbWNvbF9jaGFyYWN0ZXIoKVx1MDAxYlszOW0sXG4gIFBsb3QueCA9IFx1MDAxYlszMm1jb2xfZG91YmxlKClcdTAwMWJbMzltLFxuICBQbG90LnkgPSBcdTAwMWJbMzJtY29sX2RvdWJsZSgpXHUwMDFiWzM5bSxcbiAgRmlsZU51bSA9IFx1MDAxYlszMm1jb2xfZG91YmxlKClcdTAwMWJbMzltLFxuICBOb3RlcyA9IFx1MDAxYlszMW1jb2xfY2hhcmFjdGVyKClcdTAwMWJbMzltLFxuICBXZWF0aGVyID0gXHUwMDFiWzMxbWNvbF9jaGFyYWN0ZXIoKVx1MDAxYlszOW0sXG4gIFR5cGUgPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bVxuKVxuUGFyc2VkIHdpdGggY29sdW1uIHNwZWNpZmljYXRpb246XG5jb2xzKFxuICBzcHVfZmlsZW5hbWUgPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgRGF0ZVRpbWUgPSBcdTAwMWJbMzRtY29sX2RhdGV0aW1lKGZvcm1hdCA9IFwiXCIpXHUwMDFiWzM5bSxcbiAgU2l0ZSA9IFx1MDAxYlszMW1jb2xfY2hhcmFjdGVyKClcdTAwMWJbMzltLFxuICBGaWxlTnVtID0gXHUwMDFiWzMybWNvbF9kb3VibGUoKVx1MDAxYlszOW0sXG4gIERhdGUgPSBcdTAwMWJbMzRtY29sX2RhdGUoZm9ybWF0ID0gXCJcIilcdTAwMWJbMzltLFxuICBJbnRlZ3JhdGlvbl9tcyA9IFx1MDAxYlszMm1jb2xfZG91YmxlKClcdTAwMWJbMzltLFxuICBUZW1wID0gXHUwMDFiWzMybWNvbF9kb3VibGUoKVx1MDAxYlszOW0sXG4gIFJlbWFya3MgPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgVHlwZSA9IFx1MDAxYlszMW1jb2xfY2hhcmFjdGVyKClcdTAwMWJbMzltLFxuICBzcHVfZmlsZW5hbWVfZnVsbCA9IFx1MDAxYlszM21jb2xfbG9naWNhbCgpXHUwMDFiWzM5bVxuKVxuNDA3MSBwYXJzaW5nIGZhaWx1cmVzLlxuICByb3cgICAgICAgICAgICAgICBjb2wgICAgICAgICAgIGV4cGVjdGVkICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGFjdHVhbCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBmaWxlXG4yMzE0MiBzcHVfZmlsZW5hbWVfZnVsbCAxLzAvVC9GL1RSVUUvRkFMU0UgL1VzZXJzL3Rvb2xpay9PbmVEcml2ZSAtIE1hcmluZSBCaW9sb2dpY2FsIExhYm9yYXRvcnkvVG9vbGlrIFRlcnJlc3RyaWFsL1VuaXNwZWNEYXRhLzIwMTkvcmF3X3NwdV9maWxlcy8yMDE5LTA4LTEwX0hJU1RfMDAwMDAuc3B1ICcvaG9tZS9ydWJ5L1VuaXNwZWNEYXRhLzIwMTkvMjAxOV9yYXdfc3BlY3RyYV9maWxlX21ldGFkYXRhLmNzdidcbjIzMTQzIHNwdV9maWxlbmFtZV9mdWxsIDEvMC9UL0YvVFJVRS9GQUxTRSAvVXNlcnMvdG9vbGlrL09uZURyaXZlIC0gTWFyaW5lIEJpb2xvZ2ljYWwgTGFib3JhdG9yeS9Ub29saWsgVGVycmVzdHJpYWwvVW5pc3BlY0RhdGEvMjAxOS9yYXdfc3B1X2ZpbGVzLzIwMTktMDgtMTBfSElTVF8wMDAwMS5zcHUgJy9ob21lL3J1YnkvVW5pc3BlY0RhdGEvMjAxOS8yMDE5X3Jhd19zcGVjdHJhX2ZpbGVfbWV0YWRhdGEuY3N2J1xuMjMxNDQgc3B1X2ZpbGVuYW1lX2Z1bGwgMS8wL1QvRi9UUlVFL0ZBTFNFIC9Vc2Vycy90b29saWsvT25lRHJpdmUgLSBNYXJpbmUgQmlvbG9naWNhbCBMYWJvcmF0b3J5L1Rvb2xpayBUZXJyZXN0cmlhbC9VbmlzcGVjRGF0YS8yMDE5L3Jhd19zcHVfZmlsZXMvMjAxOS0wOC0xMF9ISVNUXzAwMDAyLnNwdSAnL2hvbWUvcnVieS9VbmlzcGVjRGF0YS8yMDE5LzIwMTlfcmF3X3NwZWN0cmFfZmlsZV9tZXRhZGF0YS5jc3YnXG4yMzE0NSBzcHVfZmlsZW5hbWVfZnVsbCAxLzAvVC9GL1RSVUUvRkFMU0UgL1VzZXJzL3Rvb2xpay9PbmVEcml2ZSAtIE1hcmluZSBCaW9sb2dpY2FsIExhYm9yYXRvcnkvVG9vbGlrIFRlcnJlc3RyaWFsL1VuaXNwZWNEYXRhLzIwMTkvcmF3X3NwdV9maWxlcy8yMDE5LTA4LTEwX0hJU1RfMDAwMDMuc3B1ICcvaG9tZS9ydWJ5L1VuaXNwZWNEYXRhLzIwMTkvMjAxOV9yYXdfc3BlY3RyYV9maWxlX21ldGFkYXRhLmNzdidcbjIzMTQ2IHNwdV9maWxlbmFtZV9mdWxsIDEvMC9UL0YvVFJVRS9GQUxTRSAvVXNlcnMvdG9vbGlrL09uZURyaXZlIC0gTWFyaW5lIEJpb2xvZ2ljYWwgTGFib3JhdG9yeS9Ub29saWsgVGVycmVzdHJpYWwvVW5pc3BlY0RhdGEvMjAxOS9yYXdfc3B1X2ZpbGVzLzIwMTktMDgtMTBfSElTVF8wMDAwNC5zcHUgJy9ob21lL3J1YnkvVW5pc3BlY0RhdGEvMjAxOS8yMDE5X3Jhd19zcGVjdHJhX2ZpbGVfbWV0YWRhdGEuY3N2J1xuLi4uLi4gLi4uLi4uLi4uLi4uLi4uLi4gLi4uLi4uLi4uLi4uLi4uLi4uIC4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLiAuLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uXG5TZWUgcHJvYmxlbXMoLi4uKSBmb3IgbW9yZSBkZXRhaWxzLlxuUGFyc2VkIHdpdGggY29sdW1uIHNwZWNpZmljYXRpb246XG5jb2xzKFxuICBzcHVfZmlsZW5hbWUgPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgRGF0ZVRpbWUgPSBcdTAwMWJbMzRtY29sX2RhdGV0aW1lKGZvcm1hdCA9IFwiXCIpXHUwMDFiWzM5bSxcbiAgSW5kZXggPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgQmFuZERlZmluaXRpb24gPSBcdTAwMWJbMzFtY29sX2NoYXJhY3RlcigpXHUwMDFiWzM5bSxcbiAgVmFsdWUgPSBcdTAwMWJbMzJtY29sX2RvdWJsZSgpXHUwMDFiWzM5bVxuKVxuSm9pbmluZywgYnkgPSBjKFwic3B1X2ZpbGVuYW1lXCIsIFwiRGF0ZVRpbWVcIilcbkpvaW5pbmcsIGJ5ID0gYyhcInNwdV9maWxlbmFtZVwiLCBcIkRhdGVUaW1lXCIpXG5Kb2luaW5nLCBieSA9IFwic3B1X2ZpbGVuYW1lXCJcbiJ9 -->
-<pre><code>Parsed with column specification:
-cols(
-  Date = [34mcol_date(format = &quot;&quot;)[39m,
-  Site = [31mcol_character()[39m,
-  Block = [31mcol_character()[39m,
-  Treatment = [31mcol_character()[39m,
-  ScanRep = [32mcol_double()[39m,
-  ScanLocation = [31mcol_character()[39m,
-  Plot.x = [32mcol_double()[39m,
-  Plot.y = [32mcol_double()[39m,
-  FileNum = [32mcol_double()[39m,
-  Notes = [31mcol_character()[39m,
-  Weather = [31mcol_character()[39m
-)
-Parsed with column specification:
-cols(
-  spu_filename = [31mcol_character()[39m,
-  Date = [34mcol_date(format = &quot;&quot;)[39m,
-  Site = [31mcol_character()[39m,
-  Block = [31mcol_character()[39m,
-  Treatment = [31mcol_character()[39m,
-  ScanRep = [32mcol_double()[39m,
-  ScanLocation = [31mcol_character()[39m,
-  Plot.x = [32mcol_double()[39m,
-  Plot.y = [32mcol_double()[39m,
-  FileNum = [32mcol_double()[39m,
-  Notes = [31mcol_character()[39m,
-  Weather = [31mcol_character()[39m,
-  Type = [31mcol_character()[39m
-)
-Parsed with column specification:
-cols(
-  spu_filename = [31mcol_character()[39m,
-  DateTime = [34mcol_datetime(format = &quot;&quot;)[39m,
-  Site = [31mcol_character()[39m,
-  FileNum = [32mcol_double()[39m,
-  Date = [34mcol_date(format = &quot;&quot;)[39m,
-  Integration_ms = [32mcol_double()[39m,
-  Temp = [32mcol_double()[39m,
-  Remarks = [31mcol_character()[39m,
-  Type = [31mcol_character()[39m,
-  spu_filename_full = [33mcol_logical()[39m
-)
-4071 parsing failures.
-  row               col           expected                                                                                                                            actual                                                             file
-23142 spu_filename_full 1/0/T/F/TRUE/FALSE /Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/raw_spu_files/2019-08-10_HIST_00000.spu '/home/ruby/UnispecData/2019/2019_raw_spectra_file_metadata.csv'
-23143 spu_filename_full 1/0/T/F/TRUE/FALSE /Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/raw_spu_files/2019-08-10_HIST_00001.spu '/home/ruby/UnispecData/2019/2019_raw_spectra_file_metadata.csv'
-23144 spu_filename_full 1/0/T/F/TRUE/FALSE /Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/raw_spu_files/2019-08-10_HIST_00002.spu '/home/ruby/UnispecData/2019/2019_raw_spectra_file_metadata.csv'
-23145 spu_filename_full 1/0/T/F/TRUE/FALSE /Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/raw_spu_files/2019-08-10_HIST_00003.spu '/home/ruby/UnispecData/2019/2019_raw_spectra_file_metadata.csv'
-23146 spu_filename_full 1/0/T/F/TRUE/FALSE /Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/raw_spu_files/2019-08-10_HIST_00004.spu '/home/ruby/UnispecData/2019/2019_raw_spectra_file_metadata.csv'
-..... ................. .................. ................................................................................................................................. ................................................................
-See problems(...) for more details.
-Parsed with column specification:
-cols(
-  spu_filename = [31mcol_character()[39m,
-  DateTime = [34mcol_datetime(format = &quot;&quot;)[39m,
-  Index = [31mcol_character()[39m,
-  BandDefinition = [31mcol_character()[39m,
-  Value = [32mcol_double()[39m
-)
-Joining, by = c(&quot;spu_filename&quot;, &quot;DateTime&quot;)
-Joining, by = c(&quot;spu_filename&quot;, &quot;DateTime&quot;)
-Joining, by = &quot;spu_filename&quot;</code></pre>
-<!-- rnb-output-end -->
-<p>
+
 <!-- rnb-html-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImtuaXRfYXNpcyJdLCJzaXppbmdQb2xpY3kiOltdfX0= -->
 
 <table>
@@ -1864,936 +1809,137 @@ Joining, by = &quot;spu_filename&quot;</code></pre>
 <tr class="header">
 <th align="left">Date</th>
 <th align="left">Site</th>
-<th align="right">Files</th>
+<th align="right">Raw_Files</th>
+<th align="right">Processed_Files</th>
+<th align="right">Index_Files</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td align="left">2019-06-02</td>
-<td align="left">LAB2</td>
-<td align="right">22</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-02</td>
 <td align="left">LMAT</td>
 <td align="right">246</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-02</td>
-<td align="left">MAT</td>
-<td align="right">122</td>
+<td align="right">244</td>
+<td align="right">239</td>
 </tr>
 <tr class="even">
-<td align="left">2019-06-08</td>
-<td align="left">DHT</td>
-<td align="right">171</td>
-</tr>
-<tr class="odd">
 <td align="left">2019-06-08</td>
 <td align="left">LMAT</td>
 <td align="right">50</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-08</td>
-<td align="left">WSG1</td>
-<td align="right">31</td>
+<td align="right">50</td>
+<td align="right">50</td>
 </tr>
 <tr class="odd">
-<td align="left">2019-06-11</td>
-<td align="left">EDC</td>
-<td align="right">16</td>
-</tr>
-<tr class="even">
 <td align="left">2019-06-11</td>
 <td align="left">LMAT</td>
 <td align="right">186</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-11</td>
-<td align="left">MAT</td>
-<td align="right">100</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-11</td>
-<td align="left">SHB2</td>
-<td align="right">26</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-11</td>
-<td align="left">WSG23</td>
-<td align="right">46</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-15</td>
-<td align="left">DHT</td>
-<td align="right">171</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-15</td>
-<td align="left">HIST</td>
-<td align="right">46</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-15</td>
-<td align="left">MNAT</td>
-<td align="right">90</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-15</td>
-<td align="left">NANT</td>
-<td align="right">66</td>
+<td align="right">185</td>
+<td align="right">180</td>
 </tr>
 <tr class="even">
 <td align="left">2019-06-18</td>
 <td align="left">LMAT</td>
 <td align="right">558</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-18</td>
-<td align="left">MAT</td>
-<td align="right">307</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-18</td>
-<td align="left">WSG1</td>
-<td align="right">60</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-19</td>
-<td align="left">WSG23</td>
-<td align="right">101</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-20</td>
-<td align="left">MNAT</td>
-<td align="right">255</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-20</td>
-<td align="left">NANT</td>
-<td align="right">191</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-21</td>
-<td align="left">DHT</td>
-<td align="right">244</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-22</td>
-<td align="left">DHT</td>
-<td align="right">146</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-22</td>
-<td align="left">HIST</td>
-<td align="right">203</td>
+<td align="right">556</td>
+<td align="right">546</td>
 </tr>
 <tr class="odd">
 <td align="left">2019-06-24</td>
 <td align="left">LMAT</td>
 <td align="right">40</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
 </tr>
 <tr class="even">
-<td align="left">2019-06-26</td>
-<td align="left">COMP</td>
-<td align="right">113</td>
-</tr>
-<tr class="odd">
 <td align="left">2019-06-26</td>
 <td align="left">LMAT</td>
 <td align="right">186</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-26</td>
-<td align="left">MAT</td>
-<td align="right">226</td>
+<td align="right">186</td>
+<td align="right">181</td>
 </tr>
 <tr class="odd">
 <td align="left">2019-06-27</td>
 <td align="left">LMAT</td>
 <td align="right">159</td>
+<td align="right">155</td>
+<td align="right">150</td>
 </tr>
 <tr class="even">
-<td align="left">2019-06-27</td>
-<td align="left">MNAT</td>
-<td align="right">131</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-02</td>
-<td align="left">DHT</td>
-<td align="right">171</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-02</td>
-<td align="left">HIST</td>
-<td align="right">131</td>
-</tr>
-<tr class="odd">
 <td align="left">2019-07-02</td>
 <td align="left">LMAT</td>
 <td align="right">306</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-02</td>
-<td align="left">LMATEDC</td>
-<td align="right">9</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-02</td>
-<td align="left">MAT</td>
-<td align="right">231</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-02</td>
-<td align="left">MAT-SH</td>
-<td align="right">38</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-04</td>
-<td align="left">MNAT</td>
-<td align="right">131</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-04</td>
-<td align="left">NANT</td>
-<td align="right">140</td>
+<td align="right">305</td>
+<td align="right">290</td>
 </tr>
 <tr class="odd">
 <td align="left">2019-07-06</td>
 <td align="left">LMAT</td>
 <td align="right">76</td>
+<td align="right">75</td>
+<td align="right">70</td>
 </tr>
 <tr class="even">
-<td align="left">2019-07-06</td>
-<td align="left">LMATEDC</td>
-<td align="right">3</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-06</td>
-<td align="left">WSG1</td>
-<td align="right">56</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-08</td>
-<td align="left">MAT</td>
-<td align="right">22</td>
-</tr>
-<tr class="odd">
 <td align="left">2019-07-09</td>
 <td align="left">LMAT</td>
 <td align="right">286</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-09</td>
-<td align="left">LMATEDC</td>
-<td align="right">6</td>
+<td align="right">285</td>
+<td align="right">280</td>
 </tr>
 <tr class="odd">
-<td align="left">2019-07-09</td>
-<td align="left">MAT</td>
-<td align="right">227</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-12</td>
-<td align="left">DHT</td>
-<td align="right">191</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-12</td>
-<td align="left">HIST</td>
-<td align="right">131</td>
-</tr>
-<tr class="even">
 <td align="left">2019-07-12</td>
 <td align="left">LMAT</td>
 <td align="right">91</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-12</td>
-<td align="left">MNAT</td>
-<td align="right">131</td>
+<td align="right">90</td>
+<td align="right">70</td>
 </tr>
 <tr class="even">
-<td align="left">2019-07-15</td>
-<td align="left">DHT</td>
-<td align="right">26</td>
-</tr>
-<tr class="odd">
 <td align="left">2019-07-15</td>
 <td align="left">LMAT</td>
 <td align="right">51</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-15</td>
-<td align="left">TEST</td>
-<td align="right">94</td>
+<td align="right">50</td>
+<td align="right">40</td>
 </tr>
 <tr class="odd">
 <td align="left">2019-07-18</td>
 <td align="left">LMAT</td>
 <td align="right">292</td>
+<td align="right">290</td>
+<td align="right">280</td>
 </tr>
 <tr class="even">
-<td align="left">2019-07-18</td>
-<td align="left">MAT</td>
-<td align="right">226</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-22</td>
-<td align="left">MNAT</td>
-<td align="right">51</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-22</td>
-<td align="left">NANT</td>
-<td align="right">45</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-23</td>
-<td align="left">DHT</td>
-<td align="right">201</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-23</td>
-<td align="left">HIST</td>
-<td align="right">131</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-23</td>
-<td align="left">WSG23</td>
-<td align="right">86</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-24</td>
-<td align="left">MAT</td>
-<td align="right">226</td>
-</tr>
-<tr class="odd">
 <td align="left">2019-07-25</td>
 <td align="left">LMAT</td>
 <td align="right">291</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-25</td>
-<td align="left">LMAT-EDC</td>
-<td align="right">6</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-30</td>
-<td align="left">MNAT</td>
-<td align="right">141</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-30</td>
-<td align="left">NANT</td>
-<td align="right">135</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-31</td>
-<td align="left">DHT</td>
-<td align="right">77</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-31</td>
-<td align="left">HIST</td>
-<td align="right">46</td>
+<td align="right">290</td>
+<td align="right">280</td>
 </tr>
 <tr class="odd">
 <td align="left">2019-07-31</td>
 <td align="left">LMAT</td>
 <td align="right">81</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-31</td>
-<td align="left">MAT</td>
-<td align="right">62</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-31</td>
-<td align="left">WSG1</td>
-<td align="right">61</td>
+<td align="right">80</td>
+<td align="right">70</td>
 </tr>
 <tr class="even">
 <td align="left">2019-08-02</td>
 <td align="left">LMAT</td>
 <td align="right">291</td>
+<td align="right">290</td>
+<td align="right">280</td>
 </tr>
 <tr class="odd">
-<td align="left">2019-08-02</td>
-<td align="left">LMATEDC</td>
-<td align="right">6</td>
-</tr>
-<tr class="even">
-<td align="left">2019-08-02</td>
-<td align="left">MAT</td>
-<td align="right">226</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-08-05</td>
-<td align="left">DHT</td>
-<td align="right">206</td>
-</tr>
-<tr class="even">
 <td align="left">2019-08-07</td>
 <td align="left">LMAT</td>
 <td align="right">290</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-08-07</td>
-<td align="left">MAT</td>
-<td align="right">226</td>
+<td align="right">290</td>
+<td align="right">280</td>
 </tr>
 <tr class="even">
-<td align="left">2019-08-07</td>
-<td align="left">MNAT</td>
-<td align="right">131</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-08-10</td>
-<td align="left">HIST</td>
-<td align="right">131</td>
-</tr>
-<tr class="even">
-<td align="left">2019-08-16</td>
-<td align="left">DHT</td>
-<td align="right">226</td>
-</tr>
-<tr class="odd">
 <td align="left">2019-08-16</td>
 <td align="left">LMAT</td>
 <td align="right">347</td>
-</tr>
-<tr class="even">
-<td align="left">2019-08-16</td>
-<td align="left">LMATEDC</td>
-<td align="right">6</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-08-16</td>
-<td align="left">MAT</td>
-<td align="right">344</td>
-</tr>
-<tr class="even">
-<td align="left">2019-08-16</td>
-<td align="left">MNAT</td>
-<td align="right">172</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-08-16</td>
-<td align="left">NANT</td>
-<td align="right">131</td>
-</tr>
-</tbody>
-</table>
-
-
-<!-- rnb-html-end -->
- <!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBjKFwic3B1X2ZpbGVuYW1lXCIsIFwiU2l0ZVwiLCBcIkJsb2NrXCIsIFwiVHJlYXRtZW50XCIsIFwiU2NhblJlcFwiLCBcIlNjYW5Mb2NhdGlvblwiLCBcIlBsb3QueFwiLCBcIlBsb3QueVwiLCBcIkZpbGVOdW1cIiwgXCJOb3Rlc1wiLCBcIldlYXRoZXJcIiwgXCJUeXBlXCIpXG4ifQ== --></p>
-<pre><code>Joining, by = c(&quot;spu_filename&quot;, &quot;Site&quot;, &quot;Block&quot;, &quot;Treatment&quot;, &quot;ScanRep&quot;, &quot;ScanLocation&quot;, &quot;Plot.x&quot;, &quot;Plot.y&quot;, &quot;FileNum&quot;, &quot;Notes&quot;, &quot;Weather&quot;, &quot;Type&quot;)</code></pre>
-<!-- rnb-output-end -->
-
-<!-- rnb-html-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImtuaXRfYXNpcyJdLCJzaXppbmdQb2xpY3kiOltdfX0= -->
-
-<table>
-<colgroup>
-<col width="4%" />
-<col width="2%" />
-<col width="2%" />
-<col width="20%" />
-<col width="70%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left">Date</th>
-<th align="left">Site</th>
-<th align="right">Files</th>
-<th align="left">Blocks</th>
-<th align="left">Treatments</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">2019-06-02</td>
-<td align="left">LAB2</td>
-<td align="right">15</td>
-<td align="left">B1</td>
-<td align="left">DRYAS,GROUND,SALIX</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-02</td>
-<td align="left">LMAT</td>
-<td align="right">239</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH,GH-CT</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-02</td>
-<td align="left">MAT</td>
-<td align="right">116</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,GH_CT,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-08</td>
-<td align="left">DHT</td>
-<td align="right">165</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT1,CT2,EXCT-LF,EXCT-NF,EXCT-SF,EXNP-LF,EXNP-NF,EXNP-SF,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-08</td>
-<td align="left">LMAT</td>
-<td align="right">50</td>
-<td align="left">B1</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH,GH-CT,NH4,NO3</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-08</td>
-<td align="left">WSG1</td>
-<td align="right">25</td>
-<td align="left">B1</td>
-<td align="left">CT1,CT2,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-11</td>
-<td align="left">LMAT</td>
-<td align="right">180</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT,NH4,NO3</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-11</td>
-<td align="left">MAT</td>
-<td align="right">100</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-11</td>
-<td align="left">SHB2</td>
-<td align="right">20</td>
-<td align="left">B2</td>
-<td align="left">CT1,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-11</td>
-<td align="left">WSG23</td>
-<td align="right">40</td>
-<td align="left">B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-15</td>
-<td align="left">DHT</td>
-<td align="right">165</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT1,CT2,EXCT-LF,EXCT-NF,EXCT-SF,EXNP-LF,EXNP-NF,EXNP-SF,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-15</td>
-<td align="left">HIST</td>
-<td align="right">40</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,NP</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-15</td>
-<td align="left">MNAT</td>
-<td align="right">90</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,L,N,NP,P,S</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-15</td>
-<td align="left">NANT</td>
-<td align="right">60</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-18</td>
-<td align="left">LMAT</td>
-<td align="right">546</td>
-<td align="left">B1,B2,B3,B4,MAT-EDC</td>
-<td align="left">4-1,4-2,4-3,5-1,5-2,5-3,CT,F0.5,F1,F10,F2,F5,GH-CT,NH4,NO3</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-18</td>
-<td align="left">MAT</td>
-<td align="right">300</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-18</td>
-<td align="left">WSG1</td>
-<td align="right">50</td>
-<td align="left">B1</td>
-<td align="left">CT1,CT2,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-19</td>
-<td align="left">WSG23</td>
-<td align="right">80</td>
-<td align="left">B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-20</td>
-<td align="left">MNAT</td>
-<td align="right">240</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,L,N,NP,P,S</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-20</td>
-<td align="left">NANT</td>
-<td align="right">180</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-21</td>
-<td align="left">DHT</td>
-<td align="right">232</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT1,CT2,EXCT-LF,EXCT-NF,EXCT-SF,EXNP-LF,EXNP-NF,EXNP-SF,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-22</td>
-<td align="left">DHT</td>
-<td align="right">109</td>
-<td align="left">B3</td>
-<td align="left">CT1,CT2,EXCT-LF,EXCT-NF,EXCT-SF,EXNP-LF,EXNP-NF,EXNP-SF,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-22</td>
-<td align="left">HIST</td>
-<td align="right">175</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,NP</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-26</td>
-<td align="left">COMP</td>
-<td align="right">107</td>
-<td align="left">Heath,Shrub,Tussock</td>
-<td align="left">ITEX_BOARDWALK -1,ITEX_BOARDWALK -2,ITEX_BOARDWALK -3,LMAT_B2_CT_EDC 2-1,LMAT_B2_CT_EDC 2-2,LMAT_B2_CT_EDC 2-3,LMAT_B2_CT_plot,LMAT_B2_F10_10m,LMAT_B2_F10_15m,LMAT_B2_F10_5m,LMAT_B2_F10_plot</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-26</td>
-<td align="left">LMAT</td>
-<td align="right">181</td>
-<td align="left">B3,B4</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT,NH4,NO3</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-26</td>
-<td align="left">MAT</td>
-<td align="right">220</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-06-27</td>
-<td align="left">LMAT</td>
-<td align="right">150</td>
-<td align="left">B1,B2</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT,NO3</td>
-</tr>
-<tr class="even">
-<td align="left">2019-06-27</td>
-<td align="left">MNAT</td>
-<td align="right">120</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-02</td>
-<td align="left">DHT</td>
-<td align="right">165</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT1,CT2,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-02</td>
-<td align="left">HIST</td>
-<td align="right">120</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,NP</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-02</td>
-<td align="left">LMAT</td>
-<td align="right">290</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT,NH4</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-02</td>
-<td align="left">MAT</td>
-<td align="right">220</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-02</td>
-<td align="left">MAT-SH</td>
-<td align="right">32</td>
-<td align="left">B2</td>
-<td align="left">CT1,NP,SH-CT,SH-NP</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-04</td>
-<td align="left">MNAT</td>
-<td align="right">120</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-04</td>
-<td align="left">NANT</td>
-<td align="right">130</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,green-grass,N,NP,P,yellowed-grass</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-06</td>
-<td align="left">LMAT</td>
-<td align="right">70</td>
-<td align="left">B1</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-06</td>
-<td align="left">WSG1</td>
-<td align="right">45</td>
-<td align="left">B1</td>
-<td align="left">CT1,CT2,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-08</td>
-<td align="left">MAT</td>
-<td align="right">15</td>
-<td align="left">B2</td>
-<td align="left">EXNP-NF,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-09</td>
-<td align="left">LMAT</td>
-<td align="right">280</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-09</td>
-<td align="left">MAT</td>
-<td align="right">220</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-12</td>
-<td align="left">DHT</td>
-<td align="right">180</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT1,CT2,EXCT-NF,EXCT-SF,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-12</td>
-<td align="left">HIST</td>
-<td align="right">120</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,NP</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-12</td>
-<td align="left">LMAT</td>
-<td align="right">70</td>
-<td align="left">B1,B1-EDC</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-12</td>
-<td align="left">MNAT</td>
-<td align="right">120</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-15</td>
-<td align="left">DHT</td>
-<td align="right">20</td>
-<td align="left">B3</td>
-<td align="left">CT2,NP</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-15</td>
-<td align="left">LMAT</td>
-<td align="right">40</td>
-<td align="left">B3,B4</td>
-<td align="left">CT,F10</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-15</td>
-<td align="left">TEST</td>
-<td align="right">80</td>
-<td align="left">BLOCKED-FOREOPTIC,CABLE-COMPARE,CABLE-MOTION,CABLE-NDVI</td>
-<td align="left">ChA,ChA-ChB,ChA-new,ChA-old,ChB</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-18</td>
-<td align="left">LMAT</td>
-<td align="right">280</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-18</td>
-<td align="left">MAT</td>
-<td align="right">220</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-22</td>
-<td align="left">MNAT</td>
-<td align="right">40</td>
-<td align="left">B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-22</td>
-<td align="left">NANT</td>
-<td align="right">40</td>
-<td align="left">B1</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-23</td>
-<td align="left">DHT</td>
-<td align="right">195</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT1,CT2,EXCT-NF,EXCT-SF,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-23</td>
-<td align="left">HIST</td>
-<td align="right">120</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,NP</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-23</td>
-<td align="left">WSG23</td>
-<td align="right">80</td>
-<td align="left">B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-24</td>
-<td align="left">MAT</td>
-<td align="right">220</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-25</td>
-<td align="left">LMAT</td>
-<td align="right">280</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-30</td>
-<td align="left">MNAT</td>
-<td align="right">120</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-30</td>
-<td align="left">NANT</td>
-<td align="right">120</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-31</td>
-<td align="left">DHT</td>
-<td align="right">65</td>
-<td align="left">B3</td>
-<td align="left">CT1,CT2,EXCT-LF,EXCT-SF,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-31</td>
-<td align="left">HIST</td>
-<td align="right">40</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,NP</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-31</td>
-<td align="left">LMAT</td>
-<td align="right">70</td>
-<td align="left">B1</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT</td>
-</tr>
-<tr class="even">
-<td align="left">2019-07-31</td>
-<td align="left">MAT</td>
-<td align="right">55</td>
-<td align="left">B2</td>
-<td align="left">CT1,CT2,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-07-31</td>
-<td align="left">WSG1</td>
-<td align="right">50</td>
-<td align="left">B1</td>
-<td align="left">CT1,CT2,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-08-02</td>
-<td align="left">LMAT</td>
-<td align="right">280</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-08-02</td>
-<td align="left">MAT</td>
-<td align="right">220</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="even">
-<td align="left">2019-08-05</td>
-<td align="left">DHT</td>
-<td align="right">195</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT1,CT2,EXCT-NF,EXCT-SF,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-08-07</td>
-<td align="left">LMAT</td>
-<td align="right">280</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT,F0.5,F1,F10,F2,F5,GH-CT</td>
-</tr>
-<tr class="even">
-<td align="left">2019-08-07</td>
-<td align="left">MAT</td>
-<td align="right">220</td>
-<td align="left">B1,B2,B3,B4</td>
-<td align="left">CT1,CT2,EXNP-NF,N,NP,P</td>
-</tr>
-<tr class="odd">
-<td align="left">2019-08-07</td>
-<td align="left">MNAT</td>
-<td align="right">120</td>
-<td align="left">B1,B2,B3</td>
-<td align="left">CT,N,NP,P</td>
+<td align="right">346</td>
+<td align="right">320</td>
 </tr>
 </tbody>
 </table>
@@ -2803,11 +1949,39 @@ Joining, by = &quot;spu_filename&quot;</code></pre>
 
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>Code chunks:</p>
+<ol style="list-style-type: decimal">
+<li>Correct Spectra</li>
+<li>Calculate Indices</li>
+<li>Format data for analyses / storage</li>
+<li>Format data for visualization</li>
+</ol>
+</div>
+</div>
+</div>
+<div id="data-for-shiny" class="section level2">
+<h2>Data for Shiny</h2>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-output-begin eyJkYXRhIjoiW1sxXV1cbiJ9 -->
+<pre><code>[[1]]</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibmNvbCI6NSwibnJvdyI6MTgwfSwicmRmIjoiSDRzSUFBQUFBQUFBQTExWkNWaE5heGRPSlJXdWhNaVVlNDJoSkxOa2hhUXJSS1l1b2pRWW9yb0pvVFNYNWtRbDBhQzVUblVhVUlwYlNmTTVwS2hNRFpyT1BwMkV1SWJvMzFuTC8vK1A4enpuZWZkNjE3dUc3OXZmOTUyOXkwRGJjSkdzb2F5WW1KaUVtSVFVK3gzS1hvb04zYmxEUjJXNW1KaWtPR3NNRVpNVWt4bEVlMVkwWnRETGZuOWp2emxhWjJaVXN4K2UxcG05aXdZL1dtY3Vock9mcTFwbnlnZXppR21kNlVmLzJVWG9QM3NFL1djakxRWS9XbWZyMEg5dU9QclByVUgvdVZQb1A4Y2gvMnYwTzB6QXZBNWIwTy9nam42SFBJeHo2RVcvNHl6ME8xSmZqdFNYSS9YbFNIMmRwNzdPVTEvbnFhL3oxSmVURFBKT1doam5SSDA1cFdLY1V3djZuVWVnMzVucU90TTRuUGNSZnhyMXp0U0hNNDNMbWZweGJxVzRiK2gzb1hHNlVIOHVtNGsvakhFdTd1U25mbDFvL0M1MXhML0JPRmZxMzVYdWt5c1F2d2ZqWE8ySUQ4STQxeFRpSDFCY00vRmZNYzV0SFBKdWFoam5wa2U4QmNhNU9STi9EZVBjYmhIL2lQaHU1TjJsa0hmL0hmTzVyeUorTitaei81dDRQNHh6VHlTK2lQZ1h4UCtMdkljODV2T1lqN3pIQnVJUEV1OUEvQldzNDVGRmZEWHhYY2g3aWlQdk9SbDV6K1hFR3hCL2pQZ0x4Tjhndm9ENEJ1TGZJZTgxQW5tdk9jaDdyU1YrSC9IMnhBY1RUK3ZDaTlhRkY2MExMMXF2RjhianVDNm9JMzloRS9HSGlIZkIrYmx3amZqYnhOY1FUL1B2UFF4NWI1cC9iNXAvNzEyWTE1dm0zOXVQK0FUaUN6R3Y5M09LLzRpOGp4enlQdk9ROTFtUDhUN0dHTzl6anZnUTRybkVWMUo4RzhVUG9NNTNJdksraTVIMzFTZWU5cWt2clg5Zld2Kyt1YVNqOWUvYmc3eWZOUEorMHpIZVR4UGovUXhSNTJkTE9scG5mclRPL0dpZCtkRTY4Nk4xNWo4YWVmLzVHTyt2Zy9IK3hxanpwM0g2MHpqOWFaeitORTUvR3FjL2pUTkFFWFVCaTFFWFFPZGFBTzN6QURmU1hTZGRMdWtlazY0YmRZRjBQd1BwZmdiaS9menZPVzIvZzg1Sk9sZWNsZWdjQ0tMMVQvUGtSZnZQbTg0SG4yU2E3NWRVbi94QmpZakJkQTVjc2tHOGZBUHpoN2dpaG9vaEg2cEF0Z2JHaGM1RURPbEJmMGdUOFhUZlEzMnhYcGdFOFo4d1BvenloWVdoLzBvSjZzTnZJWC8xTXVvaWFKNnVVNzNJZU5SSDBUNkwzb0Q2bVBHSU43U1FqejJLK2pnZjFNZkhvei9CRS9uRTdaZzNhUmJhU2QvUVRrNURmUXJ0eTVSOVpKOG1PNFF3RVBVcGJ1US9TcmlDZUhHMGs1MHBmenJWYlNmY2lIa1NhUDRUYk1nZVEvM2VRejZlOWwyOE5HTGNDOVRGM1NlYmZpL2lVc2pPcEhHM1U5eFl5cWVDY2ZFVHlNL2dmTVNGazYxTzhTTUpWMUVkYTdKcFg4VkZrNzZBOEJYcG1xbVBmT3A3Tm8yTGgzSEp0STQ0TjVEUCtJQnhtYlRmczgzUm4vTUk4V1pseHcvL0xUb2ZiaHNvL3NpZnV3RXhiMzMyanp4My9zUzYrVk13VDM0YzZ2UGZZSHpCY05UbHR4SE93ZnA1aXVpL1NYMWw1U05tUzJQK20rZFFmOXZmK1FlZlMvczRsL1p4THAzL3Qybi8zbDVML1VaZzNDMEp5bk5zMDQrNG5CcU15NW1CdXV5ZGFHZnRSWDNtVnVTNWp0aEh4aGVhcDFPWVAyTUMxazh2SWFSOWxiNEZkV25Qa0UrYmhYck9UUFNuRHFQMU9CWDVaSHZVSmVVaG4xaUttUENVa003RitEMTBQeU9RajIxQU81Yk91UnU3a1kreHdIelIybWhIMGpsLzdTTDJGZUdCZVBVa1l2aHh4Q3ZuYWYvVE9ScEc1MC9JSzh4ektRZ3g2QWpxZmRjaFhxRGZONjlSYUh2dVFOc2pBTWZuVHM5ZDdvWEl1OU4rZHE5Q3ZRZlY4ZkFsTzRwd0dqMkgwUHk0OVJMUy9uTk54L3d1OUZ6ZzNJZCtwMTYwSGRFdjl2T2M1ajlIL3ZGb1hEOTFGbWcvYlVlN2NjbVBCcldlcTZMOW9oajlMNk9SZjZXUDJEemlSd05hTFR1MWZtRHJlZFM5UG81MjIycjB0MlVpMzFhRytkb3VSeU1hTlNNT1JmNTFCUEt2TnlQL2VqV2g0VFJFRTZ6NytnL00xOXFJL3RaZWlqZWkrdG1rRTFFZld6RytyUkh0ZGdQVXRaL0crUGJyR044eERlTTZ1ckNQeml6VWR4M0NlSUVFamtkZ2pIR0NSRUlSNW1NV1lCeHpBSG5HRk9PWlZaaFgwSTkxQkxjb2p6NWlGNC9xQUdKbkd1bzZGNkRkRVV4OTFoRFM3M2piQzh6YjVrUGpYRTd6SktMeFI1SzlFYkgxSStwYU16Ri9xd1BXYndYVXQ0b2p0alNndjZXSzdBcXMyL0lBNDF1eU1GOEwxVzNSUUx1WjRwbzVoSG1ZdjdtVy9NMllwN2tQNTZsbEZPV2ZTZldra1crbTlkSnNRM2xpcWQ1SXFtZUtlVnNDVU5jU1IvNXI1RGVodXE4SkRURnYwd2ZNMXhTRGRac2lVTjlFNDJ4NlQvNUdzdVBJMWtYZHF6emtYMFloLzN3bFlyMEordXZzQ1JPeHI2ZVY2RzhJUm14Y2ovN0dKZWh2b04vSmhqR0k5ZlQ3L05RWWRVOUMwSzVyeDdwMXk1Q3Y5VVg3Y1FWaVRSdnFIcjFIKzVFcTRrTnpyTXQvakg3K05yUjVkSjd5ek5DdTdrQzdHaENyNk55cXBQZVNpaEdvSzErQWRsazAycVgwWEZKSzQzbmdUeWlOL2hKNmY3bi9tWkRxRlZjUVRrVXMwa0lzbklkNDczZlVGOUQ3WGI0UDRoMDd4RHg2cnM1MVFyeGRTMGpQblRjZkltWTdJM0p0RUZQUElpWkZJeWJ1UjB5Z3ZQSEV4OU80NHhqQ1o0VDBmQmkvbEpET3U1L1BRWEgwUEJqYlNrajkzS0Q1akxGQ2pLYStJdWw5OEJyRlhjWDNJREU2cDZHelBTajJ3YnlOMENVcSs5UEs2UVVJd2kzdU5JNVhBMEdYYjVTNWNod3dreC9wYjM2NUE1Z3QzdmtLTThLQTJlOGVGUGNvRWhqWDhKS1BEV2VBU1g3RnRaUXdBU1pMZHVqNjJVdUJ5WkNyMWhXOEFxYSswRm5SNFNRSXBmeDA2a1dmUVRpaHRWNXpvUmtJcHg4cmxoTVBCZUhjK2JVdXA2eEFxT3A3SnZkSkZ3am5mZjBqeFU0UmhFdVRQRFNOam9Od1k1MmU1YjI3SU55ZmxCeXoweFNFWmxzUGNNWnNCT0ZldmJ1cHlqd1FicTFmdlRaSEc0UzZaVGxQUkhvZ1hQUzMxS09HQVdEK3RiT1N1eWNQVEZ6WG9WRXVRNEE1SGZMUDFISWJZQTRjaEhTbHI4Qm9CeWIweStrQU0vMkw4dXQyWldBbUNNNEdWc3dFWnRGNC9mZTlWNEE1dkxIWGNrb1ZNRkdpWmdkNUkyQjRkZTM3bDdKOWo5d1h0VkZpQ1FqWGJTdjExSGdQUW92M0crV2ZzbjI0UnFmd2x5V0NNR0tIdi9VTFhSREdEYVQyWlhxRE1HTk1PZVJZZ3ZEbTdsV2J2em1Da0J1WHMyaTJQQWlqZXNlMmQ1V0IwTmxVcVY3a0JVS3Qza2xPWGNiQWRHNVIzbkpxS3pCSHBIZi8xYXdQZ201SkZaaitGQVIyYm4xVGwzSkFvRDZ5UWVXME1naGtvdnVMMzJXRFlPSzRNVzRIR2tIdzF4V3VoWUluQ0tvbDh0c1hqUVZHdVg3K3pxMHJnWEU1OU50eEZmWStQWlZOajcvMUJvUmpydHBhYVZhejgzcC9hOWp4WUJDYWx0c0h0dWF6R0tlMC80NDlDSGM5dFB3N2JCRUkxMzdScUlXWklOVG9hTmFkeXdlaG10MjNDTDBRRU01dTlOZ2Y2d2xDQlpsOVZXTEdJQnpQRFZtelJnMkVrOTgrVVZaZzQ2ZTFjckpNdDdKK2FETlkwUVpDY2FlYjVjcXF3RENjbUNGK3ZjRGtKMm1MMlpjQmMzbTArcFNvU2NCNEZUZkgzdjhYbU1pOVJUS3lKNEFwandyMEY3d0VvZVNhUFRlbEd0bjcydUV2eUF3QVlmd2RQZStGRzBENFFiM25vY1lONkI0NWQ2eFUweVlRZGdTdUZGdkpCV0cydk82c1JEOFEycllVL0NWYkNzSlptWkxoOXdHWWFwbWJlb2QyQVdOZGthRU83SDJlVmI1RmpXY0hnbjlqVkcyL080RGdxVVI0eFdnM0VPUjdyUm5sT3g0RUdVeHprNGNzaTI3bHFwdXVnT0Qyb3dzRFhsd1FGQW9YbFVpRXN2cFp5eGFVc1B2aVJXbEIwVVo1RURSTGxWL1dWd2RCUjVLdnAwczlDUHFNdHFZOUZ3R3p4RC9tbVA5UVlEaTZxeHNFZndCVEZXS1FPcTBhbUoxWEpXZDlZdWREN29WUmVMNGVNS05kMjV2T3NldHpqTitjN1paS3dFZ3g3YjFlVmlEb2ZHcG05MVlLQk1WR1V3NlY3Z0pCeW13ejNiNXBJQWcrL2Z4N29SSUlBdXhURng4cEFzRWxxNTdxcFd6ZktUNm1DNTNNUU1ETE0xR1Qzd09NeE5heVhRRnNuVlZ2WHBiY0dBNk0xVE9ad28zcXdQaWMxLzM5K2poZ1FoTXNwamF5KytQU0psZmZLbmJkZVljbWRGZHZCOGIyZEdOSDVBWmdka3dJVkR0aEI4eGlSVTJEaTlyQWpMWElydFBrQWlNdU9xVjNrbDFuL1plN0xzN2JESXhDZW5OZ0lKdEg3Y1M0Zjdoc1hrUFYxcTFaSG14K3hkdDVDU3oyZlhqcys1QmRCMXUyenN5YVh3UEN4SWU2dTlzbVFQY3dwVTdqRmMrZ2UvOG1kZFdHbDlBZCs1a3B5R21CN21hSjFrbE5jaUFhWnhsdldGOERvZzNydDN4N25BSWl1eDFHS3Rmc1FaVGExL0tPVndxaTBpSGp6MzFwQnRIajRQSU9nOFVnRWl4cyt2MWxNdlNNNnRUTTBFbUZIdVg5VnhSOGwwTFBRbU05STRPVDBMTnU3NFpWa1hyUXMybVk5VTFGWGVnNTNteFR2Y0lHZXE3dHo5S00yUWc5QmErWDNNcjlDRDJ4K2hyL0J2T2c1OXpLWW8remR0RGpYREJqb2tzSjlGenRtakp6eVFQb0NaRTBPclRPRm5vNFUvYmJjMlZaL1IrZVlrc25Rbys3OGN2ZFMzWkN6d0hPd3UyanAwQ1BodmlEY0I4OUVIMmFheXVkc3dCRXhSZGMyNVYyZytpd2JJSmhaeU9JWkc3emE5NVpRSGYyRUprRFNuZWgyMHppVksxUERYUXJCTTdZa002ZUkyWFB1emQva1FSaFdOc29WUldqLzU3VHdRMnkwKzhYVk1BbEU1TSsrZk1aY0ZuRFB0VHltaitFaUl2RmF6OG9ncENLc09DLzdEUWdOTFMxY21YVUZBZ0QvZDR2U2pzaDdQa3VsUm5zT3IzaU5pYThnRDFId2xkTmp4MTNVaHpDZThlWDYxWWVoS3VIdUlWVFZxeUJpT0VPQWZxUnd5QWlVbE5mbGxrSzE1YjRtam8vTW9acjl3dFBaTnVId2ZWNVhyNXJnajdEOWFRcW5ZczJsUkNwbU53Qmplc2gwbXZOMm84eUxSQWxIaFhzL1ZnQm9rNmVYZnY3ZkMrSWFsVVBLcGY3Qk5ITFRFeExneFVoMnZqeUZvMGw2eUg2U21qSzhMUnRFRjNGZmZlaCt4M0V5SzQrR0x4NEk4U3M5NTIxcWFnU1lrSlAvODM5V2dveDNaT2xENGUwd0kzdCtua09ZNGJCamFLQ3ZHY3h5UkM3cm5iN3NsM2JJZmIxbzdtRzhhWVFkMUUyZE50U1hZamYwN3J3dll3UUV1WXFtRGVtSkVQQ3V6ZHFqU1Z4a0hoYjRlejRHWjZRZERSNFFDdW5INUlWNVJybHBOb2h1WERFNnRwdDB5SGxxS0R3eGJwMlNQa3k0dDVhOXp1UTZtZ2k4THpuQnFsRjlvMTlveWNBUjl4T3pPMkpOSEJVZHJSSW5iUURqc2JJSklIbENoWWZOcTZzbHdTTzVwM1p4dHFyZ0tNbXJGKytJd280MmpObnlIOFJCNDd1M2ZMOThwT0FZeFlZMVg4aUN6Z1hRN056ckd1QlU1MFRGc1MxaHJTSmwvWEhmdG9IYVVmM3JuMTdaaDZrM2JGLzV4czBDZExGZlQ2OG5mc0cwbGNyYWY5bTRBL3B4djE1S1R1M1Ezb1FaOFN5cjQ4aFBlZTBZNnJxTTBqLzhES2lYdW96Wkt6K2ZrelplZzFrZUdiVXJZd1NRRWFyL29IMWw5S0FPK0xhNTg2U1E4Q2R3WG03YzkxNzRDcEx4WGxiUmdKWFJXcEg4ZXhNNEtyZFduUEkvVHVMM0tZNjYzZkFYYUNrZnJSR0Viano5MTFwanJ3TDNPa2w1aWVEbW9BN0syeGV4QXNGVnBjOWUvUHNJY0RWY1ZEc20zc1p1RFpQaFltOWI0R2I2K0d2azM4QU11ZVphSmxOZkFDWi9WeWRsNmVySVh1RjNjQ2Jnd2FRODBvdnQydGVHZHppZThYRkxvaUUzSDZkbTgrMGt5QmZ4MjFNNGxkanVPdjJXMEhEMmtqNEowbWphTTZtMlZEWTVCRHVwSzBJUmEyYnFxd2Zmb2JpWjNwNmFTNEg0ZjQvM3k2VnlaVkFpYy9JYll2UHY0SUhxL1p1ZVJLd0hCN1VYbnpRMHhFTXBYK2RuVEx5U0F5VVBvelk5cVZlRjhvV2xIN2NySlVPWlk3V25MVHAzNkhzWHRyelV6VVRvVXkwdW96dmFRemxrN2RjVmpuL0Jjb1BLNzdYdUhvZnlqTjFacGtNVTREeXgvKzB0WVdyUVBuWEFXblZpMWVoUWxXUmQ3QmlBVlRzdlI1K25HY05GVTcvU0MrdlZZT0tHd1ozL0VjK2dRcWU0ZTcrUmtlbzZObHRPV2VnRGlySGR2L2R3SVJDNVNMSmp2ZE1PVlR1V2xUbzZ0c0ZsU2ZpVitoSzdvRksvOVhGdFY0Q3FNemMrMUhsRG12ekprYysvZnNsVlBhazNEb1EvZ2RVU2F2dktiNW5EVlV6em83TTJIQU1xdFo4ZDY3ZG5BaFZSdjJmRy9VT1FOVzVBZkV6MFZ1ZzZ0bzZTM243U1ZDVk5UWHh1OGwwcUtvNWZ6MURyUUNxdXFPNmNnMWVRYlhzOEhOL0xoTkJ0Y29rVzJmdFMxQ3Q4VWx6YnVvQnFONDVSSC8rMSsxUWZVcmxrUTM3aUZFZDVIaW56NVRGaERNcnJ1aklRUFY5QjQ3ZWhzOVF6Wno4cXBTZUNUenBQL1FmQnN3QjNsUUZyU0dXeGNCYitkdXdCN3ZOZ0xlenYwVGhkQnJ3VHNROENlbzhDVHl2REs3RjFYRGdSUmRaN2x1dEE3ekNSMkUzTlhjQXIxWTBaVTc3Y09DTEwxTjhJdGNGL0ZGSmg3VnliZ0VmT3IwdWJQb0kvRzNWOTdqcGtzQTNuQ2M2bFprRGZMUFhlLzNQR0FIZjVNOFg2eTlxQXYvQXR1Z1NpU0RnYThudFV0WVdBNzdHdHh2eVR3NERYNzhpUmJIQkQvaUh1aDYzMzVzUGZCM09xa1hidHdGL2QvaTM2elo1d0QvS0M3WU1WMlB6cEYyVXFMb0xmSWYyaVBiZXljQzMzVjZubjJrSS9NdG1IWVo5Q2NBUExIby9maHdQK0hHcmF6NURHdkJ2dnVGMTZySzZMSVBmcCtsMkE3ODRxT2ExR2xzdm03bHc3MzAyOEd2NlI3VXRjd1IrMjl1S2xWTEt3RzhVcHU1VnQvM2xINHhEclV5T201OWdMK1FHRFNKbGQ1dWNNajltYm5YSTdqQXhFdXNPci8zZjVScTZsRnRuYld0cmJtcDN4TnBLeDhUVXp0cVcrT0VHNWhiSFdON0V5dFQ4bDNveXR0YW5WWC9XSFB3THB2amc0Ly9Bd01DbVh4c3pQV1p5NG1kalAwbFpNeE03RTFVTFd6YWV0YjcvRWpMTTJtYXdGVFpJZlBBZFVtb3c0SWNiUC8rZmFJanRMOFNvazFhRFhabXBtQjQrYVdXcG92NUw3RWk2enZtLzY2RllYbnlBVWtsUktrbHowOFBXZEMzRlR1SVJLL09mWXpwbWN0RDhHQm0vc1RQeFl5SlViV3lQV05uOUhDSExubEMxczdZeithbVROYlUrOXBQNU1XYXg3LzhCaHEyd0swRWVBQUE9In0= -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["Wavelength"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["ChB"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["ChA"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["CorrectionFactor"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["Reflectance"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"402.3","2":"389.3","3":"15798","4":"0.7467731","5":"0.01840225"},{"1":"405.7","2":"449.5","3":"18502","4":"0.7790257","5":"0.01892617"},{"1":"409.1","2":"515.9","3":"20888","4":"0.7999757","5":"0.01975811"},{"1":"412.5","2":"594.1","3":"23446","4":"0.8096369","5":"0.02051545"},{"1":"415.8","2":"673.1","3":"25815","4":"0.8160173","5":"0.02127683"},{"1":"419.2","2":"746.9","3":"27834","4":"0.8220872","5":"0.02205996"},{"1":"422.6","2":"811.3","3":"29448","4":"0.8240378","5":"0.02270245"},{"1":"425.9","2":"853.2","3":"30339","4":"0.8284425","5":"0.02329764"},{"1":"429.3","2":"891.7","3":"31039","4":"0.8332361","5":"0.02393752"},{"1":"432.7","2":"970.9","3":"32867","4":"0.8342333","5":"0.02464348"},{"1":"436.1","2":"1078.3","3":"35498","4":"0.8338703","5":"0.02532994"},{"1":"439.4","2":"1164.2","3":"37872","4":"0.8388369","5":"0.02578617"},{"1":"442.8","2":"1244.2","3":"39786","4":"0.8445493","5":"0.02641101"},{"1":"446.2","2":"1320.5","3":"41459","4":"0.8467879","5":"0.02697082"},{"1":"449.5","2":"1376.5","3":"42376","4":"0.8480743","5":"0.02754801"},{"1":"452.9","2":"1408.2","3":"42556","4":"0.8488983","5":"0.02809048"},{"1":"456.3","2":"1413.5","3":"42149","4":"0.8494317","5":"0.02848636"},{"1":"459.6","2":"1422.8","3":"41711","4":"0.8491188","5":"0.02896421"},{"1":"463.0","2":"1417.3","3":"41004","4":"0.8504222","5":"0.02939477"},{"1":"466.4","2":"1403.7","3":"40157","4":"0.8528844","5":"0.02981283"},{"1":"469.7","2":"1399.8","3":"39535","4":"0.8553050","5":"0.03028344"},{"1":"473.1","2":"1414.6","3":"39415","4":"0.8559954","5":"0.03072158"},{"1":"476.5","2":"1442.9","3":"39617","4":"0.8548945","5":"0.03113631"},{"1":"479.8","2":"1472.8","3":"39694","4":"0.8536183","5":"0.03167252"},{"1":"483.2","2":"1470.0","3":"39184","4":"0.8526343","5":"0.03198684"},{"1":"486.6","2":"1472.2","3":"38607","4":"0.8500295","5":"0.03241416"},{"1":"489.9","2":"1509.9","3":"38788","4":"0.8427069","5":"0.03280404"},{"1":"493.3","2":"1585.1","3":"39656","4":"0.8326303","5":"0.03328128"},{"1":"496.6","2":"1645.7","3":"40350","4":"0.8270978","5":"0.03373370"},{"1":"500.0","2":"1701.0","3":"40810","4":"0.8241435","5":"0.03435109"},{"1":"503.4","2":"1774.0","3":"41601","4":"0.8208693","5":"0.03500450"},{"1":"506.7","2":"1870.8","3":"42698","4":"0.8168917","5":"0.03579187"},{"1":"510.1","2":"1961.4","3":"43664","4":"0.8155410","5":"0.03663435"},{"1":"513.5","2":"2020.6","3":"43967","4":"0.8187367","5":"0.03762684"},{"1":"516.8","2":"2083.9","3":"44268","4":"0.8252310","5":"0.03884745"},{"1":"520.2","2":"2187.9","3":"45318","4":"0.8320226","5":"0.04016908"},{"1":"523.5","2":"2336.2","3":"46917","4":"0.8376259","5":"0.04170901"},{"1":"526.9","2":"2485.1","3":"48530","4":"0.8453811","5":"0.04328985"},{"1":"530.2","2":"2629.3","3":"49977","4":"0.8519677","5":"0.04482219"},{"1":"533.6","2":"2770.9","3":"51227","4":"0.8563172","5":"0.04631872"},{"1":"537.0","2":"2883.1","3":"51975","4":"0.8596958","5":"0.04768810"},{"1":"540.3","2":"2985.5","3":"52543","4":"0.8627112","5":"0.04901936"},{"1":"543.7","2":"3091.1","3":"53096","4":"0.8638914","5":"0.05029333"},{"1":"547.0","2":"3198.5","3":"53629","4":"0.8651217","5":"0.05159693"},{"1":"550.4","2":"3286.8","3":"54015","4":"0.8658863","5":"0.05268898"},{"1":"553.7","2":"3353.2","3":"54042","4":"0.8653129","5":"0.05369097"},{"1":"557.1","2":"3374.3","3":"53734","4":"0.8632737","5":"0.05421045"},{"1":"560.5","2":"3387.7","3":"53220","4":"0.8594223","5":"0.05470622"},{"1":"563.8","2":"3402.7","3":"52659","4":"0.8516770","5":"0.05503335"},{"1":"567.2","2":"3399.5","3":"51835","4":"0.8407355","5":"0.05513804"},{"1":"570.5","2":"3393.8","3":"50794","4":"0.8253214","5":"0.05514383"},{"1":"573.9","2":"3381.3","3":"49658","4":"0.8100606","5":"0.05515844"},{"1":"577.2","2":"3356.5","3":"48492","4":"0.7954731","5":"0.05506074"},{"1":"580.6","2":"3329.3","3":"47482","4":"0.7873601","5":"0.05520741"},{"1":"583.9","2":"3264.1","3":"46231","4":"0.7824254","5":"0.05524247"},{"1":"587.3","2":"3159.1","3":"44687","4":"0.7844339","5":"0.05545472"},{"1":"590.6","2":"3058.6","3":"43424","4":"0.7921871","5":"0.05579825"},{"1":"594.0","2":"2981.2","3":"42726","4":"0.8061541","5":"0.05624928"},{"1":"597.3","2":"2924.6","3":"42066","4":"0.8176075","5":"0.05684341"},{"1":"600.7","2":"2872.2","3":"41409","4":"0.8282962","5":"0.05745206"},{"1":"604.0","2":"2825.8","3":"40814","4":"0.8386281","5":"0.05806330"},{"1":"607.4","2":"2783.1","3":"40177","4":"0.8461430","5":"0.05861315"},{"1":"610.7","2":"2736.0","3":"39505","4":"0.8528763","5":"0.05906770"},{"1":"614.1","2":"2692.0","3":"38834","4":"0.8559306","5":"0.05933370"},{"1":"617.4","2":"2670.2","3":"38284","4":"0.8559132","5":"0.05969751"},{"1":"620.8","2":"2657.5","3":"37859","4":"0.8543470","5":"0.05997060"},{"1":"624.1","2":"2652.8","3":"37374","4":"0.8519260","5":"0.06046956"},{"1":"627.5","2":"2645.0","3":"36886","4":"0.8510622","5":"0.06102748"},{"1":"630.8","2":"2648.6","3":"36548","4":"0.8496652","5":"0.06157445"},{"1":"634.1","2":"2674.5","3":"36446","4":"0.8486145","5":"0.06227348"},{"1":"637.5","2":"2698.3","3":"36431","4":"0.8464400","5":"0.06269246"},{"1":"640.8","2":"2710.7","3":"36394","4":"0.8466418","5":"0.06305962"},{"1":"644.2","2":"2700.1","3":"36241","4":"0.8472833","5":"0.06312601"},{"1":"647.5","2":"2677.4","3":"35922","4":"0.8477643","5":"0.06318702"},{"1":"650.9","2":"2636.6","3":"35289","4":"0.8464660","5":"0.06324329"},{"1":"654.2","2":"2585.0","3":"34500","4":"0.8440550","5":"0.06324296"},{"1":"657.6","2":"2566.5","3":"34148","4":"0.8411468","5":"0.06321902"},{"1":"660.9","2":"2590.2","3":"34251","4":"0.8354074","5":"0.06317691"},{"1":"664.2","2":"2615.5","3":"34457","4":"0.8305746","5":"0.06304576"},{"1":"667.6","2":"2630.4","3":"34567","4":"0.8290724","5":"0.06308884"},{"1":"670.9","2":"2640.1","3":"34725","4":"0.8318309","5":"0.06324310"},{"1":"674.3","2":"2654.1","3":"34942","4":"0.8369901","5":"0.06357551"},{"1":"677.6","2":"2671.2","3":"35116","4":"0.8442694","5":"0.06422179"},{"1":"680.9","2":"2672.3","3":"34885","4":"0.8526490","5":"0.06531558"},{"1":"684.3","2":"2653.6","3":"34184","4":"0.8639804","5":"0.06706817"},{"1":"687.6","2":"2707.6","3":"33668","4":"0.8736815","5":"0.07026197"},{"1":"691.0","2":"2918.9","3":"34073","4":"0.8766070","5":"0.07509547"},{"1":"694.3","2":"3265.0","3":"34922","4":"0.8718945","5":"0.08151696"},{"1":"697.6","2":"3665.1","3":"35611","4":"0.8656093","5":"0.08908890"},{"1":"701.0","2":"4090.7","3":"35952","4":"0.8577737","5":"0.09759943"},{"1":"704.3","2":"4536.8","3":"36129","4":"0.8484731","5":"0.10654468"},{"1":"707.6","2":"4965.0","3":"36066","4":"0.8374070","5":"0.11528103"},{"1":"711.0","2":"5328.0","3":"35595","4":"0.8261460","5":"0.12366079"},{"1":"714.3","2":"5578.9","3":"34587","4":"0.8172342","5":"0.13182027"},{"1":"717.6","2":"5764.0","3":"33477","4":"0.8114782","5":"0.13971863"},{"1":"721.0","2":"5970.1","3":"32726","4":"0.8073748","5":"0.14728681"},{"1":"724.3","2":"6215.1","3":"32391","4":"0.8041416","5":"0.15429659"},{"1":"727.6","2":"6469.7","3":"32365","4":"0.8027243","5":"0.16046301"},{"1":"731.0","2":"6729.6","3":"32559","4":"0.8026751","5":"0.16590444"},{"1":"734.3","2":"6941.8","3":"32718","4":"0.8036883","5":"0.17051909"},{"1":"737.6","2":"7076.0","3":"32615","4":"0.8047997","5":"0.17460562"},{"1":"741.0","2":"7151.9","3":"32402","4":"0.8073913","5":"0.17821065"},{"1":"744.3","2":"7179.7","3":"32033","4":"0.8082002","5":"0.18114554"},{"1":"747.6","2":"7140.7","3":"31463","4":"0.8085970","5":"0.18351551"},{"1":"751.0","2":"6952.2","3":"30334","4":"0.8094065","5":"0.18550657"},{"1":"754.3","2":"6425.9","3":"27882","4":"0.8110797","5":"0.18692765"},{"1":"757.6","2":"5506.0","3":"23941","4":"0.8190373","5":"0.18836386"},{"1":"761.0","2":"4795.0","3":"20961","4":"0.8335305","5":"0.19067692"},{"1":"764.3","2":"4872.1","3":"21148","4":"0.8373515","5":"0.19290997"},{"1":"767.6","2":"5499.7","3":"23338","4":"0.8229494","5":"0.19393157"},{"1":"770.9","2":"6029.5","3":"25162","4":"0.8145582","5":"0.19519031"},{"1":"774.3","2":"6248.8","3":"25877","4":"0.8146376","5":"0.19671938"},{"1":"777.6","2":"6275.2","3":"25812","4":"0.8148862","5":"0.19810839"},{"1":"780.9","2":"6210.4","3":"25356","4":"0.8133444","5":"0.19921101"},{"1":"784.2","2":"6098.4","3":"24652","4":"0.8095505","5":"0.20026621"},{"1":"787.6","2":"5954.9","3":"23780","4":"0.8049760","5":"0.20157913"},{"1":"790.9","2":"5787.7","3":"22913","4":"0.8020207","5":"0.20258610"},{"1":"794.2","2":"5635.1","3":"22100","4":"0.7991294","5":"0.20376354"},{"1":"797.5","2":"5484.3","3":"21399","4":"0.7986415","5":"0.20468198"},{"1":"800.9","2":"5329.2","3":"20701","4":"0.7992472","5":"0.20575568"},{"1":"804.2","2":"5156.9","3":"20015","4":"0.8020679","5":"0.20665422"},{"1":"807.5","2":"4949.2","3":"19239","4":"0.8063628","5":"0.20743546"},{"1":"810.8","2":"4699.7","3":"18320","4":"0.8129047","5":"0.20853757"},{"1":"814.2","2":"4432.9","3":"17359","4":"0.8199386","5":"0.20938452"},{"1":"817.5","2":"4221.0","3":"16571","4":"0.8260317","5":"0.21040853"},{"1":"820.8","2":"4093.1","3":"16075","4":"0.8294059","5":"0.21118764"},{"1":"824.1","2":"4027.2","3":"15780","4":"0.8308899","5":"0.21205068"},{"1":"827.4","2":"3980.4","3":"15523","4":"0.8304808","5":"0.21295148"},{"1":"830.8","2":"3938.4","3":"15276","4":"0.8292955","5":"0.21380579"},{"1":"834.1","2":"3909.8","3":"15049","4":"0.8264732","5":"0.21472156"},{"1":"837.4","2":"3879.1","3":"14796","4":"0.8227656","5":"0.21570628"},{"1":"840.7","2":"3821.4","3":"14462","4":"0.8188597","5":"0.21637328"},{"1":"844.0","2":"3731.2","3":"13992","4":"0.8149904","5":"0.21733077"},{"1":"847.4","2":"3602.8","3":"13424","4":"0.8128574","5":"0.21815871"},{"1":"850.7","2":"3459.5","3":"12825","4":"0.8120827","5":"0.21905654"},{"1":"854.0","2":"3343.2","3":"12382","4":"0.8152689","5":"0.22012656"},{"1":"857.3","2":"3260.4","3":"12097","4":"0.8184143","5":"0.22058013"},{"1":"860.6","2":"3164.5","3":"11770","4":"0.8232645","5":"0.22134415"},{"1":"863.9","2":"3043.0","3":"11370","4":"0.8308228","5":"0.22235654"},{"1":"867.3","2":"2923.0","3":"11034","4":"0.8424024","5":"0.22315952"},{"1":"870.6","2":"2824.8","3":"10769","4":"0.8533097","5":"0.22383037"},{"1":"873.9","2":"2733.3","3":"10512","4":"0.8642346","5":"0.22471579"},{"1":"877.2","2":"2637.5","3":"10226","4":"0.8758697","5":"0.22590518"},{"1":"880.5","2":"2540.3","3":"9929","4":"0.8865109","5":"0.22681073"},{"1":"883.8","2":"2444.8","3":"9619","4":"0.8950166","5":"0.22748068"},{"1":"887.1","2":"2347.5","3":"9277","4":"0.9023456","5":"0.22833419"},{"1":"890.5","2":"2227.4","3":"8833","4":"0.9088648","5":"0.22918663"},{"1":"893.8","2":"2082.0","3":"8279","4":"0.9149500","5":"0.23009131"},{"1":"897.1","2":"1933.2","3":"7713","4":"0.9204504","5":"0.23070332"},{"1":"900.4","2":"1828.3","3":"7324","4":"0.9272408","5":"0.23146837"},{"1":"903.7","2":"1761.3","3":"7050","4":"0.9304204","5":"0.23244674"},{"1":"907.0","2":"1693.3","3":"6772","4":"0.9319548","5":"0.23302998"},{"1":"910.3","2":"1627.3","3":"6488","4":"0.9347162","5":"0.23444260"},{"1":"913.6","2":"1567.7","3":"6271","4":"0.9394413","5":"0.23485284"},{"1":"916.9","2":"1529.2","3":"6099","4":"0.9425500","5":"0.23632521"},{"1":"920.2","2":"1484.2","3":"5912","4":"0.9435274","5":"0.23687133"},{"1":"923.6","2":"1399.5","3":"5583","4":"0.9457222","5":"0.23706578"},{"1":"926.9","2":"1252.0","3":"4992","4":"0.9467809","5":"0.23745386"},{"1":"930.2","2":"1050.3","3":"4208","4":"0.9509127","5":"0.23734401"},{"1":"933.5","2":"872.4","3":"3517","4":"0.9565881","5":"0.23728390"},{"1":"936.8","2":"775.5","3":"3152","4":"0.9605576","5":"0.23633007"},{"1":"940.1","2":"737.9","3":"2991","4":"0.9574352","5":"0.23620577"},{"1":"943.4","2":"714.5","3":"2874","4":"0.9525427","5":"0.23680993"},{"1":"946.7","2":"689.8","3":"2768","4":"0.9532147","5":"0.23754607"},{"1":"950.0","2":"671.7","3":"2716","4":"0.9564095","5":"0.23653176"},{"1":"953.3","2":"664.0","3":"2677","4":"0.9556906","5":"0.23704839"},{"1":"956.6","2":"661.7","3":"2669","4":"0.9585101","5":"0.23763437"},{"1":"959.9","2":"665.4","3":"2684","4":"0.9574139","5":"0.23735590"},{"1":"963.2","2":"678.1","3":"2715","4":"0.9536595","5":"0.23818655"},{"1":"966.5","2":"689.4","3":"2751","4":"0.9491788","5":"0.23786400"},{"1":"969.8","2":"691.9","3":"2736","4":"0.9447035","5":"0.23890363"},{"1":"973.1","2":"676.1","3":"2652","4":"0.9365437","5":"0.23876213"},{"1":"976.4","2":"655.1","3":"2545","4":"0.9299967","5":"0.23938737"},{"1":"979.7","2":"638.1","3":"2444","4":"0.9189504","5":"0.23992727"},{"1":"983.0","2":"620.0","3":"2346","4":"0.9074363","5":"0.23981692"},{"1":"986.3","2":"597.8","3":"2231","4":"0.8968511","5":"0.24031267"},{"1":"989.6","2":"571.0","3":"2112","4":"0.8872087","5":"0.23986561"},{"1":"992.9","2":"542.6","3":"1978","4":"0.8777538","5":"0.24078322"},{"1":"996.2","2":"511.0","3":"1838","4":"0.8681469","5":"0.24136183"},{"1":"999.5","2":"474.9","3":"1699","4":"0.8622914","5":"0.24102541"}],"options":{"columns":{"min":{},"max":[10],"total":[5]},"rows":{"min":[10],"max":[10],"total":[180]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-frame-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiTkFcbiJ9 -->
+<pre><code>NA</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 </div>
-</div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiVW5pc3BlYyBOb3RlcyAmIFN1bW1hcmllcyIKYXV0aG9yOiAiUnVieSBBbiIKZGF0ZTogIjUvNC8yMDIwIgpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sKcGFyYW1zOgogIAogIAogIGZ1bmN0aW9uX2ZpbGU6IHVuaXNwZWNfcHJvdG9jb2xfZnVuY3Rpb25zLlIKICBzZXNzaW9uX2RhdGU6IDIwMTktMDYtMDgKICBkYXRhX3BhdGg6ICIvaG9tZS9ydWJ5L1VuaXNwZWNEYXRhLzIwMTkvIgplZGl0b3Jfb3B0aW9uczogCiAgY2h1bmtfb3V0cHV0X3R5cGU6IGlubGluZQotLS0KCmBgYHtyIHNldHVwLCBpbmNsdWRlPUZBTFNFfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShsdWJyaWRhdGUpCmxpYnJhcnkockNob2ljZURpYWxvZ3MpCmxpYnJhcnkoa25pdHIpCgprbml0cjo6b3B0c19jaHVuayRzZXQoZWNobyA9IFRSVUUpCiMjIHVzZSB0aGUgcGFyYW1zJGRhdGFfcGF0aCBhcyBzdGFydGluZyBmb2xkZXIKZGF0YV9wYXRoIDwtIHBhcmFtcyRkYXRhX3BhdGgKCmBgYAoKIyMgRGVzY3JpcHRpb24KClRoaXMgaXMgYW4gUiBNYXJrZG93biBkb2N1bWVudC4gVGhpcyBkb2N1bWVudCBwcm92aWRlcyBhbiBvdmVydmlldyBvZiB0aGUgVW5pc3BlYyBEYXRhIGNvbGxlY3RlZCBieSB0ZXJyZXN0cmlhbCBSQSBSdWJ5IEFuIGluIDIwMTcsIDIwMTgsIGFuZCAyMDE5LiAKCiMjIyMgTm90ZXMgb24gMjAxNyBEYXRhIENvbGxlY3Rpb24KVW5pc3BlYyBEYXRhIHdhcyBjb2xsZWN0ZWQgYXBwcm94aW1hdGVseSB3ZWVrbHkuIAoKT24gLS0gdGhlIFhYWCBmb3Jlb3B0aWMgYnJva2UgKFJ1Ynkgc3RlcHBlZCBvbiBpdCkuIExvb2sgZm9yIGluY29uc2lzdGVuaWVzIGhlcmUuIAoKIyMjIyBOb3RlcyBvbiAyMDE4IERhdGEgQ29sbGVjdGlvbgpVbmlzcGVjIGRhdGEgd2FzIGNvbGxlY3RlZCB3aGVuIHdlYXRoZXIgcGVybWl0dGVkLCB3ZWVrbHkgaWYgcG9zc2libGUuIFRoZSBzdW1tZXIgd2FzIGV4Y2VwdGlvbmFsbHkgcmFpbnkgYW5kIHZlZ2V0YXRpb24gd2FzIG9mdGVuIHdldCwgcmVzdHJpY3RpbmcgdGhlIHBvc3NpYmxlIHNhbXBsaW5nIHRpbWVzLiBBdCB0aGUgZW5kIG9mIHRoZSBzZWFzb24sIHNpbHZlciBjaXJjdWxhciB0YWdzIHdlcmUgbmFpbGVkIHRvIHRoZSBib2FyZHdhbGsgYXQgZWFjaCB1bmlzcGVjIGxvY2F0aW9uICh3aGVyZSBsaW5lLXNlZ21lbnQgcGVycGVuZGljdWxhciB0byB0aGUgZWRnZSBvZiB0aGUgcGxvdCBoaXQgdGhlIGJvYXJkd2FsaykuIFRoaXMgbG9jYXRpb24gd2FzIGRldGVybWluZWQgYnkgbWVhc3VyaW5nIHdpdGggYSBzdHJpbmcgYW5kIG1lYXN1cmluZyB0YXBlIGJldHdlZW4gdGhlIHdvb2RlbiBzdGFrZXMgbWFya2luZyBlYWNoIDVtIHNlZ21lbnQgb2YgdGhlIHBsb3QuIAoKRHJvbmUgZGF0YSB3YXMgY29sbGVjdGVkIGluIDIwMTggaW4gY29uanVuY3Rpb24gd2l0aCB1bmlzcGVjIG1lYXN1cmVtZW50cyAtLS0tLTsgaG93ZXZlciwgdGhpcyBkcm9uZSBkYXRhIHR1cm5lZCBvdXQgdG8gYmUgdW51c2FibGUgZHVlIHRvIGEgY2FsaWJyYXRpb24gZXJyb3Igb2YgdGhlIGRyb25lIHNlbnNvci4gCgojIyMjIE5vdGVzIG9uIDIwMTkgRGF0YSBDb2xsZWN0aW9uClVuaXNwZWMgZGF0YSB3YXMgY29sbGVjdGVkIGFwcHJveGltYXRlbHkgd2Vla2x5LiBUaGUgTE1BVCAmIE1BVCBzaXRlcyBnaXZlbiBoaWdoZXN0IHByaW9yaXR5LCB0aGUgaGlzdG9yaWMgYW5kIHdldCBzZWRnZSBsZWFzdCBzby4gVGhlIFNocnViIHNpdGVzIHdlcmUgb25seSB1bmlzcGVjJ2Qgb25jZSAgT24gLS0tLSAxNSBzY2FucyB3ZXJlIG1hZGUgcGVyIHBsb3QgZm9yIGNvbXBhcmlzb24gcHVycG9zZXMuIE9uIC0tLS0gdGhlIGRlZmF1bHQgbnVtYmVyIG9mIHNjYW5zIHBlciBwbG90IHdhcyBpbmNyZWFzZWQgZnJvbSA1IHRvIDEwIGZvciBhbGwgc2l0ZXMuIEl0IHRvb2sgYSBjb3VwbGUgdHJpZXMgdG8gbGFuZCBvbiAidGhlIG1vc3QgZWZmaWNpZW50IiAxMCBzcG90cyB0byB0YWtlIHRoZSBzY2Fucywgc28gdGhlcmUgaXMgc29tZSB2YXJpYWJpbGl0eSBvdmVyIHRoZSBjb3Vyc2Ugb2YgdGhlIHN1bW1lIG9uIHdoZXJlIHRoZXNlICJhZGRpdGlvbmFsIiBtZWFzdXJlbWVudHMgd2VyZSBtYWRlIGluIGVhY2ggcGxvdC4gQnkgLS0tIHRoaXMgd2FzIHN0YW5kYXJkaXplZC4gCgojIyMjIDIwMTkgRGF0YSBGaWxlIERlc2NyaXB0aW9ucwpUaGUgZGF0YSBjb2xsZWN0ZWQgaW4gMjAxOSBpcyBzYXZlZCBpbiB0aGUgZm9sbG93aW5nIDQgZmlsZXMuICAKCiAgMS4gMjAxOV9yYXdfc3B1X2RhdGEucmRzCiAgMi4gMjAxOV9yYXdfc3B1X2tleS5jc3YKICAzLiAyMDE5X3Byb2Nlc3NlZF9zcHVfZGF0YS5yZHMKICA0LiAyMDE5X2luZGV4X2RhdGEuY3N2IAogIApNZXRhZGF0YSBjb3JyZXNwb25kZW5jZSBrZXkgb2Ygc2NhbiAoLnNwdSBmaWxlKSB0byBzYW1wbGUgbG9jYXRpb24uIAoKICA1LiAyMDE5X3VuaXNwZWNfY29vcmRpbmF0ZV9rZXkuY3N2IChubyBzcHVfZmlsZW5hbWUgY29sdW1uKQogIDYuIDIwMTlfdW5pc3BlY19maWxlX2tleS5jc3YgKHNwdV9maWxlbmFtZSBjb2x1bW4pIAogIAogIApTdW1tYXJ5IGZpbGUgZm9yIGFuYWx5c2lzCgogIDcuIDIwMTlfcmVmbGVjdGFuY2Vfc3VtbWFyaWVzLnJkcwoKCmBgYHtyIGxvYWRfZGF0YSwgZWNobz1GQUxTRX0KCmRpcl95ZWFyIDwtICIyMDE5IgoKIyMgRmllbGQgS2V5IApmaWVsZF9rZXkgPC0gcGFzdGUwKGRhdGFfcGF0aCwgIjIwMTlfdXBkYXRlZF91bmlzcGVjX2Nvb3JkaW5hdGVfa2V5LmNzdiIpCgp1bmlzcGVjX2ZpZWxkX2tleSA8LSByZWFkX2NzdihmaWVsZF9rZXksIHNraXBfZW1wdHlfcm93cyA9IFQpICU+JSAgIyMgcmVtb3ZlIE5BIHJvd3MgCiAgbXV0YXRlKERhdGUgPSBhcy5jaGFyYWN0ZXIoRGF0ZSkpICMgdG8gam9pbiB3aXRoIHNwdV9kYXRhZnJhbWUsIHNhbWUgdHlwZQoKIyMgRmlsZSBLZXkgCmZpbGVfa2V5IDwtIHBhc3RlMChkYXRhX3BhdGgsICIyMDE5X3Byb2Nlc3NlZF91bmlzcGVjX2ZpbGVfa2V5LmNzdiIpCgp1bmlzcGVjX2ZpbGVfa2V5IDwtIHJlYWRfY3N2KGZpbGVfa2V5LCBza2lwX2VtcHR5X3Jvd3MgPSBUKSAlPiUgICMjIHJlbW92ZSBOQSByb3dzIAogIG11dGF0ZShEYXRlID0gYXMuY2hhcmFjdGVyKERhdGUpKSAjIHRvIGpvaW4gd2l0aCBzcHVfZGF0YWZyYW1lLCBzYW1lIHR5cGUKCiMjIFJhdyBEYXRhCnJhd19maWxlbmFtZSA8LSBwYXN0ZTAoZGF0YV9wYXRoLCBkaXJfeWVhciwgIl9yYXdfc3BlY3RyYS5yZHMiKQpzcHVfc3BlY3RyYSA8LSByZWFkX3JkcyhyYXdfZmlsZW5hbWUpCgpyYXdfa2V5bmFtZSA8LSBwYXN0ZTAoZGF0YV9wYXRoLCBkaXJfeWVhciwgIl9yYXdfc3BlY3RyYV9maWxlX21ldGFkYXRhLmNzdiIpCnNwdV9rZXkgPC0gcmVhZF9jc3YocmF3X2tleW5hbWUpICMgcmVtb3ZlIC1zcHVfZmlsZW5hbWVfZnVsbCBjb2x1bW4gZm9yIDIwMTkgCgojIyBQcm9jZXNzZWQgRGF0YQpwcm9jZXNzZWRfZmlsZW5hbWUgPC0gcGFzdGUwKGRhdGFfcGF0aCwgZGlyX3llYXIsICJfcHJvY2Vzc2VkX3NwZWN0cmEucmRzIikKcHJvY2Vzc2VkX3NwZWN0cmEgPC0gcmVhZF9yZHMocHJvY2Vzc2VkX2ZpbGVuYW1lKQoKIyMgSW5kZXggRGF0YQppbmRleF9maWxlbmFtZSA8LSBwYXN0ZTAoZGF0YV9wYXRoLCBkaXJfeWVhciwgIl9wcm9jZXNzZWRfdmVnLWluZGljZXMuY3N2IikKaW5kZXhfZGF0YSA8LSByZWFkX2NzdihpbmRleF9maWxlbmFtZSkKCgojIyBEQVRBIFNVTU1BUklFUyAKc3B1X2RhdGFmcmFtZSA8LSBmdWxsX2pvaW4oc3B1X3NwZWN0cmEsIHNwdV9rZXkpICU+JSAKICMgbXV0YXRlKERhdGVUaW1lID0gbHVicmlkYXRlOjp5bWRfaG1zKERhdGVUaW1lLCB0eiA9ICJVUy9BbGFza2EiKSkgJT4lIAogIG11dGF0ZShEYXRlID0gc3RyX2V4dHJhY3Qoc3B1X2ZpbGVuYW1lLCBwYXR0ZXJuID0gIl5bMC05XXs0fS1bMC05XXsyfS1bMC05XXsyfSIpKSAlPiUgICMgZnJvbSBmaWxlbmFtZSwgbm90IERhdGVUaW1lIChzb21ldGltZXMgZGlzY3JlcGFuY3kgaW4gdW5pc3BlYyBpbnN0cnVtZW50IHRpbWUpLiBLZWVwIGFzIGNoYXJhY3RlciwgdG8gYXZvaWQgam9pbmluZyBlcnJvcnMgdy9vdGhlciBkYXRhZnJhbWVzCmFycmFuZ2UoRGF0ZVRpbWUpCgojIyBEYXRhZnJhbWUgZm9yIGFuYWx5c2lzIApkZl9hbmFseXNpcyA8LSBpbmRleF9kYXRhICU+JSBuZXN0KEluZGljZXMgPSBjKCJJbmRleCIsICJCYW5kRGVmaW5pdGlvbiIsICJWYWx1ZSIpKSAlPiUgCiAgbGVmdF9qb2luKHByb2Nlc3NlZF9zcGVjdHJhKSAlPiUgCiAgbGVmdF9qb2luKHVuaXNwZWNfZmlsZV9rZXkpICU+JSBhcnJhbmdlKERhdGVUaW1lKQoKIyMgU2F2ZSBkYXRhZnJhbWUKIyB3cml0ZV9yZHMoZGZfYW5hbHlzaXMsICIvaG9tZS9ydWJ5L1VuaXNwZWNEYXRhLzIwMTkvMjAxOV9yZWZsZWN0YW5jZV9zdW1tYXJpZXMucmRzIikKCiMjIERhdGFmcmFtZSBmb3IgU2hpbnkgVmlzdWFsaXphdGlvbgoKICAKIyMgUmF3IERhdGEgc3VtbWFyeQpzcHVfZGF0YWZyYW1lICU+JSAgIGdyb3VwX2J5KERhdGUsIFNpdGUpICU+JQogIHN1bW1hcml6ZShGaWxlcyA9IG5fZGlzdGluY3Qoc3B1X2ZpbGVuYW1lKSkgJT4lCiAga2FibGUoKQoKIyMgUHJvY2Vzc2VkIERhdGEgc3VtbWFyeQojIGxlZnRfam9pbihwcm9jZXNzZWRfc3BlY3RyYSwgc3B1X2tleSkgJT4lICAgZ3JvdXBfYnkoRGF0ZSwgU2l0ZSkgJT4lIAojICAgc3VtbWFyaXplKEZpbGVzID0gbl9kaXN0aW5jdChzcHVfZmlsZW5hbWUpKSAlPiUgCiMgICBrYWJsZSgpCgojIyBJbmRleCBEYXRhIHN1bW1hcnkKIyBsZWZ0X2pvaW4oaW5kZXhfZGF0YSwgc3B1X2tleSkgJT4lICAgZ3JvdXBfYnkoRGF0ZSwgU2l0ZSkgJT4lIGxlZnRfam9pbih1bmlzcGVjX2ZpbGVfa2V5ICU+JSBzZWxlY3QoLURhdGUpKSAlPiUgCiMgICBzdW1tYXJpemUoRmlsZXMgPSBuX2Rpc3RpbmN0KHNwdV9maWxlbmFtZSksIEJsb2NrcyA9IHN0cl9jKHNvcnQodW5pcXVlKEJsb2NrKSksIGNvbGxhcHNlID0gIiwiKSwgVHJlYXRtZW50cyA9IHN0cl9jKHNvcnQodW5pcXVlKFRyZWF0bWVudCkpLCBjb2xsYXBzZSA9ICIsIikpICU+JSAKIyAgIGthYmxlKCkKICAKCiMjIEFuYWx5c2lzIGRhdGFmcmFtZSBzdW1tYXJ5CmRmX2FuYWx5c2lzICU+JSBncm91cF9ieShEYXRlLCBTaXRlKSAlPiUgbGVmdF9qb2luKHVuaXNwZWNfZmlsZV9rZXkgJT4lIHNlbGVjdCgtRGF0ZSkpICU+JSAKICBzdW1tYXJpemUoRmlsZXMgPSBuX2Rpc3RpbmN0KHNwdV9maWxlbmFtZSksIEJsb2NrcyA9IHN0cl9jKHNvcnQodW5pcXVlKEJsb2NrKSksIGNvbGxhcHNlID0gIiwiKSwgVHJlYXRtZW50cyA9IHN0cl9jKHNvcnQodW5pcXVlKFRyZWF0bWVudCkpLCBjb2xsYXBzZSA9ICIsIikpICU+JSAKICBrYWJsZSgpCgoKYGBgCgoKCg==</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiVW5pc3BlYyBOb3RlcyAmIFN1bW1hcmllcyIKYXV0aG9yOiAiUnVieSBBbiIKZGF0ZTogIjUvNC8yMDIwIgpvdXRwdXQ6CiAgaHRtbF9ub3RlYm9vawpwYXJhbXM6CiAgZGF0YV9wYXRoOiAvaG9tZS9ydWJ5L1VuaXNwZWNEYXRhLzIwMTkvCiAgZnVuY3Rpb25fZmlsZTogdW5pc3BlY19wcm90b2NvbF9mdW5jdGlvbnMuUgogIHNlc3Npb25fZGF0ZTogJzIwMTktMDYtMDgnCmVkaXRvcl9vcHRpb25zOgogIGNodW5rX291dHB1dF90eXBlOiBpbmxpbmUKLS0tCgpgYGB7ciBzZXR1cCwgaW5jbHVkZT1GQUxTRX0KbGlicmFyeSh0aWR5dmVyc2UpCmxpYnJhcnkobHVicmlkYXRlKQpsaWJyYXJ5KHJDaG9pY2VEaWFsb2dzKQpsaWJyYXJ5KGtuaXRyKQoKa25pdHI6Om9wdHNfY2h1bmskc2V0KGVjaG8gPSBUUlVFKQojIyB1c2UgdGhlIHBhcmFtcyRkYXRhX3BhdGggYXMgc3RhcnRpbmcgZm9sZGVyLiBEQVRBIFBBVEggc2hvdWxkIGJlIHRvIFVOSVNQRUMgREFUQSBmb2xkZXIuIFRoZSBmaWxlcyBzaG91bGQgYmUgcmVhZC1pbiBmcm9tIHRoZXJlLiBUaGlzIHNob3VsZCBtYXRjaCB0aGUgT25lLURyaXZlIGZpbGUgZm9ybWF0LiAKZGF0YV9wYXRoIDwtIHBhcmFtcyRkYXRhX3BhdGgKCmBgYAoKIyMgRGVzY3JpcHRpb24KClRoaXMgaXMgYW4gUiBNYXJrZG93biBkb2N1bWVudC4gVGhpcyBkb2N1bWVudCBwcm92aWRlcyBhbiBvdmVydmlldyBvZiB0aGUgVW5pc3BlYyBEYXRhIGNvbGxlY3RlZCBieSB0ZXJyZXN0cmlhbCBSQSBSdWJ5IEFuIGluIDIwMTcsIDIwMTgsIGFuZCAyMDE5LiAKCiMjIyBOb3RlcyBvbiAyMDE3IERhdGEgQ29sbGVjdGlvbgpVbmlzcGVjIERhdGEgd2FzIGNvbGxlY3RlZCBhcHByb3hpbWF0ZWx5IHdlZWtseS4gCgpPbiAtLSB0aGUgWFhYIGZvcmVvcHRpYyBicm9rZSAoUnVieSBzdGVwcGVkIG9uIGl0KS4gTG9vayBmb3IgaW5jb25zaXN0ZW5pZXMgaGVyZS4gCgojIyMjIDIwMTcgRGF0YSBGaWxlIERlc2NyaXB0aW9ucwoKIyMjIE5vdGVzIG9uIDIwMTggRGF0YSBDb2xsZWN0aW9uClVuaXNwZWMgZGF0YSB3YXMgY29sbGVjdGVkIHdoZW4gd2VhdGhlciBwZXJtaXR0ZWQsIHdlZWtseSBpZiBwb3NzaWJsZS4gVGhlIHN1bW1lciB3YXMgZXhjZXB0aW9uYWxseSByYWlueSBhbmQgdmVnZXRhdGlvbiB3YXMgb2Z0ZW4gd2V0LCByZXN0cmljdGluZyB0aGUgcG9zc2libGUgc2FtcGxpbmcgdGltZXMuIEF0IHRoZSBlbmQgb2YgdGhlIHNlYXNvbiwgc2lsdmVyIGNpcmN1bGFyIHRhZ3Mgd2VyZSBuYWlsZWQgdG8gdGhlIGJvYXJkd2FsayBhdCBlYWNoIHVuaXNwZWMgbG9jYXRpb24gKHdoZXJlIGxpbmUtc2VnbWVudCBwZXJwZW5kaWN1bGFyIHRvIHRoZSBlZGdlIG9mIHRoZSBwbG90IGhpdCB0aGUgYm9hcmR3YWxrKS4gVGhpcyBsb2NhdGlvbiB3YXMgZGV0ZXJtaW5lZCBieSBtZWFzdXJpbmcgd2l0aCBhIHN0cmluZyBhbmQgbWVhc3VyaW5nIHRhcGUgYmV0d2VlbiB0aGUgd29vZGVuIHN0YWtlcyBtYXJraW5nIGVhY2ggNW0gc2VnbWVudCBvZiB0aGUgcGxvdC4gCgpEcm9uZSBkYXRhIHdhcyBjb2xsZWN0ZWQgaW4gMjAxOCBpbiBjb25qdW5jdGlvbiB3aXRoIHVuaXNwZWMgbWVhc3VyZW1lbnRzIC0tLS0tOyBob3dldmVyLCB0aGlzIGRyb25lIGRhdGEgdHVybmVkIG91dCB0byBiZSB1bnVzYWJsZSBkdWUgdG8gYSBjYWxpYnJhdGlvbiBlcnJvciBvZiB0aGUgZHJvbmUgc2Vuc29yLiAKCiMjIyMjIDIwMTggRGF0YSBGaWxlIERlc2NyaXB0aW9ucwoKIyMjIE5vdGVzIG9uIDIwMTkgRGF0YSBDb2xsZWN0aW9uClVuaXNwZWMgZGF0YSB3YXMgY29sbGVjdGVkIGFwcHJveGltYXRlbHkgd2Vla2x5LiBUaGUgTE1BVCAmIE1BVCBzaXRlcyBnaXZlbiBoaWdoZXN0IHByaW9yaXR5LCB0aGUgaGlzdG9yaWMgYW5kIHdldCBzZWRnZSBsZWFzdCBzby4gVGhlIFNocnViIHNpdGVzIHdlcmUgb25seSB1bmlzcGVjJ2Qgb25jZSAgT24gLS0tLSAxNSBzY2FucyB3ZXJlIG1hZGUgcGVyIHBsb3QgZm9yIGNvbXBhcmlzb24gcHVycG9zZXMuIE9uIC0tLS0gdGhlIGRlZmF1bHQgbnVtYmVyIG9mIHNjYW5zIHBlciBwbG90IHdhcyBpbmNyZWFzZWQgZnJvbSA1IHRvIDEwIGZvciBhbGwgc2l0ZXMuIEl0IHRvb2sgYSBjb3VwbGUgdHJpZXMgdG8gbGFuZCBvbiAidGhlIG1vc3QgZWZmaWNpZW50IiAxMCBzcG90cyB0byB0YWtlIHRoZSBzY2Fucywgc28gdGhlcmUgaXMgc29tZSB2YXJpYWJpbGl0eSBvdmVyIHRoZSBjb3Vyc2Ugb2YgdGhlIHN1bW1lIG9uIHdoZXJlIHRoZXNlICJhZGRpdGlvbmFsIiBtZWFzdXJlbWVudHMgd2VyZSBtYWRlIGluIGVhY2ggcGxvdC4gQnkgLS0tIHRoaXMgd2FzIHN0YW5kYXJkaXplZC4gCgoKIyMjIyAyMDE5IERhdGEgRmlsZSBEZXNjcmlwdGlvbnMKVGhlIGRhdGEgY29sbGVjdGVkIGluIDIwMTkgaXMgc2F2ZWQgaW4gdGhlIGZvbGxvd2luZyA0IGZpbGVzLiAgCgogIDEuIDIwMTlfcmF3X3NwdV9tZXRhZGF0YS5jc3YgKGluc3RydW1lbnQgc2V0dGluZ3MgcGVyIC5zcHUgZmlsZSkKICAyLiAyMDE5X3Jhd19zcHVfZGF0YS5yZHMgKHJhdyBzcGVjdHJhKQogIDMuIDIwMTlfcHJvY2Vzc2VkX3NwdV9kYXRhLnJkcyAoY29ycmVjdGVkIHNwZWN0cmEpCiAgNC4gMjAxOV9pbmRleF9kYXRhLmNzdiAoY2FsY3VsYXRlZCB2ZWdldGF0aW9uIGluZGljZXMpCiAgCk1ldGFkYXRhIGNvcnJlc3BvbmRlbmNlIGtleSBvZiBzY2FuICguc3B1IGZpbGUpIHRvIHNhbXBsZSBsb2NhdGlvbi4gCgogIDUuIDIwMTlfdW5pc3BlY19jb29yZGluYXRlX2tleS5jc3YgKG5vIHNwdV9maWxlbmFtZSBjb2x1bW4pCiAgNi4gMjAxOV91bmlzcGVjX2ZpbGVfa2V5LmNzdiAoc3B1X2ZpbGVuYW1lIGNvbHVtbikgCiAgClN1bW1hcnkgZmlsZSBmb3IgYW5hbHlzaXMKCiAgNy4gMjAxOV91bmlzcGVjX2RhdGFfc3VtbWFyeS5yZHMKICAKCmBgYHtyIGxvYWRfZGF0YSwgZWNobz1GQUxTRSwgaW5jbHVkZSA9Rn0KIyMgTG9hZCAyMDE5IGRhdGEgZnJvbSBmaWxlcwoKZGlyX3llYXIgPC0gIjIwMTkiCgojIyBSYXcgRGF0YQpyYXdfZmlsZW5hbWUgPC0gcGFzdGUwKGRhdGFfcGF0aCwgZGlyX3llYXIsICJfcmF3X3NwdV9kYXRhLnJkcyIpCnNwdV9zcGVjdHJhIDwtIHJlYWRfcmRzKHJhd19maWxlbmFtZSkKICAKIyBSYXcgTWV0YWRhdGEgIApyYXdfa2V5bmFtZSA8LSBwYXN0ZTAoZGF0YV9wYXRoLCBkaXJfeWVhciwgIl9yYXdfc3B1X21ldGFkYXRhLmNzdiIpCnNwdV9rZXkgPC0gcmVhZF9jc3YocmF3X2tleW5hbWUpICU+JSBtdXRhdGUoRGF0ZVRpbWUgPSB3aXRoX3R6KERhdGVUaW1lLCAiVVMvQWxhc2thIikpIAoKIyMgUHJvY2Vzc2VkIERhdGEKcHJvY2Vzc2VkX2ZpbGVuYW1lIDwtIHBhc3RlMChkYXRhX3BhdGgsIGRpcl95ZWFyLCAiX3Byb2Nlc3NlZF9zcHVfZGF0YS5yZHMiKQpwcm9jZXNzZWRfc3BlY3RyYSA8LSByZWFkX3Jkcyhwcm9jZXNzZWRfZmlsZW5hbWUpIAoKIyMgSW5kZXggRGF0YQppbmRleF9maWxlbmFtZSA8LSBwYXN0ZTAoZGF0YV9wYXRoLCBkaXJfeWVhciwgIl9pbmRleF9kYXRhLmNzdiIpCmluZGV4X2RhdGEgPC0gcmVhZF9jc3YoaW5kZXhfZmlsZW5hbWUpICU+JSBtdXRhdGUoRGF0ZVRpbWUgPSB3aXRoX3R6KERhdGVUaW1lLCAiVVMvQWxhc2thIikpCgoKIyMgRmlsZSBLZXkgCmtleV9maWxlbmFtZSA8LSBwYXN0ZTAoZGF0YV9wYXRoLCBkaXJfeWVhciwgIl91bmlzcGVjX2ZpbGVfa2V5LmNzdiIpCgp1bmlzcGVjX2ZpbGVfa2V5IDwtIHJlYWRfY3N2KGtleV9maWxlbmFtZSwgc2tpcF9lbXB0eV9yb3dzID0gVCkKCiMjIFN1bW1hcnkgRmlsZSAKZGZfYW5hbHlzaXMgPC0gcmVhZF9yZHMocGFzdGUwKGRhdGFfcGF0aCwgZGlyX3llYXIsIl91bmlzcGVjX2RhdGFfc3VtbWFyeS5yZHMiKSkKYGBgCgojIyMjIDIwMTkgRGF0YSBGaWxlIFN1bW1hcmllcwpgYGB7ciwgZWNobz1GLCBtZXNzYWdlPUZ9CiMjIFRoaXMgY2h1bmsgb2YgY29kZSB0YWxsaWVzIHRoZSBudW1iZXIgb2YgZmlsZXMgaW4gdGhlIHJhdywgcHJvY2Vzc2VkLCBhbmQgaW5kZXggZGF0YSBkYXRhZnJhbWVzIGFuZCBkaXNwbGF5cyB0aGUgb3V0cHV0IGluIGEgdGFibGUuIAoKIyMgUmF3IERhdGEgc3VtbWFyeQoKc3B1X2RhdGFmcmFtZSA8LSBmdWxsX2pvaW4oc3B1X3NwZWN0cmEsIHNwdV9rZXkpICU+JSAKICBtdXRhdGUoRGF0ZVRpbWUgPSB3aXRoX3R6KERhdGVUaW1lLCAiVVMvQWxhc2thIikpICU+JSAKICAKICAjIEFkZCBEYXRlICYgQVJDLUxURVIgU2l0ZQogIG11dGF0ZShEYXRlID0gbHVicmlkYXRlOjpkYXRlKERhdGVUaW1lKSkgJT4lIAogIG11dGF0ZShTaXRlID0gc3RyX2V4dHJhY3Qoc3B1X2ZpbGVuYW1lLCAiKFtBLVpdezMsOH1bMC05XSopKD89XykiKSkgJT4lICMgRE9FUyBOT1QgV09SSyBGT1IgIk1BVC1TSCIgbWVhc3VyZW1lbnRzCiAgbXV0YXRlKFNpdGUgPSBpZmVsc2Uoc3RyX2RldGVjdChzcHVfZmlsZW5hbWUsICJNQVQtU0giKSwgIk1BVC1TSCIsIFNpdGUpKQoKcmF3X2ZpbGVzIDwtIHNwdV9kYXRhZnJhbWUgJT4lICAgZ3JvdXBfYnkoRGF0ZSwgU2l0ZSkgJT4lCiAgc3VtbWFyaXplKFJhd19GaWxlcyA9IG5fZGlzdGluY3Qoc3B1X2ZpbGVuYW1lKSkKCiMjIFByb2Nlc3NlZCBEYXRhIHN1bW1hcnkKcHJvY2Vzc2VkX2ZpbGVzIDwtIGxlZnRfam9pbihwcm9jZXNzZWRfc3BlY3RyYSwgc3B1X2tleSkgJT4lCiAgCiAgIyBBZGQgRGF0ZSAmIEFSQy1MVEVSIFNpdGUKICBtdXRhdGUoRGF0ZVRpbWUgPSB3aXRoX3R6KERhdGVUaW1lLCAiVVMvQWxhc2thIikpICU+JSAKICBtdXRhdGUoRGF0ZSA9IGx1YnJpZGF0ZTo6ZGF0ZShEYXRlVGltZSkpICU+JSAKICBtdXRhdGUoU2l0ZSA9IHN0cl9leHRyYWN0KHNwdV9maWxlbmFtZSwgIihbQS1aXXszLDh9WzAtOV0qKSg/PV8pIikpICU+JSAjIERPRVMgTk9UIFdPUksgRk9SICJNQVQtU0giIG1lYXN1cmVtZW50cwogIG11dGF0ZShTaXRlID0gaWZlbHNlKHN0cl9kZXRlY3Qoc3B1X2ZpbGVuYW1lLCAiTUFULVNIIiksICJNQVQtU0giLCBTaXRlKSkgJT4lIAogIAogICMjIFN1bW1hcml6ZQogIGdyb3VwX2J5KERhdGUsIFNpdGUpICU+JQogIHN1bW1hcml6ZShQcm9jZXNzZWRfRmlsZXMgPSBuX2Rpc3RpbmN0KHNwdV9maWxlbmFtZSkpCgojIyBJbmRleCBEYXRhIHN1bW1hcnkKaW5kZXhfZmlsZXMgPC0gbGVmdF9qb2luKGluZGV4X2RhdGEsIHNwdV9rZXkpICU+JSAgIAogIAogICMgQWRkIERhdGUgJiBBUkMtTFRFUiBTaXRlCiAgbXV0YXRlKERhdGVUaW1lID0gd2l0aF90eihEYXRlVGltZSwgIlVTL0FsYXNrYSIpKSAlPiUgCiAgbXV0YXRlKERhdGUgPSBsdWJyaWRhdGU6OmRhdGUoRGF0ZVRpbWUpKSAlPiUgCiAgbXV0YXRlKFNpdGUgPSBzdHJfZXh0cmFjdChzcHVfZmlsZW5hbWUsICIoW0EtWl17Myw4fVswLTldKikoPz1fKSIpKSAlPiUgIyBET0VTIE5PVCBXT1JLIEZPUiAiTUFULVNIIiBtZWFzdXJlbWVudHMKICBtdXRhdGUoU2l0ZSA9IGlmZWxzZShzdHJfZGV0ZWN0KHNwdV9maWxlbmFtZSwgIk1BVC1TSCIpLCAiTUFULVNIIiwgU2l0ZSkpICU+JSAKICAKICAjIyBTdW1tYXJpemUKICBncm91cF9ieShEYXRlLCBTaXRlKSAlPiUKICBzdW1tYXJpemUoSW5kZXhfRmlsZXMgPSBuX2Rpc3RpbmN0KHNwdV9maWxlbmFtZSkpCgojIyBESVNQTEFZCmthYmxlKGZ1bGxfam9pbihyYXdfZmlsZXMsIHByb2Nlc3NlZF9maWxlcykgJT4lIGZ1bGxfam9pbihpbmRleF9maWxlcykgJT4lIGFycmFuZ2UoRGF0ZSwgU2l0ZSkgJT4lIAogICAgICAgICMgZmlsdGVyIGJ5IHRoaW5ncwogICAgICAgIGZpbHRlcihTaXRlID09ICJMTUFUIikpCgoKYGBgCgoKCkNvZGUgY2h1bmtzOgoKICAxLiBDb3JyZWN0IFNwZWN0cmEKICAyLiBDYWxjdWxhdGUgSW5kaWNlcwogIDMuIEZvcm1hdCBkYXRhIGZvciBhbmFseXNlcyAvIHN0b3JhZ2UKICA0LiBGb3JtYXQgZGF0YSBmb3IgdmlzdWFsaXphdGlvbgogIAoKIyMgRGF0YSBmb3IgU2hpbnkKYGBge3IsIGVjaG89Rn0KIyMgU3Vic2V0IG9mIERhdGEgZm9yIFNoaW55IFZpc3VhbGl6YXRpb24KIyAoCiMgICBzaGlueV9kYXRhZnJhbWUgPC0gaW5kZXhfZGF0YSAlPiUgCiMgICAgIHNlbGVjdCgtQmFuZERlZmluaXRpb24pICU+JSAKIyAgICAgc3ByZWFkKEluZGV4LCBWYWx1ZSkgJT4lIAojICAgICBsZWZ0X2pvaW4odW5pc3BlY19maWxlX2tleSkgJT4lIAojICAgICAKIyAgICAgIyBDaGVjayBmb3IgdGFnCiMgICAgIGZpbHRlcihzdHJfZGV0ZWN0KFNjYW5Mb2NhdGlvbiwgcGF0dGVybiA9ICJbMC05XVMiKSkgJT4lIAojICAgICAKIyAgICAgIyBGb3JtYXQgZm9yIHNoaW55CiMgICAgIHJlbmFtZShSZXBsaWNhdGUgPSBTY2FuUmVwKSAlPiUgCiMgICAgIHNlbGVjdChEYXRlVGltZSwgRGF0ZSwgU2l0ZSwgQmxvY2ssIFRyZWF0bWVudCwgUmVwbGljYXRlLCBGaWxlTnVtLCBORFZJLCBFVkksIEVWSTIpICU+JSAKIyAgICAgbXV0YXRlKFllYXIgPSBsdWJyaWRhdGU6OnllYXIoRGF0ZVRpbWUpLCAKIyAgICAgICAgICAgICMgRGF0ZSA9IGx1YnJpZGF0ZTo6eW1kKERhdGUpLCAKIyAgICAgICAgICAgIERhdGUgPSAKIyAgICAgICAgICAgIERPWSA9IGx1YnJpZGF0ZTo6eWRheShEYXRlVGltZSkpICU+JSAKIyAgICAgcmVuYW1lKFRpbWUgPSBEYXRlVGltZSkgJT4lIAojICAgICBtdXRhdGUoQmxvY2sgPSBhcy5udW1lcmljKHN0cl9leHRyYWN0KEJsb2NrLCAiXFxkIikpKSAlPiUgCiMgICAgIG11dGF0ZShSZXBsaWNhdGUgPSBhcy5jaGFyYWN0ZXIoUmVwbGljYXRlKSkgJT4lIAojICAgICAKIyAgICAgIyBTdGFuZGFyZGl6ZSBTaXRlIG5hbWVzCiMgICAgIG11dGF0ZShTaXRlID0gaWZlbHNlKFNpdGUgJWluJSBjKCJXU0cxIiwgIldTRzIzIiksICJXU0ciLCBTaXRlKSkgICU+JSAKIyAgICAgbXV0YXRlKFNpdGUgPSBpZmVsc2UoU2l0ZSAlaW4lIGMoIkRIVCIpLCAiSFRIIiwgU2l0ZSkpCiMgCiMgICAgICAgCiMgKQoKIyMgQ29kZSBmb3IgUmFuZHkgCgpgYGAKCgoK</div>
 
 
 
