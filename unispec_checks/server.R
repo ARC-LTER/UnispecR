@@ -69,10 +69,11 @@ shinyServer(function(input,output) {
     # this reactive output contains the summary of the dataset and display the summary in table format
     output$summ <- renderPrint({
       if(is.null(input$file)){return()}
-      summary(read.table(file=input$file$datapath[input$file$name==input$Select], 
-                         sep=input$sep, 
-                         header = input$header, 
-                         stringsAsFactors = input$stringAsFactors))})
+      str(read.table(file=input$file$datapath[input$file$name==input$Select], 
+                         sep= ",", 
+                         header = F, 
+                         stringsAsFactors = F,
+                         skip=9))})
     
     ## Plot Spectra code ##
     # This reacticev output contains the raw spectra in an x-y line plot format
