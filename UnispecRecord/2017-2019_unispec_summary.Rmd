@@ -139,9 +139,7 @@ index_files <- left_join(index_data, spu_key) %>%
   summarize(Index_Files = n_distinct(spu_filename))
 
 ## DISPLAY
-kable(full_join(raw_files, processed_files) %>% full_join(index_files) %>% arrange(Date, Site) %>% 
-        # filter by things
-        filter(Site == "LMAT"))
+kable(full_join(raw_files, processed_files) %>% full_join(index_files) %>% arrange(Date, Site))
 
 
 ```
@@ -185,8 +183,6 @@ Code chunks:
 # 
 #       
 # )
-
-## Code for Randy 
 
 ```
 
