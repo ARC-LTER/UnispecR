@@ -21,14 +21,18 @@ require(knitr)
 
 ```{r load_data, echo=F, include =F}
 
+## MANUAL
 data_path <-  "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terrestrial/UnispecData/2019/"
+data_path <- "/home/ruby/UnispecData/2019/"
 dir_year <- "2019"
 
+## INTERACTIVE
+
 ## Raw Data
-raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
+raw_filename <- paste0(data_path, dir_year, "_raw_spectra.rds")
 spu_spectra <- read_rds(raw_filename)
 
-raw_keyname <- paste0(data_path, dir_year, "_raw_spu_key.csv")
+raw_keyname <- paste0(data_path, dir_year, "_raw_spectra_file_metadata.csv")
 spu_key <- read_csv(raw_keyname)
 
 spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
@@ -37,31 +41,31 @@ spu_dataframe <- full_join(spu_spectra, spu_key) %>%
 arrange(DateTime)
 
 ## Processed Data 
-processed_dataframe <- read_rds(paste0(data_path, "2019_processed_spu_data.rds")) %>% 
+processed_dataframe <- read_rds(paste0(data_path, "2019_processed_spectra.rds")) %>% 
   mutate(DateTime = lubridate::as_datetime(DateTime, tz="US/Alaska")) 
 
 ## Index Data
-index_data <- read_rds(paste0(data_path, "2019_index_data.rds")) %>% 
-  select(spu_filename, DateTime, ref_filenames, Spectra, Indices) 
+index_data <- read_csv(paste0(data_path, "2019_processed_veg-indices.csv"))
 
-ndvi_data <- index_data %>% unnest(Indices) %>% 
+ndvi_data <- index_data %>%
+  select(-BandDefinition) %>% 
   spread(Index, Value) %>% select(-EVI, -EVI2)
 
 ## File Key
-unispec_file_key <- read_csv(paste0(data_path, "2019_unispec_field_key.csv")) %>% 
-  full_join(read_csv(paste0(data_path, "2019_raw_spu_key.csv")))
+unispec_file_key <- read_csv(paste0(data_path, "2019_processed_unispec_file_key.csv")) 
 
 ## joined data 
 df <- unispec_file_key %>% left_join(processed_dataframe)
 ```
 
 ```{r, echo=F}
-## Summary table
+## Summary table: Sites per Date
 df %>% group_by(Date) %>% 
   filter(!is.na(Treatment)) %>% 
   filter(!str_detect(Site, "_")) %>% 
   summarize(Sites = str_c(str_replace_na(unique(Site)), collapse = ", "), Num_Files = n()) %>% kable
 
+# Dates per Site
 df %>% group_by(Site, Date) %>% 
   summarize(Num_files = n()) %>% print(n=50)
 
@@ -75,22 +79,28 @@ Comparing normal subset of 5 measurements along 5m to 15 measurements along 20m 
 ### Difference in Mean & Variance
 
 ```{r, echo=F, message=F}
+check_trtmts <- c("CT", "F0.5", "F1", "F2", "F5", "F10", "N", "P", "NP")  
+
+
 all_ndvi <- unispec_file_key %>% 
-  filter(as.character(Date) %in% c("2019-06-21", "2019-06-22", "2019-06-18", "2019-06-19", "2019-06-20")) %>%
+  # filter(as.character(Date) %in% c("2019-06-21", "2019-06-22", "2019-06-18", "2019-06-19", "2019-06-20")) %>%
   filter(!str_detect(Treatment, "DARK|REF|EX")) %>% 
+  filter(Treatment %in% check_trtmts) %>% 
   mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG", Site))  %>% 
   filter(!str_detect(Block, "EDC")) %>% 
+  filter(Block %in% c("B1", "B2", "B3", "B4")) %>% 
   left_join(ndvi_data) %>% 
   mutate(measurement_area = "full_side")
 
 tagged_ndvi <- all_ndvi %>% 
-  filter(str_detect(Location, pattern = "[0-9]S")) %>% 
+  filter(str_detect(ScanLocation, pattern = "[0-9]S")) %>% 
   mutate(measurement_area = "tagged_transect")
 
 ## Summary tables of FileNumbers 
 tagged_ndvi %>% 
-  group_by(Site, Date) %>% 
-  summarize(Num_files = n()) %>% print(n=50)
+  group_by(Site, Date, Block, Treatment) %>% 
+  summarize(Num_files = n()) %>% 
+  print(n=50) 
 
 all_ndvi %>%  group_by(Site, Date) %>%  
   summarize(Num_files = n()) %>% print(n=50)
@@ -98,11 +108,11 @@ all_ndvi %>%  group_by(Site, Date) %>%
 ## Differences in Means / Standard Deviation
 all_means <- all_ndvi %>% 
   group_by(Date, Site, Block, Treatment) %>% 
-  summarise_at(.vars = vars(NDVI), .funs = funs(mean,sd,se=sd(.)/sqrt(n()))) 
+  summarise_at(vars(NDVI), list(mean = ~mean(.), sd = ~sd(.), se = ~sd(.)/sqrt(n()))) 
   
 tagged_means <- tagged_ndvi %>% 
   group_by(Date, Site, Block, Treatment) %>% 
-  summarise_at(.vars = vars(NDVI), .funs = funs(mean,sd,se=sd(.)/sqrt(n()))) %>% 
+  summarise_at(.vars = vars(NDVI), list(mean = ~mean(.), sd = ~sd(.), se= ~sd(.)/sqrt(n()))) %>% 
   rename(mean_tagged = mean, sd_tagged = sd, se_tagged = se)
   
 difference_means <- right_join(all_means, tagged_means) %>% 
@@ -206,7 +216,7 @@ box_plot_het_function <- function(boxplot_data, check_site, facet_by_block = T, 
   return(plot)
 }
 
-box_plot_het_function(boxplot_data, "LMAT", facet_by_block = T, show_all_points = F)
+box_plot_het_function(boxplot_data, "LMAT", facet_by_block = T, show_all_points =F)
 
 box_plot_het_function(boxplot_data, "MAT", facet_by_block = T, show_all_points = F)
 
@@ -230,7 +240,7 @@ Plot the seasonal trend when including data from whole plot.
 ```{r, echo = F, message = F, fig.width = 12, fig.height=20}
 #PLOT SUBSET -- SPECIFY SITE/DATE/ETC to ZOOM IN ON
 
-check_trtmts <- c("CT", "F0.5", "F1", "F2", "F5", "F10", "N", "P", "NP")  
+check_trtmts <- c("CT", "CT1", "CT2", "F0.5", "F1", "F2", "F5", "F10", "N", "P", "NP")  
 
 
 ## PLOT OPTIONS
@@ -245,10 +255,11 @@ lmat_colors <- c(rgb(226, 240, 217, maxColorValue = 255), rgb(169, 209, 142, max
 
 ### DATA 
 ndvi_plot <- ndvi_data %>% left_join(unispec_file_key) %>% 
-  filter(!str_detect(Block, "EDC")) %>% 
-  filter(!is.na(Treatment)) %>% 
-  filter(!str_detect(Site, "LAB2|SHB2")) %>% 
-    mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG", Site))  %>% 
+  filter(Block %in% c("B1", "B2", "B3", "B4")) %>% 
+  filter(Treatment %in% check_trtmts) %>% 
+  # filter(!is.na(Treatment)) %>% 
+  filter(!str_detect(Site, "LAB2|SHB2|MAT-SH")) %>% 
+  mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG", Site))  %>% 
   mutate(Treatment = ifelse(Treatment %in% c("CT1", "CT2", "CT"), "CT", Treatment)) %>% 
   mutate(Treatment = factor(Treatment, levels = check_trtmts)) %>% 
   group_by(Site, Block, Treatment, Date) %>% 
@@ -256,10 +267,10 @@ ndvi_plot <- ndvi_data %>% left_join(unispec_file_key) %>%
   mutate(measurement_area = "full_side")
 
 ndvi_plot_tagged <- ndvi_data %>% left_join(unispec_file_key) %>% 
-  filter(!str_detect(Block, "EDC")) %>% 
-  filter(!is.na(Treatment)) %>% 
-    filter(str_detect(Location, pattern = "[0-9]S")) %>% 
-  filter(!str_detect(Site, "LAB2|SHB2")) %>% 
+  filter(Block %in% c("B1", "B2", "B3", "B4")) %>% 
+  filter(Treatment %in% check_trtmts) %>% 
+    filter(str_detect(ScanLocation, pattern = "[0-9]S")) %>% 
+  filter(!str_detect(Site, "LAB2|SHB2|MAT-SH")) %>% 
     mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG", Site))  %>% 
   mutate(Treatment = ifelse(Treatment %in% c("CT1", "CT2", "CT"), "CT", Treatment)) %>% 
   mutate(Treatment = factor(Treatment, levels = check_trtmts)) %>% 
@@ -268,9 +279,9 @@ ndvi_plot_tagged <- ndvi_data %>% left_join(unispec_file_key) %>%
   mutate(measurement_area = "tagged_transect")
   
 
-ndvi_comp <- bind_rows(ndvi_plot, ndvi_plot_tagged)
+ndvi_comp <- bind_rows(ndvi_plot, ndvi_plot_tagged) 
 
-ndvi_ggplot <- ggplot(data = ndvi_comp, mapping = aes(x = Date, y = mean, color=Treatment)) +
+(ndvi_ggplot <- ggplot(data = ndvi_comp, mapping = aes(x = Date, y = mean, color=Treatment)) +
   geom_line(aes(linetype=measurement_area)) + 
   geom_errorbar( aes(ymin = mean-se, ymax= mean + se, linetype=measurement_area), width=2) + 
   geom_point(aes(shape=measurement_area)) +
@@ -285,9 +296,9 @@ ndvi_ggplot <- ggplot(data = ndvi_comp, mapping = aes(x = Date, y = mean, color=
                               "F2" = lmat_colors[3],
                               "F5" = lmat_colors[4],
                               "F10" = lmat_colors[5])) +
-  labs(y = "Mean NDVI") 
+  labs(y = "Mean NDVI") )
 
-ndvi_ggplot
+ndvi_ggplot 
 
 ```
 
@@ -312,11 +323,11 @@ band_defns <- tribble(
   "RapidSCAN", "red_edge", 730, 730, 
   "ToolikGIS_Drone_2018", "red", 640, 680,
   "ToolikGIS_Drone_2018", "nir", 820, 890,
-  "ToolikGIS_MicaSense_2019", "blue", 455, 495,
-  "ToolikGIS_MicaSense_2019", "green", 540, 580,
-  "ToolikGIS_MicaSense_2019", "red", 658, 678,
-  "ToolikGIS_MicaSense_2019", "red_edge", 707, 727,
-  "ToolikGIS_MicaSense_2019", "nir", 800, 880,
+  "MicaSense_2019", "blue", 455, 495,
+  "MicaSense_2019", "green", 540, 580,
+  "MicaSense_2019", "red", 658, 678,
+  "MicaSense_2019", "red_edge", 707, 727,
+  "MicaSense_2019", "nir", 800, 880,
   "ToolikEDC", "red", 560, 680,
   "ToolikEDC", "nir", 725, 1000
 )
@@ -335,8 +346,8 @@ unispec_field_key <- read_csv(field_key, skip_empty_rows = T, col_types = cols(
   Site = col_character(),
   Block = col_character(),
   Treatment = col_character(),
-  Replicate = col_double(),
-  Location = col_character(),
+  ScanRep = col_double(),
+  ScanLocation = col_character(),
   FileNum = col_double(),
   Weather = col_character(),
   Notes = col_character()
@@ -359,7 +370,7 @@ df_bands <- df %>%
 
 
 drone_comp <- df_bands %>% 
-  select(spu_filename, DateTime, Site, Date, Block, Treatment, Replicate, Location, Notes, Weather, Bands) %>% unnest(Bands) %>% 
+  select(spu_filename, DateTime, Site, Date, Block, Treatment, ScanRep, ScanLocation, Notes, Weather, Bands) %>% unnest(Bands) %>% 
   filter(!is.na(Treatment), !str_detect(Treatment, "DARK|REF")) %>% 
   filter(str_detect(Date, "2019-07-15|2019-07-12")) %>% 
   mutate(AK_Time = lubridate::with_tz(DateTime, tzone = "US/Alaska"))
@@ -367,5 +378,28 @@ drone_comp <- df_bands %>%
 
 write_csv(drone_comp, paste0(data_path, "LTER_UnispecData_2019-07-12_2019-07-15_LMAT_DHT.csv"))
 
+
+
+# Drone Data for Randy - June 2020 -----------------------------------------------------
+# Check for different spelling of site names
+
+data_path <- "/home/ruby/UnispecData/2019/"
+dir_year <- "2019"
+df_analysis <- read_rds(paste0(data_path, dir_year,"_unispec_data_summary.rds"))
+
+data <- df_analysis %>% filter(Site == "LMAT") %>% 
+  filter(Date > "2019-07-01") %>% 
+  filter(Date <= "2019-07-15") %>% 
+  filter(!(Treatment %in% c("REF", "DARK"))) %>% 
+  select(-Indices) %>% 
+  mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MicaSense_2019", indices = "NDVI")))
+
+
+data %>% select(Date, Site, Block, Treatment, ScanRep, Plot.x, Plot.y, Indices) %>% 
+  unnest(Indices) %>% 
+  select(-Index) %>% 
+  rename(NDVI = Value) %>% 
+  write_csv("2019-07-02-15_ ARC-LTER_LMAT_unispec-NDVI.csv")
+  
 ```
 

@@ -1,4 +1,14 @@
 
+# File Summaries for 2019 files  -----------------------------------------------
+
+# Investigate summary by site 
+# Join to Unispec Key
+group_by(Site, Date) %>% left_join(unispec_file_key) %>%
+  summarize(Files = n_distinct(spu_filename), Blocks = str_c(sort(unique(Block)), collapse = ","), Treatments = str_c(sort(unique(Treatment)), collapse = ",")) %>% 
+  filter(Site=="MAT") 
+kable()
+
+
 # process_2017_unispec_files ----------------------------------------------
 
 

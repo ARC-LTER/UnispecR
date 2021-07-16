@@ -21,6 +21,7 @@ data_path <-  "/Users/toolik/OneDrive - Marine Biological Laboratory/Toolik Terr
 
 ## for Ruby's chromebook 
 data_path <- "UnispecRecord/UnispecData/2019/"
+data_path <- "/home/ruby/UnispecData/2019/"
 
 
 dir_year <- "2019"
@@ -54,6 +55,7 @@ band_defns <- tribble(
   "ToolikEDC", "nir", 725, 1000
 )
 
+session_date <- "2019-06-02"
 
 
 ```
@@ -95,7 +97,7 @@ spu_key <- read_csv(raw_keyname) # remove -spu_filename_full column for 2019
 
 spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
  # mutate(DateTime = lubridate::ymd_hms(DateTime, tz = "US/Alaska")) %>% 
-  mutate(Date = str_extract(spu_filename, pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}")) %>%  # from filename, not DateTime (sometimes discrepancy in unispec instrument time)
+  mutate(Date = str_extract(spu_filename, pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}")) %>%  # from filename, not DateTime (sometimes discrepancy in unispec instrument time). Keep as character, to avoid joining errors w/other dataframes
 arrange(DateTime)
 
 ## Raw Data summary
@@ -106,9 +108,14 @@ spu_dataframe %>%   group_by(Date, Site) %>%
 loaded_files <- spu_dataframe$spu_filename
 file_match <- str_c(loaded_files, collapse="|")
 
-## ## Processed Data
+## Processed Data
 processed_filename <- paste0(data_path, dir_year, "_processed_spu_data.rds")
 processed_spectra <- read_rds(processed_filename)
+
+## Processed Data summary
+left_join(processed_spectra, spu_key) %>%   group_by(Date, Site) %>% 
+  summarize(Files = n_distinct(spu_filename)) %>% 
+  kable()
 
 ```
 
@@ -143,7 +150,8 @@ spu_dataframe_new <- spu_dataframe_new %>%
   mutate(Date = as.character(Date))
 
 # > Join to previously collected data -----------------------------------------------------
-spu_dataframe <-  spu_dataframe %>% bind_rows(spu_dataframe_new)
+spu_dataframe <-  spu_dataframe %>% bind_rows(spu_dataframe_new) %>% 
+  # choose only a data subset
 
 
 ## Standardize Site Names
@@ -185,9 +193,10 @@ write_csv(spu_key, path = raw_keyname)
 ### Read Field Key & Join with .spu data
 ```{r}
 
-field_key <- paste0(data_path, "2019_unispec_field_key.csv")
+field_key <- paste0(data_path, "2019_updated_unispec_coordinate_key.csv")
 
-unispec_field_key <- read_csv(field_key, skip_empty_rows = T) ## remove NA rows 
+unispec_field_key <- read_csv(field_key, skip_empty_rows = T) %>%  ## remove NA rows 
+  mutate(Date = as.character(Date)) # to join with spu_dataframe, same type
 
 # Confirm spu_dataframe has same Site abbreviation as key
 # > Standardize Site Names -----------------------------------------------------
@@ -197,8 +206,12 @@ unique(spu_dataframe$Site) %>% sort()
 # spu_dataframe$Site <- recode (spu_dataframe$Site, !!!Site_Names, .default = spu_dataframe$Site)
 unique(unispec_field_key$Site) %>% sort()
 
+
+
 df <- full_join(spu_dataframe, unispec_field_key) %>% arrange(DateTime) %>% 
   mutate_at(.vars = vars(Site, Block, Treatment), .funs = factor)
+
+
 
 ```
 
@@ -206,19 +219,18 @@ df <- full_join(spu_dataframe, unispec_field_key) %>% arrange(DateTime) %>%
 ```{r}
 
 unispec_file_key <- df %>% 
-  select(spu_filename, Date, Site, Block, Treatment, Replicate, Location, FileNum, Notes, Weather, Type) %>% 
-  mutate(key_fix = NA) %>% 
+  select(spu_filename, DateTime, Date, Site, Block, Treatment, ScanRep, ScanLocation, Plot.x, Plot.y, FileNum, Notes, Weather, Type) %>% 
   distinct(spu_filename, .keep_all = T)
 
 
-fix_keyname <- paste0(data_path, dir_year,"_unispec_file_key.csv")
+fix_keyname <- paste0(data_path, dir_year,"_processed_unispec_file_key.csv")
 write_csv(unispec_file_key, path = fix_keyname)
 ```
 
 #### Read key fix
 ```{r}
 
-file_key_fix <- paste0(data_path, "2019_unispec_file_key.csv")
+file_key_fix <- paste0(data_path, "2019_processed_unispec_file_key.csv")
 
 unispec_file_key_fix <- read_csv(file_key_fix, col_types = cols(
   spu_filename = col_character(),
@@ -226,9 +238,9 @@ unispec_file_key_fix <- read_csv(file_key_fix, col_types = cols(
   Site = col_character(),
   Block = col_character(),
   Treatment = col_character(),
-  Replicate = col_double(),
+  ScanRep = col_double(),
   FileNum = col_double(),
-  Location = col_character(),
+  ScanLocation = col_character(),
   Weather = col_character(),
   Notes = col_character(),
   key_fix = col_logical()
@@ -257,8 +269,8 @@ df %>%
 ```{r time_check}
 
 ## SPECIFY SITE/DATE/ETC to ZOOM IN ON
-check_site <- "LMAT"
-check_date <- "2019-06-02" # necessary to unlist dates vector
+check_site <- "HIST"
+check_date <- "2019-07-02" # necessary to unlist dates vector
 
 ## Files 
 first_file <- 0
@@ -277,7 +289,7 @@ timedata$diff <- timedata$DateTime - lag(timedata$DateTime)
 
 meta_timedata <- left_join(timedata, unispec_file_key)
 
-time_check <- meta_timedata %>% select(Site, Date, DateTime, Block, Treatment, Replicate, FileNum, diff, Integration_ms, Type) %>% ungroup()
+time_check <- meta_timedata %>% select(Site, Date, DateTime, Block, Treatment, FileNum, ScanLocation, Plot.y, diff, Integration_ms, Type) %>% ungroup()
 
 # Examine dataframe
 time_check %>% print(n=400)
@@ -341,7 +353,7 @@ Make sure to rerun the **Load Keys**. The following plots your chosen references
 options(knitr.kable.NA = '')
 
 ## Build REF key 
-ref_keys <- unispec_file_key_fix %>% 
+ref_keys <- unispec_file_key %>% 
   filter(Treatment == "REF") %>% # extract reference data 
   ## The following separates the Site column into "Site" and "Site_REF"
   ### Site = the site to which the reference measurements should be applied 
@@ -354,7 +366,7 @@ spu_for_ref <- spu_dataframe %>% # in "spu_dataframe", the "Site" column is the 
   rename(Site_REF = Site) # we thus rename Site to Site_REF to match the column 'ref_keys'
 
 ## Join spu data to ref_keys by Site_REF, Date, FileNum
-ref_data <- ref_keys %>% select(Date, Site, Site_REF, FileNum, Block, Treatment, Replicate, Weather, Notes, key_fix) %>% 
+ref_data <- ref_keys %>% select(Date, Site, Site_REF, FileNum, Block, Treatment, ScanNum, Weather, Notes) %>% 
   left_join(spu_for_ref)  ## "Site_REF" is the location where the file (from which the reference correction factor is calculated) actually was collected
   ## "Site", inherited from ref_keys, is now the location where the correction factor should be applied
 
@@ -399,7 +411,7 @@ ref_data_all <- ref_data %>% unnest(Spectra) %>%
   mutate(CorrectionFactor = 1/Reflectance)
 
 ref_plot_all <- ggplot(ref_data_all, aes(x = Wavelength, y = CorrectionFactor, group=spu_filename)) +
-  geom_line(aes(color=factor(Date > "2019-07-02"))) + theme(legend.position="left")
+  geom_line(aes(color=Integration_ms)) + theme(legend.position="left")
 
 
 ref_plot_all
@@ -416,7 +428,7 @@ ref_plot_mistakes
 
 
 ## PLOTS
-ref_plot_all + ggtitle("ALL REFERENCES")
+ref_plot_all + ggtitle("All 2019 White Reference Scans")
 # ref_plot_mistakes + ggtitle("REF Mistakes") +
 #   scale_y_continuous(limits = c(0, NA))
 
@@ -450,22 +462,31 @@ ref_summary <- ref_data %>%
 
 ## Join DATA with REFS
 ### Check no missing Spectra
-spu_dataframe %>% filter(Spectra %>% map(is.null) %>% map_lgl(any))
+df %>% filter(Spectra %>% map(is.null) %>% map_lgl(any))
 
-spu_for_plots <- df %>% filter(!str_detect(Treatment, "REF|DARK")) %>% filter(!is.na(DateTime)) %>% 
+### subset spectra to usable wavelengths (400-1000nm)
+spu_for_plots <- df %>% filter(!str_detect(Treatment, "REF|DARK")) %>%
+  filter(!is.na(DateTime)) %>% 
   unnest(Spectra) %>% 
-  filter(Wavelength > 400, Wavelength < 1000)
+  filter(Wavelength > 400, Wavelength < 1000) %>% 
+  
+  # so you can join 
+  mutate(Date = as.character(Date))
 
 
 df_ref <- left_join(spu_for_plots, ref_summary) %>% 
-  select(Date, DateTime, Site, Block, Treatment, Replicate, spu_filename, FileNum, Integration_ms, Weather, Notes, Notes_REF, ref_filenames, int_REF, Wavelength, ChB, ChA, ChB_REF, ChA_REF, CorrectionFactor) %>%
+  select(Date, DateTime, Site, Block, Treatment, int_REF, Wavelength, ChB, ChA, CorrectionFactor,  ScanNum, spu_filename, FileNum, Integration_ms, Weather, Notes, ChB_REF, ChA_REF, Notes_REF, ref_filenames, everything()) %>% 
+  
+  # drop_unneccessary column
+  select( -Reflectance) %>% 
+  
+  # calculate your own
   mutate(raw_reflectance = ChB/ChA) %>% # the raw reflectance
   mutate(corrected_reflectance = raw_reflectance*CorrectionFactor) 
 
-
 ## Corrected Reflectances 
 df_corrected <- df_ref %>% 
-  nest(Wavelength:corrected_reflectance, .key = processed_spectra)
+  nest(processed_spectra = c(Wavelength, ChB, ChA, ChB_REF, ChA_REF, CorrectionFactor, raw_reflectance, corrected_reflectance))
 ```
 
 #### Check Application
@@ -486,29 +507,48 @@ anti_join(df, df_corrected, by = "spu_filename") %>% pull(Treatment) %>% unique(
 ```{r}
 
 df_subset <- df_corrected %>% 
-  filter(Date == "2019-07-31", Site == "LMAT") %>%
-  slice(1:10) %>% 
+  filter(Date == "2019-08-10", Site == "HIST") %>%
+  slice(1:100) %>% 
   unnest(processed_spectra) %>% 
   gather(key = Status, value = Reflectance, raw_reflectance, corrected_reflectance)
   
 ggplot(data = df_subset, mapping = aes(x = Wavelength, y = Reflectance )) + 
   geom_line(aes(color = spu_filename, linetype = Status)) + 
-    facet_wrap(vars(Date, Site, Block, Treatment, FileNum))
+    facet_wrap(vars(Date, Site, Block, Treatment))
 ```
 
 #### Format & Save
 ```{r}
-processed_spu_data <- df_corrected %>% 
+processed_spu_data <- df_corrected %>%
   select(spu_filename, DateTime, ref_filenames, processed_spectra) %>% unnest(processed_spectra) %>%
-  select(spu_filename, DateTime, ref_filenames, Wavelength, ChB, ChA, raw_reflectance, CorrectionFactor, corrected_reflectance) %>% 
-  nest(Wavelength:corrected_reflectance, .key = Spectra)
+  select(
+    spu_filename,
+    DateTime,
+    ref_filenames,
+    Wavelength,
+    ChB,
+    ChA,
+    raw_reflectance,
+    CorrectionFactor,
+    corrected_reflectance
+  ) %>%
+  nest(
+    Spectra = c(
+      Wavelength,
+      ChB,
+      ChA,
+      raw_reflectance,
+      CorrectionFactor,
+      corrected_reflectance
+    )
+  )
 
 ref_spu_data <- ref_data %>% unnest(Spectra) %>% 
   select(spu_filename, DateTime, Wavelength, ChB, ChA, Reflectance) %>% 
   mutate(CorrectionFactor = 1/Reflectance, corrected_reflectance = NA) %>% 
   filter(Wavelength > 400, Wavelength < 1000) %>% 
   rename(raw_reflectance = Reflectance) %>% 
-  nest(Wavelength:corrected_reflectance, .key = Spectra)
+  nest(Spectra = c(Wavelength, ChB, ChA, raw_reflectance, CorrectionFactor, corrected_reflectance))
 
 df_processed <- bind_rows(processed_spu_data, ref_spu_data)
   
@@ -939,39 +979,76 @@ write_rds(df_indices, index_filename)
 ### Load Index Data
 ```{r}
 
-index_data <- read_rds(paste0(data_path, "2019_index_data.rds")) %>% 
-    unnest(Indices) %>% spread(Index, Value) %>% 
-    mutate(DOY = lubridate::yday(DateTime))
+index_data <- read_csv(paste0(data_path, "2019_processed_veg-indices.csv")) %>% 
+    mutate(DOY = lubridate::yday(DateTime)) %>% 
+  left_join(unispec_file_key_fix)
+
+
+index_data <- read_rds("/home/ruby/UnispecR/UnispecRecord/UnispecData/2019/2019_index_data.rds") 
 ```
 
 ## Calculate INDICES for new spu files
+Calculates for all files not in existing dataframe of index_data
 ```{r}
+## identify new files by filename list 
 new_files <- spu_dataframe_new$spu_filename
-
 df_processed_new <- df_processed %>% filter(spu_filename %in% new_files)
 
-indices_new <- unispec_file_key_fix %>% 
+## OR identify new files by comparison to existing dataframe
+df_processed_new <- anti_join(processed_spectra, index_data %>% select(spu_filename)) 
+
+indices_new <-
+  
+  ## Filter for data  files 
+  unispec_file_key %>% 
   filter(!is.na(Treatment)) %>% 
   filter(!str_detect(Treatment, "REF|DARK")) %>% 
+  
+  ## Join to spectra data 
   inner_join(df_processed_new) %>% 
-  ## Format for calculuating indices
+  
+  ## Format for "calculate_indices" function
   unnest(Spectra) %>% 
   select(-ChB, -ChA, -raw_reflectance, -CorrectionFactor) %>% 
   rename(Reflectance = corrected_reflectance) %>% 
-  nest(Wavelength, Reflectance,.key = Spectra) %>%
+  nest(Spectra = c(Wavelength, Reflectance)) %>%
+  
   ## Calculate NDVI
-  mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = c("NDVI", "EVI", "EVI2"))))
+  mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns,
+                                                              instrument = "MODIS", 
+                                                              indices = c("NDVI", "EVI", "EVI2")))) %>% 
+  arrange(DateTime) 
+
+indices_new_formatted <- indices_new %>% select(spu_filename, DateTime, Indices) %>% unnest(Indices)
 
 ## SAVE UPDATED INDICES
-indices_all <- bind_rows(df_indices, indices_new)
-index_filename <- paste0(data_path, dir_year, "_index_data.rds")
-write_rds(indices_all, index_filename)
+indices_all <- index_data %>% 
+  # rename(ScanNum = Replicate, ScanLocation = Location) %>% 
+  # select(spu_filename, DateTime, Date, Site, Block, Treatment, ScanNum, ScanLocation, FileNum, Notes, Weather, Type, ref_filenames, Spectra, Indices) %>% 
+   bind_rows(indices_new_formatted) %>% 
+  # 
+  # ## Format to save to long-term record 
+  # select(spu_filename, DateTime, Indices) %>% 
+  # unnest(Indices) %>% 
+  # ## fill in gaps 
+  # # mutate(BandDefinition = "MODIS") %>% 
+  # # select(spu_filename, DateTime, Index, BandDefinition, Value) %>% 
+  arrange(DateTime) 
+
+index_filename <- paste0(data_path, dir_year, "_processed_veg-indices.csv")
+write_csv(indices_all, index_filename)
   
 ```
 
 
 ### Plot Check NDVI
 ```{r}
+
+index_data <- read_csv(paste0(data_path, "2019_processed_veg-indices.csv")) %>% 
+    mutate(DOY = lubridate::yday(DateTime)) %>% 
+  left_join(unispec_file_key_fix) %>% 
+  select(-BandDefinition) %>% 
+  spread(Index, Value) 
 
 np_colors <- RColorBrewer::brewer.pal(name = "Greens", n = 5)
 
@@ -994,6 +1071,8 @@ index_subset <- index_data %>%
   filter(Site %in% check_site) %>%
   filter(Block %in% check_blocks) %>% 
   filter(Treatment %in% check_treatments) %>% 
+  ## tagged only
+  filter(str_detect(ScanLocation, pattern = "[0-9]S")) %>% 
   mutate(Treatment = replace(Treatment, Treatment %in% CT & aggregate_ctls, "CT"), Treatment)  %>% #Choose index to graph
   rename_at(vars(contains(which_index)), list( ~ sub(which_index, 'index', .)))
 
@@ -1008,6 +1087,7 @@ index_summary <- index_subset %>%
 #   group_by(N = n(), add = TRUE) %>% # add number of blocks per site to get Standard Error
 #   summarize_at(vars(index), funs(mean, sd), na.rm=T) 
 
+## LINEPLOT
 ggplot(data = index_summary, mapping = aes(x = Date, y = mean, color=Treatment)) +
     {if(add_points)geom_point(data = index_subset, aes(x=Date, y = index, color = Treatment),  alpha = 0.4)} + # add points for all measurements
     geom_point() + 
@@ -1026,7 +1106,7 @@ ggplot(data = index_summary, mapping = aes(x = Date, y = mean, color=Treatment))
     facet_grid(Site ~ Block) 
 
 
-
+## SCATTERPLOT
 ggplot(data = index_subset, mapping = aes(x = Date, y = index, color = Treatment)) +
   geom_point(aes(shape=Block), position = "jitter") + 
   geom_smooth(aes(fill=Treatment), method = lm, formula = y ~ splines::bs(x, 3)) + 
@@ -1057,8 +1137,8 @@ ggplot(data = index_subset,aes(x=Date, y=index)) +
 ggplot(data = index_subset, aes(x=FileNum,y=index, fill=Block)) +
   geom_bar(stat="identity") + facet_wrap(vars(Block), scales = "free_x")
 
-ggplot(data = index_subset, aes(x=Date,y=Value)) +
-  geom_point(aes(color=Block, shape=factor(Replicate)))
+ggplot(data = index_subset, aes(x=Date,y=index)) +
+  geom_point(aes(color=Block, shape=factor(ScanRep)))
   #geom_line(aes(group=Replicate, color=Block))
 
 spec_subset <- df_subset %>% select(-Spectra) %>% 

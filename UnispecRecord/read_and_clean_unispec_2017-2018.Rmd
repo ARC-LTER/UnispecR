@@ -107,7 +107,7 @@ spu_key <- spu_dataframe %>%
 ### Save .spu data & key 
 ```{r, save_raw_data}
 
-# > Extract only Spectral datawithout metadata -----------------------------------------------------
+# > Extract only Spectral data without metadata -----------------------------------------------------
 spu_spectra <- spu_dataframe %>% select(spu_filename, DateTime, Spectra)
 
 ## Save raw data as .rds 

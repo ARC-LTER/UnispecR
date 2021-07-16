@@ -7,6 +7,7 @@
 #    http://shiny.rstudio.com/
 #
 
+library(tidyverse)
 library(shiny)
 
 index_data <- read_rds("2019_index_data.rds") %>% 
@@ -20,7 +21,7 @@ index_list <- c("NDVI", "EVI", "EVI2")
 year_list <- seq(min(lubridate::year(index_data$DateTime)), max((lubridate::year(index_data$DateTime))), by = 1) 
 date_list <- unique(lubridate::yday(index_data$DateTime))
 
-# Define UI for application that draws a histogram
+# Define UI for application 
 shinyUI(fluidPage(
     
     navbarPage("Arctic LTER Spectral Reflectance Data",

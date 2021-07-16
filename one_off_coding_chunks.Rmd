@@ -1,0 +1,356 @@
+---
+title: "Unispec Key Processing Code"
+output: html_notebook
+author: Ruby An - Terrestrial RA 2017, 2018, 2019
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(tidyverse)
+```
+
+This Notebook is meant to be a placeholder repository for code chunks used to process and quality check the unispec keys. This is not part of the normal workflow, but more of a one-off code that can be scraped for other uses later on. 
+
+### 16 June 2020 : Beta testing shiny unispec_checks code 
+```{r}
+# read in file subset 
+data_path <- "/home/ruby/UnispecData/2019/2019-08-16/"
+spu_files <- list.files(path = data_path, pattern = ".spu$", full.names = T, recursive=T)
+
+
+
+## read data
+read.table(file= spu_files[100], 
+                 skip = 9, 
+                 col.names = c("Wavelength", "ChB", "ChA")) %>%
+  
+  ## tidy
+  as_tibble() %>% 
+  mutate(Reflectance = ChB/ChA) %>% 
+  filter(Wavelength > 400, Wavelength < 1000) %>% 
+  gather(key = Channel, value = Intensity, ChB, ChA) %>%
+  gather(key = ref_part, value = Reflectance_Intensity, Intensity, Reflectance) %>% 
+        
+  ## viz
+  ggplot(mapping = aes(x = Wavelength, y = Reflectance_Intensity)) +
+    geom_line(aes(color=Channel)) +
+    facet_wrap("ref_part", scales = "free")
+
+```
+
+
+### 1 June 2020 : Create Unispec Data Summary File for 2019 
+```{r}
+dir_year <- "2019"
+
+## Raw Data
+raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
+spu_spectra <- read_rds(raw_filename)
+  
+# Raw Metadata  
+raw_keyname <- paste0(data_path, dir_year, "_raw_spu_metadata.csv")
+spu_key <- read_csv(raw_keyname) %>% mutate(DateTime = with_tz(DateTime, "US/Alaska")) 
+
+## Processed Data
+processed_filename <- paste0(data_path, dir_year, "_processed_spu_data.rds")
+processed_spectra <- read_rds(processed_filename) 
+
+## Index Data
+index_filename <- paste0(data_path, dir_year, "_index_data.csv")
+index_data <- read_csv(index_filename) %>% mutate(DateTime = with_tz(DateTime, "US/Alaska"))
+
+
+## File Key 
+key_filename <- paste0(data_path, dir_year, "_unispec_file_key.csv")
+
+unispec_file_key <- read_csv(key_filename, skip_empty_rows = T)
+
+## DATA SUMMARIES 
+spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
+  mutate(DateTime = with_tz(DateTime, "US/Alaska")) %>% 
+arrange(DateTime)
+
+processed_dataframe <- processed_spectra %>% 
+  unnest(Spectra) %>% 
+  select(-raw_reflectance) %>% rename(Reflectance=corrected_reflectance) %>% 
+  nest(Spectra = c("Wavelength", "ChB", "ChA", "CorrectionFactor", "Reflectance")) %>% 
+  
+  ## Add index data
+  left_join(index_data) %>% 
+  nest(Indices = c("Index", "BandDefinition", "Value")) 
+  
+  ## Add SITE metadata to join to file key
+  mutate(Site = str_extract(spu_filename, "([A-Z]{3,8}[0-9]*)(?=_)")) %>% # DOES NOT WORK FOR "MAT-SH" measurements
+  mutate(Site = ifelse(str_detect(spu_filename, "MAT-SH"), "MAT-SH", Site))
+
+
+## Dataframe for analysis 
+df_analysis <- unispec_file_key %>% 
+  left_join(processed_dataframe)
+
+## Save dataframe
+# write_rds(df_analysis, "/home/ruby/UnispecData/2019/2019_unispec_data_summary.rds")
+```
+
+### 1 June 2020 : Check DateTime and Date correspondance for spu_dataframe
+```{r}
+
+spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
+  mutate(DateTime = with_tz(DateTime, "US/Alaska")) %>% 
+  mutate(Date = str_extract(spu_filename, pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}")) %>%  # from filename, not DateTime (sometimes discrepancy in unispec instrument time). Keep as character, to avoid joining errors w/other dataframes\
+  mutate(DateMatch = yday(Date) == yday(DateTime)) %>% 
+arrange(DateTime)
+
+```
+
+### 1 June 2020 : Read unispec field key locally & from google drive
+```{r}
+## Field Key 
+field_key <- paste0(data_path, "2019_updated_unispec_coordinate_key.csv")
+
+# frome google
+unispec_field_key <- read_sheet("https://docs.google.com/spreadsheets/d/1pgxU2FW7AjVFFokRF2SKjErp13DkgLbhOqZYBqbv2tA/edit#gid=1538721792")
+
+unispec_field_key <- read_csv(field_key, skip_empty_rows = T) %>%  ## remove NA rows 
+  mutate(Date = as.character(Date)) # to join with spu_dataframe, same type
+
+```
+
+
+### 29 April 2020 : Add location coordinates (Location, Plot.x, Plot.y) data to 2019 field key
+```{r}
+
+## One-time code for adding location data to field key 
+
+## Plot.x value 
+field_key <- "/home/ruby/UnispecData/2019_unprocessed_unispec_data/2019_unispec_field_key.csv"
+
+unispec_key <- read_csv(field_key, skip_empty_rows = T)  %>% 
+  mutate(Plot.y = Location) %>% 
+  mutate(Plot.x = case_when(
+    Site == "NANT" & Block == "B3" ~ 0.5, 
+    Site %in% c("LMAT", "MAT","DHT", "MNAT", "HIST", "NANT", "WSG") ~ 4.5)) 
+
+unispec_key[is.na(unispec_key)] <- ""
+
+write_csv(unispec_key, "2019_unispec_key_locations.csv")
+
+
+#################### Using Google Sheets (copy of above .csv)
+# This step included a lot of manual editing.
+
+
+library(googlesheets4) #for reading in files from google sheets
+
+# function for speed
+read.gtemplate <- function(link, sheet_name) {
+  key <- read_sheet(templates_link, 
+                    sheet=sheet_name, 
+                    col_types = "Dcccicnnicc") 
+}
+
+templates_link <- "https://docs.google.com/spreadsheets/d/1j1rMbdqanJ-ZKh-k54wVKSIs5ECdC2jYLhYQcyLH80A/edit#gid=1993211502"
+
+
+# Read each sheet -- for Sliver Tag by PLot.y coordinate correspondence
+HIST <- read.gtemplate(templates_link, "MAT81")
+MAT <- read.gtemplate(templates_link, "MAT89")
+LMAT <- read.gtemplate(templates_link, "MAT06")
+DHT <- read.gtemplate(templates_link, "DHT89")
+WSG <- read.gtemplate(templates_link, "WSG89")
+SHB <- read.gtemplate(templates_link, "SHB89")
+MNAT <- read.gtemplate(templates_link, "MNT97")
+NANT <- read.gtemplate(templates_link, "MNN97")
+
+templates <- bind_rows(HIST, MAT, LMAT, DHT, WSG, SHB, MNAT, NANT) %>%
+  select(-Date, -FileNum, -ScanNum, -Notes, - Weather) %>% 
+  filter(!Treatment %in% c("DARK", "REF")) %>% 
+  filter(!is.na(ScanLocation)) %>% 
+  filter(!is.na(Plot.y))
+
+templates.coord <- templates %>% rename(Plot.y.template = Plot.y, Plot.x.template = Plot.x)
+
+
+## 2019 Unispec Field Key with Locations
+key_2019 <- read_sheet("https://docs.google.com/spreadsheets/d/1Y8QInRjmvuTBKmUrvRiLFYojkh3MQuOE1uV0fN5siPE/edit")
+
+
+## Check for discrepancies 
+key_2019 %>% left_join(templates) %>%
+  filter(Location != ScanLocation) 
+
+# IF NONE, proceed: 
+
+## Fill-in missing tag locations
+(
+  key_located <- key_2019 %>%
+    left_join(templates) %>%
+    filter(!is.na(Date)) %>%  # remove empty rows
+    
+    # fills in Location from templates
+    mutate(Location = if_else(is.na(Location), ScanLocation, Location)) %>% 
+    select(-ScanLocation) %>%
+    rename(ScanLocation = Location) %>%
+    
+    # fills in Plot.y from templates.coord
+    left_join(templates.coord) %>% 
+    mutate(Plot.y = if_else(is.na(Plot.y),Plot.y.template, Plot.y)) %>% 
+    
+    # Orders columns
+    select(-Plot.x.template, -Plot.y.template) %>% 
+    select(Date,
+           Site,
+           Block,
+           Treatment,
+           ScanNum,
+           ScanLocation,
+           everything()) %>%
+    
+    # make it easier to see summaries
+    mutate_at( .vars = c("Site", "Block", "Treatment", "ScanLocation"), .funs = list(factor))
+)
+
+
+### Fills in PLot.y from templates.coord
+key_located %>% 
+  filter(!is.na(ScanLocation) & is.na(Plot.y)) %>% 
+  select(Date, Site, Block, Treatment) %>% unique() %>% 
+  print(n=500)
+  # CHECK THAT no important. WSG, DHT EXClosures, LMAT CT & GH's, GH's and SH's are fine. 
+
+## Check for abnormal number of tagged location in plots 
+key_located %>% filter(!is.na(ScanLocation)) %>% 
+  group_by(Date, Site, Block, Treatment) %>% 
+  summarize(count = n(), scans = str_c(unique(str_replace_na(ScanLocation)), collapse=", ")) %>% 
+  filter(count != 5) %>% 
+  print(n=100)
+## No important treatments missing 1S, 2S, 3S, 4S, 5S, only -- then this is OK
+
+
+# CHECK-UP & CLEAN-UP: 
+## Summarize silver tagged locations 
+tagged <- key_located %>% filter(str_detect(ScanLocation, "\\dS")) %>% ## detect rows w/silver tag
+  group_by(Date, Site, Block, Treatment) %>% 
+  summarize(count = n(), scans = str_c(unique(str_replace_na(ScanLocation)), collapse=", "))
+
+## Summarize all -- check for missing important treatments 
+(non_tagged <- key_located %>%
+  filter(!is.na(Block)) %>% # remove
+  group_by(Date, Site, Block, Treatment) %>% 
+  summarize(count = n(), scans = str_c(unique(str_replace_na(ScanLocation)), collapse=", ")) %>% 
+  select(Date, Site, Block, Treatment) %>% anti_join(tagged)) %>%   #compare against tagged
+
+  # Only significant treatment noted is LMAT CT's missing tagged files
+  filter(Treatment == "CT") 
+
+
+## FORMAT FOR SAVING 
+key_located
+
+
+# SAVE .csv of key with completed location
+write_csv(key_located %>% mutate(Date = lubridate::ymd(Date)), "2019_unispec_key_locations.completed.csv")
+```
+
+
+### 1 May 2020 : Add 2019 Index Data to dataframe for SHINY VISUALIZATION 
+```{r}
+
+index_data_2019 <- read_rds("/home/ruby/UnispecR/UnispecRecord/UnispecData/2019/2019_index_data.rds") %>% 
+    unnest(Indices) %>% spread(Index, Value) %>% 
+    mutate(DOY = lubridate::yday(DateTime))
+
+## Make a character vector of all .spu raw files in folder
+index_files <- list.files(path = "/home/ruby/UnispecData/2019_unprocessed_unispec_data/", pattern = "index_data.rds$", full.names = T, recursive=T)
+
+# Read metadata text lines (9) from the spu files
+index_filedata.shiny <- map_dfr(index_files, read_rds) %>%  select(DateTime, Site, Block, Treatment, Replicate, FileNum, Indices) %>% 
+  unnest(Indices) %>% 
+  
+  # Spread Indices 
+  group_by_at(vars(-Value)) %>%  # WEIRD WORK AROUND FOR SPREADING PROBLEM: group by everything other than the value column. 
+  mutate(row_id=1:n()) %>% ungroup() %>%  # build group index
+  spread(Index, Value) %>% 
+  select(-row_id) %>%  # drop the index
+  
+  # Add the right dates 
+  select(DateTime, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2) %>% 
+  mutate(Year = lubridate::year(DateTime), Date = lubridate::date(DateTime), DOY = lubridate::yday(DateTime))
+
+# Filter out 2019 un-tagged locations
+index_filedata.shiny %>% left_join(unispec_file_key %>% select(-Date)) %>% filter(!is.na(ScanLocation))
+
+# Format index data for shiny
+index_data_2019.shiny <- index_data_2019 %>% 
+  select(DateTime, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2) %>% 
+  mutate(Year = lubridate::year(DateTime), Date = lubridate::date(DateTime), DOY = lubridate::yday(DateTime))
+
+# Add metadata 
+index_data_2019.all.shiny <- bind_rows(index_data_2019.shiny, index_filedata.shiny) %>%  
+  mutate(Block = as.numeric(str_extract(Block, "\\d"))) %>% 
+  mutate(Replicate = as.character(Replicate))
+
+# Add to previously processed data (before August)
+index_data_update <- index_data %>% bind_rows(index_data_2019.all.shiny)
+
+write_rds(index_data_update, "/home/ruby/UnispecR/Visualizations/shiny_unispec_cleaned/indices_2014-2019.updated.rds")
+
+```
+
+
+# 1 May 2020, Add newly processed files to "2019_processed_spectra.rds"
+```{r}
+
+
+## Processed Data
+processed_filename <- paste0(data_path, dir_year, "_processed_spu_data.rds")
+processed_spectra <- read_rds(processed_filename)
+
+processed_spectra.all <- processed_spectra %>% bind_rows(df_processed)
+
+
+# Check all NA's are REF files
+processed_spectra %>% left_join(unispec_file_key) %>% 
+  unnest(Spectra) %>% filter(is.na(corrected_reflectance)) %>% 
+  select(Date, Site, Treatment, spu_filename) %>% unique()  %>% 
+  pull(Treatment) %>% unique()
+
+all_spectra <- processed_spectra %>% bind_rows(df_processed) %>% arrange(DateTime) 
+
+# Check new spectra are added
+left_join(all_spectra, spu_key) %>%   group_by(Date, Site) %>% 
+  summarize(Files = n_distinct(spu_filename)) %>% 
+  kable()
+
+# Check no others are missing
+anti_join(processed_spectra %>% select(spu_filename), all_spectra) %>% left_join(unispec_file_key) %>% group_by(Date, Site) %>% summarize()
+
+## Save 
+processed_spu_filename <- paste0(data_path, dir_year, "_processed_spu_data.rds")
+
+write_rds(all_spectra, processed_spu_filename)
+
+
+## Index Data for shiny app
+
+```
+
+# 5 May 2020: Filter data out of for Shiny APP
+```{r}
+index_data <- read_rds("/home/ruby/UnispecR/Visualizations/shiny_unispec_cleaned/indices_2014-2019.updated.rds") #load dataframe "index_data"
+
+
+index_data_comp <- index_data %>% 
+  mutate(Time = if_else(is.na(Time), DateTime, Time)) %>% 
+  select(-DateTime) %>% 
+  
+  ## join with standardized shiny data from 2019
+  filter(Year != 2019) %>% 
+  bind_rows(shiny_dataframe)
+
+write_rds(index_data_comp, "/home/ruby/UnispecR/Visualizations/shiny_unispec_cleaned/indices_2014-2019_tagged.rds")
+
+```
+
+
+
