@@ -1,0 +1,386 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+## CHOOSE FILES MANUALLY 
+```{r}
+## OR CHOOSE MANUALLY 
+# Check if directory exist and use it as the working directory
+if (!dir.exists(data_path) || !grepl(session_year,data_path)) {
+  data_path <- rchoose.dir(caption = "Select Unispec Data directory")}
+# Find unispec_key files 
+key_files <- rchoose.files(default = data_path, caption = "Select unispec key file")
+```
+
+
+### Check compatability of Field Key with data files 
+```{r, echo = F, warning=F}
+
+# Confirm spu_dataframe has same Site abbreviation as key
+if(!(unique(spu_dataframe$Site) %in% unique(field_keys$Site) %>% all())) {
+  print("ERROR! SITE NAME in spu_files and spu_fieldkey differ! Check file names and file key template.")
+}
+u
+# Date inconsistencies
+if(spu_dataframe %>% pull(Date) %>% unique() != params$session_date){
+  print("ERROR! Date Discrepancy")
+  print(spu_dataframe %>% pull(Date) %>% unique())
+}
+
+```
+
+
+## Data Summary 
+```{r data_summary} 
+## Data summary
+spu_dataframe %>%
+  mutate(Date = floor_date(DateTime, unit="day")) %>% 
+  group_by(Date, Site) %>% 
+  summarize(Files = n_distinct(spu_filename)) %>% 
+  kable(caption = "Raw .spu files read-into spu_dataframe")
+
+## Print Summary of files 
+df %>% group_by(Date, Site, Block) %>%  
+  filter(!is.na(Treatment)) %>% 
+  summarize(Treatments = str_c(str_replace_na(sort(unique(Treatment))), collapse = ","), Num_Files = n()) %>% 
+  kable(caption ="Files listed in field key")
+
+```
+
+
+
+
+## QAQC
+
+### Missing files 
+List missing raw .spu files and those that are unprocessed (raw .spu file does not appear in summary .xlsx). Missing raw files. 
+```{r missing, warnings=F}
+### MISSING: Find all processed data that is missing corresponding raw spu files 
+missing_spu_data <- anti_join(field_keys, spu_dataframe)
+
+if(nrow(missing_spu_data) > 0){
+  missing_spu_data 
+}
+
+(unprocessed_files <- anti_join(spu_dataframe, field_keys) %>% pull(spu_filename))
+```
+
+
+### Mis-Labeling 
+Check for human error in recording correspondence between metadata and file numbers. 
+
+#### Discrepancy Checks
+Check for possible mislabeling. 
+
+```{r df_check, dependson="df", eval= T, echo=F, warnings=F}
+
+## General NA test
+df_na <- df %>% filter(ScanType == "Datascan") %>% 
+  filter(is.na(spu_filename) | # spu_filename
+           is.na(Site) | # site
+           is.na(Block) & !str_detect(Treatment, "REF|DARK|VEG") | # Block NA's should always be REFS or EXTRA
+           is.na(Replicate) & !str_detect(Treatment, "REF"), # Check for replicate NA's that aren't REF
+         Treatment != "EXTRA|VEG|REF") # don't care about EXTRA 
+
+
+## Check for large filenumbers : Inconsistent File Number reading due to number at end of site names
+df_lgfn <- df %>%
+  filter(FileNum > 600) %>%  # Sites w/numbers at the end mis-read in as part of file number. All > 100000: Unispec-DC measurements only go up to 5 digits.
+  select(Date, Site, Block, Treatment, FileNum, spu_filename)
+
+
+## Check File Number Pattern -- pulls out treatments that are not multiples of 5
+#### Num Files per block should be multiples of 5, unless REF or NA
+df_filenum_count <- field_keys %>% group_by(Site, Date, Block) %>% 
+  filter(Treatment != "THROWAWAY") %>% 
+  filter(Treatment != "DARK") %>% 
+  filter(Treatment != "REF") %>% 
+  summarize(Treatments = str_c(str_replace_na(unique(Treatment)), collapse = ","), Num_Files = n()) %>% 
+  filter(Num_Files %% 5 != 0)  # files per plot
+
+```
+
+
+Missing labels: 
+`r if(nrow(df_na)>0){kable(df_na)}`
+Large filenumbers: 
+`r if(nrow(df_lgfn)>0){kable(df_lgfn)}`
+
+An abnormal numbers of files per plot: 
+`r if(nrow(df_filenum_count)>0){kable(df_filenum_count)}`
+
+#### Duplicates 
+Identify duplicates in field key or spu_files. Fix by editing unispec_key_fix.csv or deleting duplicate files. Only duplicates should be REF files used for other sites. 
+
+```{r duplicates}
+
+### Check for duplicate entries in key
+duplicate_entries <- field_keys %>% group_by(Date, Site, Block, Treatment, Replicate, FileNum) %>%
+  filter(n()>1) %>%
+  arrange(Date, Site, FileNum) 
+
+if(nrow(duplicate_entries)>0) {
+  duplicate_entries %>% kable()
+}
+
+### Check raw spu_files have no duplicates
+
+duplicates <- spu_dataframe %>% group_by(DateTime, FileNum) %>%
+  filter(n()>1) %>%
+  arrange(Date, Site, FileNum)
+
+## File List 
+duplicate_files <- duplicates$spu_filename
+  
+if (nrow(spu_dataframe) != length(unique(spu_dataframe$DateTime))) {
+    ## Check for duplicate spu files 
+  duplicates %>%   kable()
+}
+
+
+```
+
+### Instrument Check:
+
+#### Max'd Out Spectra (> 65000 AD)
+List files that maxed out, in the wavelengths used to calculate MODIS NDVI.
+```{r maxed, dependson="df"}
+
+maxed_data <- df %>% inner_join(spu_dataframe %>% select(spu_filename)) %>% # restrict to those w/.spu files
+  unnest(Spectra) %>% 
+  filter(ChA > 65000 | ChB > 65000) %>% 
+  group_by(spu_filename) %>% 
+  summarize(maxed_number = n(), maxed_wavelengths = str_c(min(Wavelength), " - ", max(Wavelength), collapse = ", "))  
+
+# Print MAXED files 
+if (nrow(maxed_data) > 0) {
+  df %>% select(spu_filename, Site, Date, Block, Treatment, Replicate) %>% 
+     inner_join(maxed_data)
+  
+} else { print("no maxed files")}
+
+# Maxed file list 
+maxed_files <- maxed_data$spu_filename
+```
+
+
+#### Dim'd Out Spectra
+Primarily Darkscans should show up. 
+```{r dim, dependson=df, warnings=F}
+dim_data <- df %>% inner_join(spu_dataframe %>% select(spu_filename)) %>% 
+  #filter(!ScanType %in% c("Throwawayscan", "DARKscan")) %>% 
+  unnest(Spectra) %>% 
+  group_by(spu_filename) %>% 
+  summarize(ChA_max = max(ChA)) %>% 
+  filter(ChA_max < 20000) %>% 
+  left_join(df) 
+
+# Print DIM files  
+if (nrow(dim_data) > 0) {
+  dim_data %>% select(spu_filename, Site, Date, Block, Treatment, Replicate, ChA_max) %>% 
+    kable()
+  
+} else { print("no dim files")}
+
+# File List
+dim_files <- dim_data$spu_filename
+```
+
+
+#### Time Check / Editable Data Table
+Times between files, check for Mislabeling, etc.
+```{r time_check}
+# Select columns to Check
+timedata <- df %>% 
+  select(Site, Date, DateTime, FileNum, Integration, ScanType) %>% 
+  distinct(DateTime, .keep_all = T)
+
+timedata$diff <- timedata$DateTime - lag(timedata$DateTime)
+
+meta_timedata <- left_join(timedata, field_keys)
+
+time_check <- meta_timedata %>% select(Site, Date, DateTime, Block, Treatment, Replicate, FileNum, diff, everything()) %>% ungroup()
+
+# Examine dataframe
+time_check %>% select(Date, Site, Block, Treatment, FileNum, diff, Integration) %>% print(n=450)
+```
+
+
+#### Zero'd Spectra
+```{r zerod}
+## zero'd data with restricted wavelengths 
+zero_data <- df %>% inner_join(spu_dataframe %>% select(spu_filename)) %>% unnest(Spectra) %>% 
+  filter(ChA == 0) %>%  ## This is for all wavelengths, not just 400-1000nm
+  filter(Wavelength > 400, Wavelength < 1000) %>% 
+  group_by(spu_filename) %>% 
+  summarize(Zeros = n()) %>% 
+  left_join(df)
+
+# Print ZEROED files 
+if (nrow(zero_data_narrowed) > 0) {
+  zero_data_narrowed %>% select(spu_filename, Site, Date, Block, Treatment, Replicate, Zeros)
+  
+} else { print("no zero'd files")}
+  
+```
+
+
+### Raw Spectra Plot Check
+```{r check_refs}
+
+
+df %>% 
+  # arrange for 
+  unnest(Spectra) %>% 
+  filter(Wavelength > 400, Wavelength < 1000) %>% 
+  mutate(Reflectance = ChB/ChA) %>% 
+  gather(key = Channel, value = Intensity, ChB, ChA) %>% 
+  gather(key = ref_part, value = Reflectance_Intensity, Intensity, Reflectance) %>% 
+  
+  # Viz
+  ggplot(mapping = aes(x = Wavelength, y = Reflectance_Intensity, group = FileNum)) +
+  geom_line(aes(color = Treatment)) +
+  facet_grid(ref_part ~ FileNum, scales="free") 
+
+
+```
+
+### Reference mistakes 
+```{r}
+ref_mistakes <- ref_data_mistakes %>% distinct(spu_filename) %>% pull()
+
+
+
+## Build Plot all reference mistakes
+ref_data_mistakes <- ref_data_all %>%
+  filter(CorrectionFactor > 5) %>% 
+  distinct(spu_filename) %>% 
+  select(spu_filename) %>% 
+  left_join(ref_data_all)
+
+(ref_plot_mistakes <- ggplot(ref_data_mistakes, aes(x = Wavelength, y = CorrectionFactor)) +
+  geom_line(aes(color=spu_filename)))
+
+## PLOTS
+ref_plot_all + ggtitle("ALL REFERENCES")
+# ref_plot_mistakes + ggtitle("REF Mistakes") +
+#   scale_y_continuous(limits = c(0, NA))
+
+```
+
+
+#### Reflectance >1 
+```{r absurd}
+
+## Corrected Spectra
+absurd_data <- df_corrected %>% 
+  filter(!str_detect(Treatment, "REF")) %>% # ignore REF files
+  unnest(processed_spectra) %>% # use corrected spectra
+  select(-(ChB:raw_reflectance)) %>%  # remove unnecessary Wavelength specific rows 
+  filter(Wavelength > 400 & Wavelength < 1000) %>% 
+  filter(corrected_reflectance > 1) %>% 
+  nest(Spectra = c(Wavelength, corrected_reflectance))
+
+## File List 
+absurd_files <- absurd_data$spu_filename
+
+```
+
+## Apply references
+
+##### Check Application
+```{r}
+## Check all files have a corrected reflectance
+corrected_spectra_files <- df_corrected %>% unnest(processed_spectra) %>% filter(!is.na(corrected_reflectance)) %>% select(spu_filename, Date, Site) %>% distinct()
+
+## missing corrections
+anti_join(df_corrected, corrected_spectra_files) %>% 
+  group_by(Date, Site, Block, Treatment, Integration) %>% 
+  summarize(Num_Files = n()) %>% kable()
+
+## Check that no important treatments are left out 
+anti_join(df, df_corrected, by = "spu_filename") %>% pull(Treatment) %>% unique()
+```
+
+
+
+### Calculate INDICES for new spu files
+```{r}
+new_files <- spu_dataframe_new$spu_filename
+
+df_processed_new <- df_processed %>% filter(spu_filename %in% new_files)
+
+indices_new <- unispec_file_key_fix %>%
+  filter(!is.na(Treatment)) %>%
+  filter(!str_detect(Treatment, "REF|DARK")) %>%
+  inner_join(df_processed_new) %>%
+  ## Format for calculuating indices
+  unnest(Spectra) %>%
+  select(-ChB, -ChA, -raw_reflectance, -CorrectionFactor) %>%
+  rename(Reflectance = corrected_reflectance) %>%
+  nest(Wavelength, Reflectance,.key = Spectra) %>%
+  ## Calculate NDVI
+  mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = c("NDVI", "EVI", "EVI2"))))
+
+## SAVE UPDATED INDICES
+indices_all <- bind_rows(df_indices, indices_new)
+index_filename <- paste0(data_path, dir_year, "_index_data.rds")
+write_rds(indices_all, index_filename)
+
+```
+
+
+### Label Unispec Problems
+```{r unispec_problem_key}
+
+problem_files <- c(maxed_files, dim_files, absurd_files, missing_spu_files)
+
+df_ref_filenames <- df_corrected %>% unnest(processed_spectra) %>%
+  select(spu_filename, ref_filenames) %>% distinct()
+
+unispec_problem_key_pre <- unispec_file_key_fix%>%
+  mutate(Replicate = factor(Replicate)) %>%
+  # mislabeled
+  mutate(mislabeled = !is.na(key_fix)) %>% # mislabeled
+  # mismeasurement
+  left_join(maxed_data) %>% # maxed_number, maxed_wavelenghs
+  mutate(maxed = spu_filename %in% maxed_files) %>%
+  mutate(dim = spu_filename %in% dim_files) %>% # dim
+  mutate(absurd_reflectance = spu_filename %in% c(zero_files, absurd_files)) %>% # absurd_reflectance
+  # missing
+  mutate(missing_spu = spu_filename %in% missing_spu_files) %>%  # missing_spu
+  left_join(df_ref_filenames)
+
+# miscorrection
+ref_problem_key <- unispec_problem_key_pre %>%
+  filter(spu_filename %in% ref_files) %>% # select ref files
+  #mutate(mislabeled = if_else(spu_filename %in% ref_mistakes, TRUE, mislabeled)) %>%
+  gather("problem", "status", mislabeled, maxed, dim, absurd_reflectance, missing_spu) %>% # row for each type of problem
+  filter(!is.na(status)) %>% # remove non-problems
+  filter(status != FALSE) %>% # remove non-problems
+  group_by(spu_filename) %>%
+  select(spu_filename, problem, status) %>%
+  summarize(problems = str_c(unique(problem), collapse = ", ")) %>% # group: one row per spu_filename
+  rename(ref_filenames = spu_filename, ref_problem = problems) # rename variables to join w/unispec_problem_key
+
+## Unispec Problem Key
+unispec_problem_key <- unispec_problem_key_pre %>%
+  separate_rows(ref_filenames, sep = ", ") %>% # split ref_filenames string into multiple rows per ref_filename
+  left_join(ref_problem_key) %>% # adds ref_problem column
+  group_by(spu_filename) %>%
+  summarize(ref_problems = str_c(str_replace_na(ref_problem), collapse = "; ")) %>% # collapse to one row per spu_filename
+  right_join(unispec_problem_key_pre) %>%  # add the rest of the key info back in
+  mutate_at(.vars = c("ref_problems", "dim", "absurd_reflectance", "mislabeled", "missing_spu"), .funs = factor) %>%
+  mutate(file_problem = spu_filename %in% problem_files) %>%
+  select(spu_filename, Type, Date, Site, Block, Treatment, Replicate, Weather, Notes, missing_spu, file_problem, mislabeled, key_fix, maxed, maxed_number, maxed_wavelengths, dim, absurd_reflectance, ref_problems, ref_filenames) # order
+
+
+### Summary table
+unispec_problem_key %>%
+  mutate_at(list(factor), .vars = vars(c("Site", "Block", "Treatment", "key_fix", "ref_problems"))) %>%
+  mutate(file_problem = spu_filename %in% problem_files) %>%
+  summary()
+```
+
