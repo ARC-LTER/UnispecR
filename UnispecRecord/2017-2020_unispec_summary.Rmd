@@ -1,0 +1,245 @@
+---
+title: "Unispec Notes & Summaries"
+author: "Ruby An"
+date: "5/4/2020"
+output:
+  html_document:
+    df_print: paged
+params:
+  data_path: /home/ruby/ResearchProjects/Unispec/UnispecData/2019/
+  function_file: unispec_protocol_functions.R
+  session_date: '2019-06-08'
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=F}
+library(tidyverse)
+library(lubridate)
+library(rChoiceDialogs)
+library(knitr)
+library(plotly)
+
+knitr::opts_chunk$set()
+
+## use the params$data_path as starting folder. DATA PATH should be to UNISPEC DATA folder. The files should be read-in from there. This should match the One-Drive file format. 
+data_path <- params$data_path
+
+```
+
+## Description
+
+This document provides an overview of the Unispec Data collected by terrestrial RA Ruby An in 2017, 2018, 2019, and 2020. 
+
+### 2017 Data Collection Notes
+Unispec Data was collected approximately weekly. Unispec locations were changed by Jim and Ruby from historic locations to standardized spots, mainly outside of the destructive zones. See ---- file for map comparison. 
+
+INSTRUMENT
+PROTOCOL
+LOCATIONS
+DATA
+
+#### Instrument Status: 
+On -- the XXX foreoptic broke at the Shrub plots. Look for inconsistenies here with the rest of the season. 
+
+#### Data File Descriptions
+
+### 2018 Data Collection Notes
+Unispec data was collected when weather permitted, weekly if possible. The summer was exceptionally rainy and vegetation was often wet, restricting the possible sampling times. At the end of the season, silver circular tags were nailed to the boardwalk at each unispec location (where line-segment perpendicular to the edge of the plot hit the boardwalk). This location was determined by measuring with a string and measuring tape along the plot edge between the wooden stakes marking each 5m segment of the plot. 
+
+Drone data was collected in 2018 in conjunction with unispec measurements; however, this data
+
+#### Instrument Status
+
+turned out to be unusable due to a calibration error of the drone sensor. 
+
+#### Data File Descriptions
+
+
+
+### 2019 Data Collection Notes
+Unispec data was collected approximately weekly. The MAT06 & MAT89 sites given highest priority, the historic and wet sedge least so. The SHB89 sites were only unispec'd once.  On ---- 15 scans were made per plot for comparison purposes. On ---- the default number of scans per plot was increased from 5 to 10 for all sites. It took a couple tries to land on "the most efficient" 10 spots to take the scans, so there is some variability over the course of the summer on where these "additional" measurements were made in each plot. 
+
+#### Instrument Status
+
+#### Data File Descriptions
+The data collected in 2019 is saved in the following 4 files.  
+
+  1. 2019_raw_spu_metadata.csv (instrument settings per .spu file)
+  2. 2019_raw_spu_data.rds (raw spectra)
+  3. 2019_processed_spu_data.rds (corrected spectra)
+  4. 2019_index_data.csv (calculated vegetation indices)
+  
+Metadata correspondence key of scan (.spu file) to sample location. 
+
+  5. 2019_unispec_coordinate_key.csv (no spu_filename column)
+  6. 2019_unispec_file_key.csv (spu_filename column) 
+  
+Summary file for analysis
+
+  7. 2019_unispec_data_summary.rds
+  
+
+```{r load_data, include=F}
+## Load 2019 data from files
+
+dir_year <- "2019"
+
+## Raw Data
+raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
+spu_spectra <- read_rds(raw_filename)
+  
+# Raw Metadata  
+raw_keyname <- paste0(data_path, dir_year, "_raw_spu_metadata.csv")
+spu_key <- read_csv(raw_keyname) %>% mutate(DateTime = with_tz(DateTime, "US/Alaska")) 
+
+## Processed Data
+processed_filename <- paste0(data_path, dir_year, "_processed_spu_data.rds")
+processed_spectra <- read_rds(processed_filename) 
+
+## Index Data
+index_filename <- paste0(data_path, dir_year, "_index_data.csv")
+index_data <- read_csv(index_filename) %>% mutate(DateTime = with_tz(DateTime, "US/Alaska"))
+
+
+## File Key 
+key_filename <- paste0(data_path, dir_year, "_unispec_file_key.csv")
+
+unispec_file_key <- read_csv(key_filename, skip_empty_rows = T)
+
+## Summary File 
+df_analysis <- read_rds(paste0(data_path, dir_year,"_unispec_data_summary.rds"))
+```
+
+#### File Summaries
+```{r}
+## This chunk of code tallies the number of files in the raw, processed, and index data dataframes and displays the output in a table. 
+
+## Raw Data summary
+
+spu_dataframe <- full_join(spu_spectra, spu_key) %>% 
+  mutate(DateTime = with_tz(DateTime, "US/Alaska")) %>% 
+  
+  # Add Date & ARC-LTER Site
+  mutate(Date = lubridate::date(DateTime)) %>% 
+  mutate(Site = str_extract(spu_filename, "([A-Z]{3,8}[0-9]*)(?=_)")) %>% # DOES NOT WORK FOR "MAT-SH" measurements
+  mutate(Site = ifelse(str_detect(spu_filename, "MAT-SH"), "MAT-SH", Site))
+
+raw_files <- spu_dataframe %>%   group_by(Date, Site) %>%
+  summarize(Raw_Files = n_distinct(spu_filename))
+
+## Processed Data summary
+processed_files <- left_join(processed_spectra, spu_key) %>%
+  
+  # Add Date & ARC-LTER Site
+  mutate(DateTime = with_tz(DateTime, "US/Alaska")) %>% 
+  mutate(Date = lubridate::date(DateTime)) %>% 
+  mutate(Site = str_extract(spu_filename, "([A-Z]{3,8}[0-9]*)(?=_)")) %>% # DOES NOT WORK FOR "MAT-SH" measurements
+  mutate(Site = ifelse(str_detect(spu_filename, "MAT-SH"), "MAT-SH", Site)) %>% 
+  
+  ## Summarize
+  group_by(Date, Site) %>%
+  summarize(Processed_Files = n_distinct(spu_filename))
+
+## Index Data summary
+index_files <- left_join(index_data, spu_key) %>%   
+  
+  # Add Date & ARC-LTER Site
+  mutate(DateTime = with_tz(DateTime, "US/Alaska")) %>% 
+  mutate(Date = lubridate::date(DateTime)) %>% 
+  mutate(Site = str_extract(spu_filename, "([A-Z]{3,8}[0-9]*)(?=_)")) %>% # DOES NOT WORK FOR "MAT-SH" measurements
+  mutate(Site = ifelse(str_detect(spu_filename, "MAT-SH"), "MAT-SH", Site)) %>% 
+  
+  ## Summarize
+  group_by(Date, Site) %>%
+  summarize(Index_Files = n_distinct(spu_filename))
+
+## DISPLAY
+kable(full_join(raw_files, processed_files) %>% full_join(index_files) %>% arrange(Date, Site))
+
+
+```
+
+
+
+Code chunks:
+
+  1. Correct Spectra
+  2. Calculate Indices
+  3. Format data for analyses / storage
+  4. Format data for visualization
+  
+
+#### For Shiny
+```{r, echo=F}
+
+# Subset of Data for Shiny Visualization
+(
+  shiny_dataframe <- index_data %>%
+    select(-BandDefinition) %>%
+    spread(Index, Value) %>%
+    left_join(unispec_file_key) %>%
+
+    # Check for tag
+    #filter(str_detect(ScanLocation, pattern = "[0-9]S")) %>%
+
+    # Format for shiny
+    rename(Replicate = ScanRep) %>%
+    select(DateTime, Date, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2, Plot.y) %>%
+    mutate(Year = lubridate::year(DateTime),
+           # Date = lubridate::ymd(Date),
+           DOY = lubridate::yday(DateTime)) %>%
+    rename(Time = DateTime) %>%
+    mutate(Block = as.numeric(str_extract(Block, "\\d"))) %>%
+    mutate(Replicate = as.character(Replicate)) %>%
+
+    # Standardize Site names from 2019 version to 2020 onwards
+    mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG89", Site))  %>%
+    mutate(Site = ifelse(Site %in% c("DHT"), "DHT89", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("MAT"), "MAT89", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("LMAT"), "MAT06", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("HIST"), "DHT89", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("SHB2"), "SHB89", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("MNAT"), "MNT97", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("NANT"), "MNN97", Site))
+
+)
+
+plot_data <- shiny_dataframe %>% 
+  filter(Site %in% c("MAT06"),Treatment %in% c("CT", "CT1", "CT2", "F10", "NP")) %>% 
+  filter(Replicate %in% c(1:10)) %>% 
+  filter(Plot.y > 9 && Plot.y < 17) %>% # original 5 measurement 
+  mutate(Spot = paste0(Treatment, "_", Plot.y))
+
+plot <- ggplot(data = plot_data, aes(x = DOY, 
+                                     y = NDVI, 
+                                     color = Treatment,
+                                     text = paste(
+                          "Location: ", Plot.y, "\n",
+                          sep = ""))) + 
+  geom_point(aes(alpha = 0.2)) + 
+  geom_line(aes(group=c(Spot), alpha=0.2)) +
+  geom_smooth(aes(group=Treatment)) +
+  facet_grid(Site ~ Block)
+
+plot
+ggplotly(plot)
+
+```
+
+### 2020 Data Collection Notes 
+Unispec data collected once at the following sites: 
+
+- Sites: MAT06, MAT89, DHT89, MNT97, MNN97, WSG89
+- Dates: 2020-07-16 to 2020-07-19
+- Protocol: 10/plot using Unispec-DC and new field keys (SHB89: RapidScan 5/plot)
+Data Processing: “UnispecR” git-hub repository, piloted shiny-app 
+
+#### Instrument Status
+Unispec performed fine. The downward facing foreoptic seemed to be breaking a bit at the joint to the metal. However, checking the Darkscans it didn't seem like any light was leaking in. 
+
+#### Data File Descriptions
+
+
+
+
