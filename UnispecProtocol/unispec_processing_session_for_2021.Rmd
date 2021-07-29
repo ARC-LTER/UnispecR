@@ -1,14 +1,13 @@
 ---
 title: "Process Unispec Files collected on One Day"
 author: "Ruby An"
-date: "2021-06-24"
+date: "2021-07-29"
 output: html_document
 editor_options: 
   
   chunk_output_type: console
 params:
-  session_date: 2020-07-16
-  data_path: /home/ruby/UnispecData/2020/raw_data/2020-07-16 # select folder where spu files reside
+  data_path: /home/ruby/ResearchProjects/Unispec/UnispecData/2020/raw_data/2020-07-17 # select folder where
 ---
 
 ## Introduction
@@ -18,11 +17,14 @@ This file is fo  processing unispec data in a user friendly way.
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, message=F)
 
+data_path <- params$data_path
+
 ## Required Packages
 library("tidyverse")
 library("knitr")
 library(rChoiceDialogs)
 library(lubridate)
+library(plotly)
 
 ## R FUNCTIONS for processing spu data
 read_spu_file_metadata <- function(filename, info = "short") {
@@ -102,6 +104,18 @@ read_spu_file_spectra <- function(filename) {
   return(data)
 }
 
+
+# Assign nearest reference value
+assign_closest_ref <- function(data_int, ref_int) {
+  # Get the nearest integration 
+  
+  pick <- which(abs(ref_int-data_int) == min(abs(ref_int-data_int)))
+  
+  REF_Integration <- ref_int[pick]
+  
+  return(REF_Integration)
+}
+
 # Color band definitios for calculate_indices function
 band_defns <- tribble(
   ~definition, ~color, ~min, ~max,
@@ -126,8 +140,8 @@ band_defns <- tribble(
 
 calculate_indices <- function(spectra, band_defns, instrument = "MODIS", indices = "NDVI") {
   # Calculates NDVI, EVI, and EVI2 from dataframe including Wavelength : Spectra 
-  ## inputs: spectra - Wavelength, Reflectance columns
-  ##         band_defns : wavelengths definining colors 
+  ## inputs: spectra - dataframe with Wavelength, Reflectance columns
+  ##         band_defns : dataframe defining wavelengths definining colors 
   ##         instrument : e.g. MODIS, SKYE, ITEX
   ##         indicies   : the index to return 
   ## output: Index - name of vegetation index
@@ -151,6 +165,8 @@ calculate_indices <- function(spectra, band_defns, instrument = "MODIS", indices
   
   index_data <- spectra_bands %>%
     spread(color, Reflectance) %>% 
+    
+    ## INDEX DEFINITIONS
     mutate(NDVI = (nir-red)/(nir+red),
            EVI = 2.5*((nir-red)/(nir+6*red-7.5*blue + 1)),
            EVI2 = 2.5*((nir-red)/(nir+2.4*red + 1))) %>% 
@@ -200,8 +216,11 @@ check_for_missing_spectra <- function(spu_dataframe) {
 ### Read .SPU files 
   
 ```{r, include = F}
-# Choose folder with .spu files
-data_path <- rchoose.dir(caption = "Select directory containing .spu files")
+## INPUTS:
+# - path to data folder containing .spu files
+
+# Manually choose folder with .spu files
+# data_path <- rchoose.dir(caption = "Select directory containing .spu files")
 
 ## Make a character vector of all .spu raw files in current session date folder
 # Check if directory exist and use it as the working directory
@@ -230,16 +249,18 @@ spu_dataframe <- spu_metadata %>%
 
 ### Read Unispec File Key
 ```{r}
+## INPUTS:
+# - *unispec_key.csv file
+# - spu_dataframe of spu files with corresponding site, date, and file numbers to the key
+
+# Manually choose key files 
+#key_files <- rchoose.files(caption = "Choose Unispec File Key", multi = T)
 
 # Choose key files
 key_files <- list.files(path = data_path, pattern = "*unispec_key.csv$", full.names = T, recursive=T)
 
-# Read key files 
-key_files <- rchoose.files(caption = "Choose Unispec File Key", multi = T)
-
 field_keys <- key_files %>%  purrr::map(function(file_name) read_csv(file_name)) %>% 
-  reduce(rbind) %>% 
-  mutate(Date = date(params$session_date)) # Add date
+  reduce(rbind)
 
 
 # Join by SITE, DATE, FILENUM
@@ -248,13 +269,12 @@ raw_data <- left_join(spu_dataframe, field_keys) %>% arrange(DateTime) %>%
 ```
 
 
-### QUALITY CHECK: Unispec Key & .spu file Correspondance  
+### QAQC: Unispec Key & .spu file Correspondance  
 
 ```{r missing, warnings=F}
 # This chunk prints a bunch of checks at the end. Read through it to check that nothing is amiss. 
 
 ### MISSING: Identify any measurement locations that are missing corresponding raw spu files. By checking the overlap between "field_keys" and "spu_dataframe", this code lists (a) missing raw .spu files OR (b) extra .spu files that aren't accounted for in the unispec field keys. 
-
 
 ## Identify any missing files (or extra files)
 missing_spu_files <- anti_join(field_keys, spu_dataframe)
@@ -293,7 +313,6 @@ print(paste0("Total number of scans documented: ", nrow(field_keys)))
 ## Missing things
 print("QUALITY CHECKS: all answers should be zero if things ran well")
 print(paste0("Missing .spu files: ", nrow(missing_spu_files)))
-print(paste0("Extra .spu files: ", length(unprocessed_files)))
 print(paste0("Scan Locations missing info: ", nrow(missing_info)))
 ## Mislabeling
 print(paste0("Plots with an abnormal number of scans (not a clean multiple of 5): ", nrow(df_filenum_count)))
@@ -306,20 +325,25 @@ print(paste0("Plots with an abnormal number of scans (not a clean multiple of 5)
 
 White references correct for instrument & cable irregularities. Multiplying by the correction factor (ChA/ChB) smooths out the spectra. There are typically 5 reference measurements per *Date* / *Site*. If multiple file numbers are listed, the correction factors are averaged. 
 
-Based on the original field notebook key and the following quality checks, choose reference files by entering the appropriate file numbers in **`r field_keys`** for the rows where the column *Treatment* = **REF**. 
+Based on the original field notebook key and the following quality checks, choose reference files by entering the appropriate file numbers in the field keys for the rows where the column *Treatment* = **REF**. 
 
 Make sure to rerun the **Read Unispec Keys** if you change REF file choices. The following code plots your chosen references for a visual check.
 
 ### Choose & Check References
 ```{r ref_choice_list}
+## INPUTS:
+# - raw_data, including the reference files
 
-## NOTE: DELETED CODE that allowed for:
-# (a) using references not taken at the site during the same session, e.g. if you took references at MAT06 and then used those same files for MAT89. 
-# (b) code that allows you to match different ref spectra to different blocks, e.g. in the case that the direction the unispec is facing matters. This code ignores that possibilty (some evidence for this in 2019 checks) for now. 
 
-ref_files <- raw_data %>% filter(Treatment == "REF") 
+# Create a vector of reference files (either by treatment labels, as below or some other method)
+ref_files <- raw_data %>% 
+  filter(Treatment == "REF") %>% 
+  select(spu_filename) %>% pull()
 
-ref_data <- ref_files %>% 
+ref_data <- raw_data %>% 
+  
+  ## Get the spectra for reference files
+  filter(spu_filename %in% ref_files) %>% 
   
   ### Unnest Spectra & calculate correction factor
   unnest(Spectra) %>% 
@@ -328,16 +352,13 @@ ref_data <- ref_files %>%
   mutate(correction_factor = ChA/ChB) %>% 
 
   ### Group repeated REF measurements based on your plot set-up (choose Block or NOT)
-  group_by(Date,Site,Integration,Wavelength) 
+  group_by(Date,Site,Integration,Wavelength)
 
 
 ## Calculate correction factors by averaging 5 chosen ref measurements per DATE/SITE & calculate mean correction factors
-
 correction_factors <- ref_data %>% 
   summarize(correction_factor = mean(ChA/ChB), 
-            ref_filenames = str_c(spu_filename,collapse = ", "),
-            num_files = n())
-
+            ref_filenames = str_c(spu_filename,collapse = ", ")) 
 
 ## QUALITY CHECK
 ## Table per Site of Reference Files 
@@ -346,9 +367,10 @@ correction_factors <- ref_data %>%
 
 ## Build Plot all reference data files
 mean_refs <- correction_factors %>% 
-  rename(spu_filename = ref_filenames)
+  rename(spu_filename = ref_filenames) %>% 
+  mutate(average = "average")
 single_refs <- ref_data %>% 
-  mutate(num_files = 1)
+  mutate(average = "single")
 
 ### VIZ
 (ref_plot <- ggplot(full_join(mean_refs, single_refs),
@@ -356,74 +378,110 @@ single_refs <- ref_data %>%
                         y = correction_factor,
                         group = spu_filename)) + 
   theme(legend.position="left") + 
-  geom_line(aes(color=factor(Integration), alpha = factor(num_files)))) 
+  geom_line(aes(color=factor(Integration), linetype = factor(average))) + 
+  
+  # Formatting
+  labs(title = "White Reference Correction Factors",
+       subtitle = "Visually check to make sure references look OK.",
+       x = "Wavelength (nm)", 
+       y = "Correction Factor") + 
+  scale_linetype_discrete(name = "Files") + 
+  scale_color_discrete(name = "Integration time (ms)") + 
+  theme_light()
+  
+  ) 
 
 ```
 
 ### Apply References
 Rerun the **Join Data & keys** sections above to update the `raw_data` dataframe. Apply your chosen references to actual spectral data to create the tidy dataframe `processed_data` containing corrected sepectral reflectance values.
 
+INPUTS:
+- raw_data
+- correction_factors
+
+OUTPUT:
+- processed_data
+- plot of first 30 files to check
+
 ```{r apply_refs, echo=FALSE}
+
+#------ 
+# Get integration times of ref data
+ref_int_values <- unique(correction_factors$Integration)
+
 
 ## Join DATA with REFS
 
 raw_data_with_refs <- raw_data %>% 
-  filter(!str_detect(Treatment, "REF|DARK|THROWAWAY")) %>% # remove non-data (ref, dark, throwaway) scans
-  unnest(Spectra) %>% 
-  filter(Wavelength > 400, Wavelength < 1000) %>% # remove edge wavelengths, because instrument unreliable at extreme wavelengths
   
-  # join with ref data
-  left_join(correction_factors) %>%
+  # unlist Spectra and remove edge wavelengths, because instrument unreliable at extreme wavelengths
+  unnest(Spectra) %>% 
+  filter(Wavelength > 400, Wavelength < 1000) %>%
+  
+  # assign the "REF_Integration" value closest to data scan integration time
+  rowwise() %>% 
+  mutate(REF_Integration = assign_closest_ref(Integration, ref_int_values)) %>% 
+  ungroup() %>% 
+
+  # join data with ref data
+  left_join(correction_factors %>% rename(REF_Integration = Integration)) %>%
+  select(-REF_Integration) %>%  # drop joining column, no longer needed
+  
+  # calculate reflectances
   mutate(raw_reflectance = ChB/ChA) %>% # the raw reflectance
   mutate(corrected_reflectance = raw_reflectance*correction_factor) # corrected reflectance
 
-## Corrected Reflectances 
+
+## Corrected Reflectances with one row per file
 processed_data <- raw_data_with_refs %>% 
   nest(processed_spectra = c(Wavelength, ChB, ChA, correction_factor, raw_reflectance, corrected_reflectance))
+```
+
+### QAQC application
+```{r}
+
+## Check all files have a corrected reflectance
+
+missing_corrections <- processed_data %>%  filter(processed_spectra %>% map(is.null) %>% map_lgl(any)) # remove files w/out spu_spectra
+
+corrected_spectra_files <- processed_data %>% 
+  unnest(processed_spectra) %>% 
+  filter(!is.na(corrected_reflectance)) %>% # check the column is calculated
+  select(spu_filename, Date, Site) %>% distinct()
 
 
-##### VIZ: Plot Check first 10 files
+print(paste0("Number of raw files: ", nrow(raw_data)))
+print(paste0("Number of corrected Files: ", nrow(corrected_spectra_files)))
+
+## print treatments missing corrections
+if(nrow(processed_data) != nrow(raw_data)) {
+  anti_join(raw_data, corrected_spectra_files) %>% 
+  group_by(Date, Site, Block, Treatment, Integration) %>% 
+  summarize(Num_Files = n()) %>% kable()
+  
+  anti_join(raw_data, processed_data, by = "spu_filename") %>% pull(Treatment) %>% unique() %>% print()
+  
+  print(missing_corrections)
+}
+
+##### VIZ: Plot Check first 30 files
 
 (processed_data %>% 
+    slice(1:30) %>% 
     # make consolidated location label so it's more readable
   mutate(Location = str_c(Site, "-", Block, "-", Treatment)) %>% 
     #reformat data to plot
-  slice(1:30) %>% 
+
   unnest(processed_spectra) %>% 
   gather(key = Status, value = Reflectance, raw_reflectance, corrected_reflectance) %>% 
   
   # VIZ
   ggplot(mapping = aes(x = Wavelength, y = Reflectance )) + 
   geom_line(aes(color = spu_filename, linetype = Status)) + 
-    facet_wrap(vars(Date, Location)))
+    facet_wrap(vars(Date, Location)) + 
+  theme_light())
 
-```
-
-
-## ? INTERPOLATION
-
-
-## SAVE DATA
-```{r}
-processed_spu_data <- processed_data %>%
-  select(spu_filename, DateTime, ref_filenames, processed_spectra) %>% unnest(processed_spectra) %>%
-  select(spu_filename, DateTime, ref_filenames, Wavelength, ChB, ChA, raw_reflectance, CorrectionFactor, corrected_reflectance) %>%
-  nest(Spectra = c(Wavelength, ChB, ChA, raw_reflectance, CorrectionFactor, corrected_reflectance))
-
-ref_spu_data <- ref_data %>% unnest(Spectra) %>%
-  select(spu_filename, DateTime, Wavelength, ChB, ChA) %>%
-  mutate(Reflectance = ChB/ChA) %>% 
-  mutate(CorrectionFactor = 1/Reflectance, corrected_reflectance = NA) %>%
-  filter(Wavelength > 400, Wavelength < 1000) %>%
-  rename(raw_reflectance = Reflectance) %>%
-  nest(Spectra = c(Wavelength, ChB, ChA, raw_reflectance, CorrectionFactor, corrected_reflectance))
-
-processed_spectra <- bind_rows(processed_spu_data, ref_spu_data)
-
-## Save
-processed_spu_filename <- paste0(data_path, "/", session_year, "_processed_spu_data.rds")
-
-write_rds(df_processed, processed_spu_filename)
 ```
 
 
@@ -431,63 +489,130 @@ write_rds(df_processed, processed_spu_filename)
 
 Currently, this only works for NDVI, EVI, and EVI2 as I haven't worked out spectral interpolation yet and the other indices need reflectance at a specific value (not a range).
 
+
 ### Calculate Indices
 ```{r}
 
-df_processed %>%  filter( Spectra %>% map(is.null) %>% map_lgl(any)) # remove files w/out spu_spectra
-
-df_indices <- df %>% select(-Spectra) %>% #dataframe with metadata
-  filter(!is.na(Treatment)) %>%
-  filter(!str_detect(Treatment, "REF|DARK")) %>%
-  inner_join(df_processed) %>% # corrected reflectances with 
-  ## Format for calculuating indices
-  unnest(Spectra) %>%
-  select(-ChB, -ChA, -raw_reflectance, -CorrectionFactor) %>%
+index_data <- processed_data %>% 
+  
+  ## Format for calculuating indices function
+  unnest(processed_spectra) %>%
+  select(-ChB, -ChA, -raw_reflectance, -correction_factor) %>%
   rename(Reflectance = corrected_reflectance) %>%
   nest(Spectra = c(Wavelength, Reflectance)) %>%
+  
+  
   ## Calculate NDVI
   mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = c("NDVI", "EVI", "EVI2"))))
 
-index_filename <- paste0(data_path, "/", params$session_date, "_index_data.rds")
-write_rds(df_indices, index_filename)
+
+```
 
 
-## convert to SHINY ready format
+### QAQC: Visualize with other years
+```{r}
+## Convert current data format for visualization
+
+viz_data <- index_data %>%
+    select(-Spectra) %>% 
+    unnest(Indices) %>% 
+  
+    select(-BandDefinition) %>%
+    spread(Index, Value) %>%
+
+    # Select useful columns 
+    select(DateTime, Date, Site, Block, Treatment, Replicate, FileNum, NDVI, EVI, EVI2) %>%
+  
+    # Create additional columns 
+    mutate(Year = lubridate::year(DateTime),
+           DOY = lubridate::yday(DateTime)) %>%
+    rename(Time = DateTime) %>%
+    mutate(Block = as.numeric(str_extract(Block, "\\d"))) %>%
+    mutate(Replicate = as.character(Replicate)) %>% 
+    mutate(collection_year = "current") %>% 
+  
+    # remove non-data (ref, dark, throwaway) scans
+    filter(!str_detect(Treatment, "REF|DARK|THROWAWAY"))
+
+# Get relevant treatments and sites
+viz_treatments <- viz_data$Treatment %>% unique()
+viz_sites <- viz_data$Site   %>% unique()
+
+# Read data from past years
+past_data <- readRDS("~/ResearchProjects/Unispec/UnispecR/Visualizations/shiny_unispec_cleaned/indices_2014-2019.updated.rds") %>% 
+  
+    # Standardize Site names from 2019 version to 2020 onwards
+    mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG89", Site))  %>%
+    mutate(Site = ifelse(Site %in% c("DHT"), "DHT89", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("MAT"), "MAT89", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("LMAT"), "MAT06", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("HIST"), "DHT89", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("SHB2"), "SHB89", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("MNAT"), "MNT97", Site)) %>% 
+    mutate(Site = ifelse(Site %in% c("NANT"), "MNN97", Site)) %>% 
+  
+    # Label as previous years
+    mutate(collection_year = "Past") %>% 
+  
+  # Get relevant subset of data
+  filter(Treatment %in% viz_treatments) %>% 
+  filter(Site %in% viz_sites) %>% 
+  filter(Year >= 2017)
+
+
+all_data <- past_data %>% 
+  full_join(viz_data)
+
+
+(plot <- ggplot(data = all_data, aes(x = DOY, 
+                                     y = NDVI, 
+                                     color = collection_year)) + 
+    geom_point(aes(alpha = 0.01)) + 
+    geom_smooth() +
+    facet_grid(Site ~ Treatment)+ 
+    
+    #formatting
+    theme_minimal()
+)
 
 
 ```
 
 
-## Rename Raw Files for Long-Term Storage 
-Rename files ("SITE_FileNum.spu") to include parent directory (Date) in filename: "YYYY-MM-DD_SITE_FileNum.spu". Copy the following code and use in the command line (haven't figured out how to run in RStudio yet... some kind of error that "file doesn't exist"). Adjust so that year (date) structure is correct. 
 
-Do this before processing, so that the filenames match the long-term filenames. 
-```{bash}
-
-cd /UnispecData/2020  # go to directry with session "date folders"
-#Set $SESSION = session date somehow 
-
-#mkdir raw_data
-
-# RUN THIS TO RENAME FILES AND MOVE THEM INTO .spu folders 
-#!/bin/bash
-for date in 2020-07-19; do
-  pushd "$date"
-  for file in *; do
-    cp "$file" ../"${date}_${file}"
-  done
-  popd
-done
-
-  mv *.spu raw_spectra_files/ #make sure the "raw_data" folder exists first! :) 
+## SAVE DATA
+```{r}
+# processed_spu_data <- processed_data %>%
+#   
+#   # remove non-data (ref, dark, throwaway) scans
+#   filter(!str_detect(Treatment, "REF|DARK|THROWAWAY")) %>% 
+#   
+#   # adjust column names
+#   select(spu_filename, DateTime, ref_filenames, processed_spectra) %>% unnest(processed_spectra) %>%
+#   select(spu_filename, DateTime, ref_filenames, Wavelength, ChB, ChA, raw_reflectance, CorrectionFactor, corrected_reflectance) %>%
+#   nest(Spectra = c(Wavelength, ChB, ChA, raw_reflectance, CorrectionFactor, corrected_reflectance))
+# 
+# ref_spu_data <- ref_data %>% unnest(Spectra) %>%
+#   select(spu_filename, DateTime, Wavelength, ChB, ChA) %>%
+#   mutate(Reflectance = ChB/ChA) %>% 
+#   mutate(CorrectionFactor = 1/Reflectance, corrected_reflectance = NA) %>%
+#   filter(Wavelength > 400, Wavelength < 1000) %>%
+#   rename(raw_reflectance = Reflectance) %>%
+#   nest(Spectra = c(Wavelength, ChB, ChA, raw_reflectance, CorrectionFactor, corrected_reflectance))
+# 
+# processed_spectra <- bind_rows(processed_spu_data, ref_spu_data)
+# 
+# ## Save
+# processed_spu_filename <- paste0(data_path, "/", session_year, "_processed_spu_data.rds")
+# 
+# write_rds(df_processed, processed_spu_filename)
+# 
+# ## Save index data
+# index_filename <- paste0(data_path, "/", params$session_date, "_index_data.rds")
+# write_rds(df_indices, index_filename)
 
 ```
 
-### Visualize with other years
-
-### Check across years
 
 ## CHECKLIST/SUMMARY REPORT
-
-
 
