@@ -201,7 +201,7 @@ check_for_missing_spectra <- function(spu_dataframe) {
   
 ```{r, include = F}
 # Choose folder with .spu files
-data_path <- rchoose.dir(caption = "Selecte directory containing .spu files")
+data_path <- rchoose.dir(caption = "Select directory containing .spu files")
 
 ## Make a character vector of all .spu raw files in current session date folder
 # Check if directory exist and use it as the working directory
@@ -323,6 +323,7 @@ ref_data <- ref_files %>%
   
   ### Unnest Spectra & calculate correction factor
   unnest(Spectra) %>% 
+  filter(Wavelength > 400, Wavelength < 1000) %>% # remove edge wavelengths, instrument unreliable at extremes
   
   mutate(correction_factor = ChA/ChB) %>% 
 
@@ -330,11 +331,12 @@ ref_data <- ref_files %>%
   group_by(Date,Site,Integration,Wavelength) 
 
 
-## Average 5 chosen ref measurements per DATE/SITE & calculate mean correction factors
+## Calculate correction factors by averaging 5 chosen ref measurements per DATE/SITE & calculate mean correction factors
 
 correction_factors <- ref_data %>% 
   summarize(correction_factor = mean(ChA/ChB), 
-            ref_filenames = str_c(spu_filename,collapse = ", "))
+            ref_filenames = str_c(spu_filename,collapse = ", "),
+            num_files = n())
 
 
 ## QUALITY CHECK
@@ -343,9 +345,18 @@ correction_factors <- ref_data %>%
   summarize(Files = n_distinct(spu_filename), ref_filenames = str_c(spu_filename,collapse = ", ")) )
 
 ## Build Plot all reference data files
-(ref_plot <- ggplot(ref_data, aes(x = Wavelength, y = correction_factor, group=spu_filename)) + 
+mean_refs <- correction_factors %>% 
+  rename(spu_filename = ref_filenames)
+single_refs <- ref_data %>% 
+  mutate(num_files = 1)
+
+### VIZ
+(ref_plot <- ggplot(full_join(mean_refs, single_refs),
+                    aes(x = Wavelength, 
+                        y = correction_factor,
+                        group = spu_filename)) + 
   theme(legend.position="left") + 
-  geom_line(aes(color=factor(Integration))))
+  geom_line(aes(color=factor(Integration), alpha = factor(num_files)))) 
 
 ```
 
@@ -357,9 +368,9 @@ Rerun the **Join Data & keys** sections above to update the `raw_data` dataframe
 ## Join DATA with REFS
 
 raw_data_with_refs <- raw_data %>% 
-  filter(!str_detect(Treatment, "REF|DARK|THROWAWAY")) %>% # remove ref & dark scans
+  filter(!str_detect(Treatment, "REF|DARK|THROWAWAY")) %>% # remove non-data (ref, dark, throwaway) scans
   unnest(Spectra) %>% 
-  filter(Wavelength > 400, Wavelength < 1000) %>% # remove edge wavelengths, instrument unreliable at extremes
+  filter(Wavelength > 400, Wavelength < 1000) %>% # remove edge wavelengths, because instrument unreliable at extreme wavelengths
   
   # join with ref data
   left_join(correction_factors) %>%
@@ -369,21 +380,22 @@ raw_data_with_refs <- raw_data %>%
 ## Corrected Reflectances 
 processed_data <- raw_data_with_refs %>% 
   nest(processed_spectra = c(Wavelength, ChB, ChA, correction_factor, raw_reflectance, corrected_reflectance))
-```
 
 
-##### Plot Check
-```{r}
+##### VIZ: Plot Check first 10 files
 
 (processed_data %>% 
-  slice(1:10) %>% 
+    # make consolidated location label so it's more readable
+  mutate(Location = str_c(Site, "-", Block, "-", Treatment)) %>% 
+    #reformat data to plot
+  slice(1:30) %>% 
   unnest(processed_spectra) %>% 
   gather(key = Status, value = Reflectance, raw_reflectance, corrected_reflectance) %>% 
   
   # VIZ
   ggplot(mapping = aes(x = Wavelength, y = Reflectance )) + 
   geom_line(aes(color = spu_filename, linetype = Status)) + 
-    facet_wrap(vars(Date, Site, Block, Treatment, FileNum)))
+    facet_wrap(vars(Date, Location)))
 
 ```
 
