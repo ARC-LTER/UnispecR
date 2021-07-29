@@ -7,17 +7,15 @@ editor_options:
   
   chunk_output_type: console
 params:
-  data_path: /home/ruby/ResearchProjects/Unispec/UnispecData/2020/raw_data/2020-07-19 # select folder where
+  data_path: /home/ruby/ResearchProjects/Unispec/UnispecData/2020/raw_data/2020-07-17 # select folder where
 ---
 
 ## Introduction
-This file is fo  processing unispec data in a user friendly way. 
+This file is for processing unispec data in a user friendly way. 
 
 ## Required Packages & Functions
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, message=F)
-
-data_path <- params$data_path
 
 ## Required Packages
 library("tidyverse")
@@ -199,12 +197,6 @@ check_scan_times <- function(raw_data) {
   return(time_check)
 }
 
-check_for_missing_spectra <- function(spu_dataframe) {
-  missing <- spu_dataframe %>% filter(Spectra %>% map(is.null) %>% map_lgl(any))
-
-  return(missing)
-}
-
 ```
 
 ## Read in data
@@ -218,12 +210,15 @@ check_for_missing_spectra <- function(spu_dataframe) {
 ```{r, include = F}
 ## INPUTS:
 # - path to data folder containing .spu files
+# - param: set in header
 
 # Manually choose folder with .spu files
 # data_path <- rchoose.dir(caption = "Select directory containing .spu files")
 
 ## Make a character vector of all .spu raw files in current session date folder
 # Check if directory exist and use it as the working directory
+data_path <- params$data_path
+
 spu_files <- list.files(path = data_path, pattern = ".spu$", full.names = T, recursive=T)
 
 # Read metadata text lines (9) from the spu files
@@ -274,6 +269,19 @@ raw_data <- left_join(spu_dataframe, field_keys) %>% arrange(DateTime) %>%
 ```{r missing, warnings=F}
 # This chunk prints a bunch of checks at the end. Read through it to check that nothing is amiss. 
 
+## Data summary
+spu_dataframe %>%
+  mutate(Date = floor_date(DateTime, unit="day")) %>% 
+  group_by(Date, Site) %>% 
+  summarize(Files = n_distinct(spu_filename)) %>% 
+  kable(caption = "Raw .spu files read-into spu_dataframe")
+
+## Print Summary of files 
+raw_data %>% group_by(Date, Site, Block) %>%  
+  filter(!is.na(Treatment)) %>% 
+  summarize(Treatments = str_c(str_replace_na(sort(unique(Treatment))), collapse = ","), Num_Files = n()) %>% 
+  kable(caption ="Files listed in field key")
+
 ### MISSING: Identify any measurement locations that are missing corresponding raw spu files. By checking the overlap between "field_keys" and "spu_dataframe", this code lists (a) missing raw .spu files OR (b) extra .spu files that aren't accounted for in the unispec field keys. 
 
 ## Identify any missing files (or extra files)
@@ -318,6 +326,83 @@ print(paste0("Scan Locations missing info: ", nrow(missing_info)))
 print(paste0("Plots with an abnormal number of scans (not a clean multiple of 5): ", nrow(df_filenum_count)))
 
 
+```
+
+### QAQC: Instrument Check
+
+
+
+#### Max'd Out Spectra (> 65000 AD)
+List files that maxed out, in the wavelengths used to calculate MODIS NDVI.
+```{r maxed, dependson="raw_data"}
+
+maxed_data <- raw_data %>% inner_join(spu_dataframe %>% select(spu_filename)) %>% # restrict to those w/.spu files
+  unnest(Spectra) %>% 
+  filter(ChA > 65000 | ChB > 65000) %>% 
+  group_by(spu_filename) %>% 
+  summarize(maxed_number = n(), maxed_wavelengths = str_c(min(Wavelength), " - ", max(Wavelength), collapse = ", "))  
+
+# Print MAXED files 
+if (nrow(maxed_data) > 0) {
+  raw_data %>% select(spu_filename, Site, Date, Block, Treatment, Replicate) %>% 
+     inner_join(maxed_data)
+  
+  # Maxed file list 
+  maxed_files <- maxed_data$spu_filename
+  
+} else { print("no maxed files")}
+
+
+```
+
+
+#### Dim'd Out Spectra
+Primarily Darkscans should show up. 
+
+```{r dim, dependson=raw_data, warnings=F}
+dim_data <- raw_data %>%  
+  unnest(Spectra) %>% 
+  group_by(spu_filename) %>% 
+  summarize(ChA_max = max(ChA)) %>% 
+  filter(ChA_max < 20000) %>% 
+  left_join(raw_data)
+
+# Print DIM files  
+if (nrow(dim_data) > 0) {
+  dim_data %>% select(spu_filename, Site, Date, Block, Treatment, Replicate, ChA_max) %>% 
+    kable()
+  
+  # File List
+  dim_files <- dim_data$spu_filename
+  
+} else { print("no dim files")}
+
+
+```
+
+
+#### Zero'd Spectra
+```{r zerod, dependson="raw_data"}
+## zero'd data 
+zero_data <- raw_data %>% unnest(Spectra) %>% 
+  filter(ChA == 0) %>%  ## This is for all wavelengths, not just 400-1000nm
+  group_by(spu_filename) %>% 
+  summarize(Zeros = n())
+
+# Print ZEROD files 
+if (nrow(zero_data) > 0) {
+  ## File List : Restricted Wavelengths
+  zero_files <- zero_data %>% unnest(Spectra) %>% 
+    filter(ChA == 0 ) %>% 
+    filter(Wavelength > 400, Wavelength < 1000) %>% 
+    pull(spu_filename) %>% unique()
+  
+  zero_data_narrowed <- df %>% filter(spu_filename %in% zero_files) 
+
+  zero_data_narrowed %>% select(spu_filename, Site, Date, Block, Treatment, Replicate, Zeros)
+  
+} else { print("no zero'd files")}
+  
 ```
 
 

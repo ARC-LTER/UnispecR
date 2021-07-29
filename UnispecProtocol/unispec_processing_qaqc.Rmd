@@ -2,7 +2,7 @@
 title: "R Notebook"
 output: html_notebook
 ---
-
+Collection of code snippets used to clean and quality check unispec data. 
 
 ## CHOOSE FILES MANUALLY 
 ```{r}
