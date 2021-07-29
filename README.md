@@ -9,6 +9,12 @@ R code for processing spectral data collected using a Unispec-DC instrument (PP 
 
 3. Visualizations : shiny application built to explore the ArcticLTER unispec record (2009-present)
 
+4. UnispecInvestigations : mainly code from 2019, including:
+- spectral_instrument_comparison: campaign to assess whether NDVI was the same across instruments for the Unispec-SC, Unispec-DC, ASD, RapidSCAN, and Greenseeker
+- plot heterogeneity: comparing 5 or 10 measurements per plot
+- seasonal trends: 
+- legacy "UnispecProtocol" scripts used for processing and quality checking the 2019 unispec data
+
 User friendly scripts and summary documents currently under construction. 
 
 ## Prerequisites
