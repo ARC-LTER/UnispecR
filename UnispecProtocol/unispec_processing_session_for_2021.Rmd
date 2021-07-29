@@ -7,7 +7,7 @@ editor_options:
   
   chunk_output_type: console
 params:
-  data_path: /home/ruby/ResearchProjects/Unispec/UnispecData/2020/raw_data/2020-07-17 # select folder where
+  data_path: /home/ruby/ResearchProjects/Unispec/UnispecData/2020/raw_data/2020-07-19 # select folder where
 ---
 
 ## Introduction
