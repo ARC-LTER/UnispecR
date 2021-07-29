@@ -31,9 +31,9 @@ Any feedback on usability, improvements, features that would be useful, etc. is 
 ## Authors
 
 * **Jim Laundre** - *Data Management* - jlaundre@mbl.edu
-* **Ruby An** - *Code Development* - rubyan@uchicago.edu 
+* **Ruby An** - *Code Development* - rubya@princeton.edu 
 
 ## Acknowledgments
 
 * The many Terrestrial RA's that collected Unispec data over the years!  
-* **Laura Gough** - *Arctic LTER Terrestrial PI* - 
+* **Laura Gough** - *Arctic LTER Terrestrial PI* - lgough@towson.edu
