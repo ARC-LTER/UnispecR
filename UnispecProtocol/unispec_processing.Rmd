@@ -3,11 +3,9 @@ title: "Process Unispec Files collected on One Day"
 author: "Ruby An"
 date: "2021-07-29"
 output: html_document
-editor_options: 
-  
-  chunk_output_type: console
-params:
-  data_path: /home/ruby/ResearchProjects/Unispec/UnispecData/2020/raw_data/2020-07-17 # select folder where
+params: 
+  data_path: C:\Users\TerrestrialRA\Desktop\rawUnispec\2021-06-14
+  #select folder where .spu files are. No string quotes for data_path ("")
 ---
 
 ## Introduction
@@ -15,14 +13,16 @@ This file is for processing unispec data in a user friendly way.
 
 ## Required Packages & Functions
 ```{r setup, include=FALSE}
+rm = list(ls())
 knitr::opts_chunk$set(echo = F, message=F)
 
 ## Required Packages
-library("tidyverse")
-library("knitr")
+
+library(knitr)
 library(rChoiceDialogs)
 library(lubridate)
-library(plotly)
+library(purrr)
+library(tidyverse)
 
 ## R FUNCTIONS for processing spu data
 read_spu_file_metadata <- function(filename, info = "short") {
@@ -213,32 +213,36 @@ check_scan_times <- function(raw_data) {
 # - param: set in header
 
 # Manually choose folder with .spu files
-# data_path <- rchoose.dir(caption = "Select directory containing .spu files")
+if(interactive()){
+  data_path <- rchoose.dir(caption = "Select directory containing .spu files")
+} else 
+  {data_path <- params$data_path}
 
 ## Make a character vector of all .spu raw files in current session date folder
 # Check if directory exist and use it as the working directory
-data_path <- params$data_path
 
 spu_files <- list.files(path = data_path, pattern = ".spu$", full.names = T, recursive=T)
 
 # Read metadata text lines (9) from the spu files
 spu_filedata <- map_dfr(spu_files, read_spu_file_metadata)
 
-# Add Metadata columns:
+## Add Metadata columns:
 #   spu_filename_full: variable with the full path filename 
 #   Site: column from spu_filename
 #   FileNum: column from spu_filename 
 #   ScanType: column identifying scan type (Dark, Throwaway, Datascan)
+
 spu_metadata <- spu_filedata %>% 
   mutate(spu_filename_full = spu_files) %>% #
-  mutate(Site = toupper(str_extract(spu_filename, "[A-Za-z]{3}[0-9]{1,2}(?=_)"))) %>% # get string that is 3 letters, 2 numbers before _ 
+  mutate(Site = toupper(str_extract(spu_filename, "[A-Za-z]{3}[0-9]{1,2}(?=_)"))) %>%
+  # get string that is 3 letters, 2 numbers before _ 
+  
   mutate(FileNum = as.integer(str_extract(spu_filename, "\\d{5}"))) 
 
 # Read spectra from .spu files > add to metadata
 spu_dataframe <- spu_metadata %>% 
   mutate(Spectra=map(spu_filename_full, function(x) read_spu_file_spectra(x))) %>% 
   mutate(Date = date(DateTime))
-  # mutate(Time = DateTime-floor_date(DateTime, unit = "day")) 
 
 ```
 
@@ -252,14 +256,15 @@ spu_dataframe <- spu_metadata %>%
 #key_files <- rchoose.files(caption = "Choose Unispec File Key", multi = T)
 
 # Choose key files
-key_files <- list.files(path = data_path, pattern = "*unispec_key.csv$", full.names = T, recursive=T)
+key_files <- list.files(path = data_path, pattern = "*template.csv$", full.names = T, recursive=T)
 
-field_keys <- key_files %>%  purrr::map(function(file_name) read_csv(file_name)) %>% 
-  reduce(rbind)
-
+field_keys <- key_files %>% purrr::map(function(file_name) read_csv(file_name,
+                                                                    col_select = c(1:7))) %>%
+  reduce(rbind) %>%
+  mutate(Date = lubridate::parse_date_time(Date, c("mdy", "ymd")))
 
 # Join by SITE, DATE, FILENUM
-raw_data <- left_join(spu_dataframe, field_keys) %>% arrange(DateTime) %>% 
+raw_data <- left_join(field_keys, spu_dataframe) %>% arrange(DateTime) %>% 
   mutate_at(.vars = vars(Site, Block, Treatment), .funs = factor)
 ```
 
@@ -356,61 +361,9 @@ if (nrow(maxed_data) > 0) {
 ```
 
 
-#### Dim'd Out Spectra
-Primarily Darkscans should show up. 
-
-```{r dim, dependson=raw_data, warnings=F}
-dim_data <- raw_data %>%  
-  unnest(Spectra) %>% 
-  group_by(spu_filename) %>% 
-  summarize(ChA_max = max(ChA)) %>% 
-  filter(ChA_max < 20000) %>% 
-  left_join(raw_data)
-
-# Print DIM files  
-if (nrow(dim_data) > 0) {
-  dim_data %>% select(spu_filename, Site, Date, Block, Treatment, Replicate, ChA_max) %>% 
-    kable()
-  
-  # File List
-  dim_files <- dim_data$spu_filename
-  
-} else { print("no dim files")}
-
-
-```
-
-
-#### Zero'd Spectra
-```{r zerod, dependson="raw_data"}
-## zero'd data 
-zero_data <- raw_data %>% unnest(Spectra) %>% 
-  filter(ChA == 0) %>%  ## This is for all wavelengths, not just 400-1000nm
-  group_by(spu_filename) %>% 
-  summarize(Zeros = n())
-
-# Print ZEROD files 
-if (nrow(zero_data) > 0) {
-  ## File List : Restricted Wavelengths
-  zero_files <- zero_data %>% unnest(Spectra) %>% 
-    filter(ChA == 0 ) %>% 
-    filter(Wavelength > 400, Wavelength < 1000) %>% 
-    pull(spu_filename) %>% unique()
-  
-  zero_data_narrowed <- df %>% filter(spu_filename %in% zero_files) 
-
-  zero_data_narrowed %>% select(spu_filename, Site, Date, Block, Treatment, Replicate, Zeros)
-  
-} else { print("no zero'd files")}
-  
-```
-
-
 ## Correct data with REFerence files
 
 White references correct for instrument & cable irregularities. Multiplying by the correction factor (ChA/ChB) smooths out the spectra. There are typically 5 reference measurements per *Date* / *Site*. If multiple file numbers are listed, the correction factors are averaged. 
-
-Based on the original field notebook key and the following quality checks, choose reference files by entering the appropriate file numbers in the field keys for the rows where the column *Treatment* = **REF**. 
 
 Make sure to rerun the **Read Unispec Keys** if you change REF file choices. The following code plots your chosen references for a visual check.
 
@@ -419,8 +372,12 @@ Make sure to rerun the **Read Unispec Keys** if you change REF file choices. The
 ## INPUTS:
 # - raw_data, including the reference files
 
+# OUTPUT:
+# - correction_factors data_frame
+# - plot to see the plot of the white reference files
 
-# Create a vector of reference files (either by treatment labels, as below or some other method)
+
+# Create a vector of reference files (by treatment labels)
 ref_files <- raw_data %>% 
   filter(Treatment == "REF") %>% 
   select(spu_filename) %>% pull()
@@ -450,35 +407,33 @@ correction_factors <- ref_data %>%
 (ref_filenames_table <- ref_data %>% group_by(Date, Site, Integration) %>% 
   summarize(Files = n_distinct(spu_filename), ref_filenames = str_c(spu_filename,collapse = ", ")) )
 
-## Build Plot all reference data files
-mean_refs <- correction_factors %>% 
-  rename(spu_filename = ref_filenames) %>% 
-  mutate(average = "average")
-single_refs <- ref_data %>% 
-  mutate(average = "single")
 
 ### VIZ
-(ref_plot <- ggplot(full_join(mean_refs, single_refs),
+(ref_plot <- ggplot(ref_data,
                     aes(x = Wavelength, 
                         y = correction_factor,
-                        group = spu_filename)) + 
+                        group_by = spu_filename)) + 
   theme(legend.position="left") + 
-  geom_line(aes(color=factor(Integration), linetype = factor(average))) + 
+  geom_line(aes(color=factor(Site))) + 
   
   # Formatting
-  labs(title = "White Reference Correction Factors",
-       subtitle = "Visually check to make sure references look OK.",
+  labs(title = "White Reference Correction Factor",
+       subtitle = "Make sure correction factor isn't a data scan and between 0.5 and 1.5",
        x = "Wavelength (nm)", 
        y = "Correction Factor") + 
   scale_linetype_discrete(name = "Files") + 
-  scale_color_discrete(name = "Integration time (ms)") + 
+  scale_color_discrete(name = "Site Name") + 
+    geom_hline(yintercept = 0.5, lty = 2) +
+    geom_hline(yintercept = 1.5, lty = 2) +
   theme_light()
   
   ) 
 
+
 ```
 
-### Apply References
+### Process Data
+Apply references to the data scans.
 Rerun the **Join Data & keys** sections above to update the `raw_data` dataframe. Apply your chosen references to actual spectral data to create the tidy dataframe `processed_data` containing corrected sepectral reflectance values.
 
 INPUTS:
@@ -553,19 +508,17 @@ if(nrow(processed_data) != nrow(raw_data)) {
 ##### VIZ: Plot Check first 30 files
 
 (processed_data %>% 
-    slice(1:30) %>% 
-    # make consolidated location label so it's more readable
-  mutate(Location = str_c(Site, "-", Block, "-", Treatment)) %>% 
-    #reformat data to plot
-
+    filter(Treatment %in% c("DARK", "REF", "CT", "CT1", "CT2")) %>% 
+   
   unnest(processed_spectra) %>% 
   gather(key = Status, value = Reflectance, raw_reflectance, corrected_reflectance) %>% 
   
   # VIZ
   ggplot(mapping = aes(x = Wavelength, y = Reflectance )) + 
-  geom_line(aes(color = spu_filename, linetype = Status)) + 
-    facet_wrap(vars(Date, Location)) + 
-  theme_light())
+  geom_line(aes(color = spu_filename, linetype = Status)) +
+    facet_grid(Site ~ Treatment) +
+  theme_light())+
+  theme(legend.position = "none")
 
 ```
 
@@ -585,7 +538,6 @@ index_data <- processed_data %>%
   select(-ChB, -ChA, -raw_reflectance, -correction_factor) %>%
   rename(Reflectance = corrected_reflectance) %>%
   nest(Spectra = c(Wavelength, Reflectance)) %>%
-  
   
   ## Calculate NDVI
   mutate(Indices = map(Spectra, function(x) calculate_indices(x, band_defns = band_defns, instrument = "MODIS", indices = c("NDVI", "EVI", "EVI2"))))
@@ -624,7 +576,7 @@ viz_treatments <- viz_data$Treatment %>% unique()
 viz_sites <- viz_data$Site   %>% unique()
 
 # Read data from past years
-past_data <- readRDS("~/ResearchProjects/Unispec/UnispecR/Visualizations/shiny_unispec_cleaned/indices_2014-2019.updated.rds") %>% 
+past_data <- readRDS("indices_2014-2019.updated.rds") %>% 
   
     # Standardize Site names from 2019 version to 2020 onwards
     mutate(Site = ifelse(Site %in% c("WSG1", "WSG23"), "WSG89", Site))  %>%
@@ -642,22 +594,29 @@ past_data <- readRDS("~/ResearchProjects/Unispec/UnispecR/Visualizations/shiny_u
   # Get relevant subset of data
   filter(Treatment %in% viz_treatments) %>% 
   filter(Site %in% viz_sites) %>% 
-  filter(Year >= 2017)
+  filter(Year >= 2017) 
 
 
 all_data <- past_data %>% 
-  full_join(viz_data)
-
+  full_join(viz_data) %>%
+  
+  # Calculate mean +/- se
+  group_by(Site, DOY, Date, Treatment, collection_year) %>% 
+  summarise(sd = sd(NDVI,na.rm = T),
+            NDVI = mean(NDVI, na.rm = T)) %>% 
+  
+# standardize site names
+  mutate(Site = ifelse(Site %in% c("NANT", "NNT97"), "MNN97", Site))
 
 (plot <- ggplot(data = all_data, aes(x = DOY, 
                                      y = NDVI, 
                                      color = collection_year)) + 
-    geom_point(aes(alpha = 0.01)) + 
-    geom_smooth() +
-    facet_grid(Site ~ Treatment)+ 
+    geom_point(aes(alpha = 0.5)) +
+    facet_grid(Site ~ Treatment) + 
     
     #formatting
-    theme_minimal()
+    theme_minimal() +
+    scale_color_manual(values = c("red", "grey"))
 )
 
 
