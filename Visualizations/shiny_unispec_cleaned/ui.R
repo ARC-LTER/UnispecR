@@ -11,15 +11,15 @@ library(shiny)
 library(DT)
 library(tidyverse)
 library(markdown)
+library(plotly)
 
 
 # Load Data ----------------------------------------------------------
-index_data <- read_rds("indices_2014-2019_tagged.rds") #load dataframe "index_data"
-
+index_data <- read_rds("indices_2014-2021.rds") %>% #load dataframe "index_data"
+         filter(!Site %in% c("IGNOR"))
 # Useful Vectors ----------------------------------------------------------
 
-
-site_list <- c("HIST", "MAT", "LMAT", "MNAT", "NANT", "HTH", "WSG", "SHB")
+site_list <- c("MAT81", "MAT89", "MAT06", "MNT97", "NNT97", "DHT89", "WSG89", "SHB89")
 block_list <- c("1", "2", "3", "4")
 index_list <- c("NDVI", "EVI", "EVI2")
 year_list <- seq(min(index_data$Year), max(index_data$Year), by = 1) 
@@ -39,7 +39,7 @@ shinyUI(fluidPage(
                              ),
                       
                       column(6,
-                        img(src='toolik_map.jpg', align = "center", 
+                        img(src="toolik_map.jpg", align = "center", 
                             height=700,
                             width=700)
                       )
@@ -75,16 +75,17 @@ shinyUI(fluidPage(
                                
                                # Input: Checkboxes for Site selection ----
                                checkboxGroupInput("ctl_comp_sites", 
-                                                  h4("Vegetation Type Site (expmt. started)"), 
-                                                  choices = list("HIST (1981)" = 1,
-                                                                 "MAT (1989)"  = 2, 
-                                                                 "LMAT (2006)"  = 3,
-                                                                 "MNAT (1997)" = 4,
-                                                                 "NANT (1997)" = 5,
-                                                                 "HTH (1989)"  = 6,
-                                                                 "WSG (1989)"  = 7,
-                                                                 "SHB (1989)" = 8),
-                                                  selected = c(1,2,3,4,5,6,7,8)),
+                                                  h4("Experimental Site"), 
+                                                  choices = site_list,
+                                                    # "HIST (1981)" = 1,
+                                                    #              "MAT (1989)"  = 2, 
+                                                    #              "LMAT (2006)"  = 3,
+                                                    #              "MNAT (1997)" = 4,
+                                                    #              "NANT (1997)" = 5,
+                                                    #              "HTH (1989)"  = 6,
+                                                    #              "WSG (1989)"  = 7,
+                                                    #              "SHB (1989)" = 8),
+                                                  selected = site_list),
                                
                                # Input: Radiobuttons to Aggregate CT Plots
                                radioButtons("ctl_comp_aggregate", label = h4("Aggregate CT plots"),
@@ -123,7 +124,7 @@ shinyUI(fluidPage(
                       # Fluid row layout with input and output definitions ----
                       fluidRow(
                         
-                        column(2, 
+                        column(width = 2, 
                                
                                # Input: ordinary selectize input without option groups
                                selectizeInput('bysite_index', 
@@ -143,29 +144,19 @@ shinyUI(fluidPage(
                                p("Each panel in the plot shows the Vegetation Index plotted over the summer:
                                  the x-axis displays the Day of Year (DOY); the y-axis, the chosen vegetation index."),
                                p("The data is averaged by plot (5 measurements per plot) and then by block (1 to 4 blocks per site).
-                                 The error bars indicate one standard deviation above and below.")   
-                               
-                              
+                                 The error bars indicate one standard deviation above and below.")
                         ), 
                         
                         column(width = 1,
-                               
-                               # Input: Checkboxes for Site selection ----
-                               checkboxGroupInput("bysite_sites", 
-                                                  h4("Sites"), 
-                                                  choices = list("HIST" = 1,
-                                                                 "MAT"  = 2, 
-                                                                 "LMAT"  = 3,
-                                                                 "MNAT" = 4,
-                                                                 "NANT" = 5,
-                                                                 "HTH"  = 6,
-                                                                 "WSG"  = 7,
-                                                                 "SHB" = 8),
-                                                  selected = 1)
-                                              
+                          
+                          # Input: Checkboxes for Site selection ----
+                          checkboxGroupInput(
+                            "bysite_sites",
+                            h4("Sites"),
+                            choices = setNames(nm = site_list),
+                            selected = site_list[1]
+                          )
                         ),
-                        
-
                         
                         column(width = 1, 
                                
@@ -185,9 +176,7 @@ shinyUI(fluidPage(
                         
                         column(width = 4,
                                DT::dataTableOutput("bysite_table")
-                               
                         )
-                        
                       )
              ),
              
@@ -225,24 +214,26 @@ shinyUI(fluidPage(
                                            sep=""),
 
                                # Input: Checkboxes for Site selection ----
-                               checkboxGroupInput("byblock_blocks", 
+                               checkboxGroupInput(inputId = "byblock_blocks", 
                                                   h4("Blocks"), 
-                                                  choices = list("B1" = 1, 
-                                                                 "B2" = 2,
-                                                                 "B3" = 3,
-                                                                 "B4" = 4),
-                                                  selected = 1),
+                                                  choices = NULL),
+                                                  #   list("B1" = 1, 
+                                                  #                "B2" = 2,
+                                                  #                "B3" = 3,
+                                                  #                "B4" = 4),
+                                                  # selected = 1),
                         
                                # Input: Checkboxes for Treatment  ----
-                               checkboxGroupInput("byblock_trtmts", 
+                               checkboxGroupInput(inputId = "byblock_trtmts", 
                                                   h4("Treatments"), 
-                                                  choices = list("CT"  = 1,
-                                                                 "N"   = 2,
-                                                                 "P"   = 3,
-                                                                 "NP"  = 4
+                                                  choices = NULL)
+                                                    # list("CT"  = 1,
+                                                    #              "N"   = 2,
+                                                    #              "P"   = 3,
+                                                    #              "NP"  = 4
                                                                  # EXCT, EXNP{LF, SF, NF}, S, L to add 
-                                                  ), 
-                                                  selected = 1)
+                                                  # ), 
+                                                  # selected = 1)
                         ),
                         
                         column(width = 3,
@@ -266,7 +257,7 @@ shinyUI(fluidPage(
                       
                       # PLOT Plot Data ----
                       textOutput("plot"),
-                      plotOutput('plotPlot'),
+                      plotlyOutput('plotPlot'),
                       
                       hr(), # horizontal line break 
                       

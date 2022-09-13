@@ -11,15 +11,17 @@ library(tidyverse)
 library(DT)
 library(shiny)
 library(markdown)
+library("viridis",warn.conflicts = FALSE)
+library(plotly)
 
-index_data <- read_rds("indices_2014-2019_tagged.rds") #load dataframe "index_data"
-
+index_data <- read_rds("indices_2014-2021.rds") %>% #load dataframe "index_data"
+               filter(!Treatment %in% c("IGNOR"))
 
 ## Useful Objects for Plotting 
-site_list <- c("HIST", "MAT", "LMAT", "MNAT", "NANT", "HTH", "WSG", "SHB")
-block_list <- c("B1", "B2", "B3", "B4")
+site_list <- c("MAT81", "MAT89", "MAT06", "MNT97", "NNT97", "DHT89", "WSG89", "SHB89")
+block_list <- c("1", "2", "3", "4")
 
-CT <- c("CT","CT1","CT2")
+CT <- c("CT","CT1","CT2", "CT2-old")
 NP <- c("F10","NP")
 NP_gradient <- c("F0.5","F1","F2","F5", "F10")
 N_types <- c("NO3", "NH4")
@@ -33,8 +35,7 @@ np_colors[5] <- "green4"
 Site.text <- c("MAT (1989)", "LMAT (2006)", "HIST (1981)", 
                "HTH (1989)", "MNAT (1997)", "NANT (1997)", 
                "SHB (1989)", "WSG (1989)")
-names(Site.text) <- c("MAT", "LMAT", "HIST", "HTH", "MNAT", "NANT",
-                      "SHB", "WSG")
+names(Site.text) <- c("MAT81", "MAT89", "MAT06", "MNT97", "NNT97", "DHT89", "WSG89", "SHB89")
 
 ## PLOT OPTIONS
 
@@ -58,7 +59,7 @@ shinyServer(
     ## (see https://shiny.rstudio.com/articles/reactivity-overview.html)
     
     ctl_comp_select <- function(index_data) {
-      sites <- unlist(site_list[as.numeric(input$ctl_comp_sites)])
+      sites <- input$ctl_comp_sites
       aggregate_ctls <- input$ctl_comp_aggregate == T
       
       sub_data <- index_data %>%
@@ -79,10 +80,10 @@ shinyServer(
     }
     
     bysite_select <- function(index_data) {
-      sites <- unlist(site_list[as.numeric(input$bysite_sites)])
-      trtmts <- unlist(trtmt_list[as.numeric(input$bysite_trtmts)])
+      sites <- input$bysite_sites
+        #unlist(site_list[as.numeric(input$bysite_sites)])
+      trtmts <- input$bysite_trtmts
       aggregate_ctls <- input$ctl_comp_aggregate == T
-      
       
       sub_data <- index_data  %>% 
         filter(Site %in% sites) %>% 
@@ -105,13 +106,13 @@ shinyServer(
     byblock_select <- function(index_data) {
       sites <- input$byblock_site
       blocks <- input$byblock_blocks
-      trtmts <- unlist(trtmt_list[as.numeric(input$byblock_trtmts)])
+      #trtmts <- unlist(trtmt_list[as.numeric(input$byblock_trtmts)])
       aggregate_ctls <- input$ctl_comp_aggregate == T
       
       
       sub_data <- index_data  %>% 
         filter(Site %in% sites) %>% 
-        filter(Treatment %in% trtmts) %>% 
+        filter(Treatment %in% input$byblock_trtmts) %>% 
         mutate(Treatment = replace(Treatment, Treatment %in% CT & aggregate_ctls, "CT"), Treatment)  %>%
         filter(Block %in% blocks) %>% 
         filter(Year >= input$byblock_years[1] & Year <= input$byblock_years[2]) %>% 
@@ -128,7 +129,7 @@ shinyServer(
     byplot_select <- function(index_data) {
       sites <- input$byplot_site
       blocks <- input$byplot_blocks
-      trtmts <- unlist(trtmt_list[as.numeric(input$byplot_trtmts)])
+      trtmts <- input$byplot_trtmts
       measures <- input$byplot_measurement
       aggregate_ctls <- input$ctl_comp_aggregate == T
       
@@ -149,7 +150,48 @@ shinyServer(
       
       return(sub_data)
     }
+    #* Select box updates.  When a file is loaded, get the sites and blocks ----
+    #* and select the first ones
     
+    #Block_Level tab
+    observeEvent(input$byblock_site,{
+      freezeReactiveValue(input, "byblock_trtmts")
+      selected_t <-unique(filter(index_data, Site %in% input$byblock_site) %>%
+                            select(Treatment))$Treatment      
+      updateCheckboxGroupInput(session, inputId = "byblock_trtmts", choices = selected_t,
+                               selected = selected_t[1])
+      freezeReactiveValue(input, "byblock_blocks")
+      selected_b <-unique(filter(index_data, Site %in% input$byblock_site) %>% select(Block))$Block
+      updateCheckboxGroupInput(session, inputId = "byblock_blocks", choices = selected_b,
+                               selected = selected_b[1])
+      
+    })
+  # Plot-Level tab  
+    observeEvent(input$byplot_site,{
+      freezeReactiveValue(input, "byplot_trtmts")
+      selected_t <-unique(filter(index_data, Site %in% input$byplot_site) %>%
+                            select(Treatment))$Treatment      
+      updateCheckboxGroupInput(session, inputId = "byplot_trtmts", choices = selected_t,
+                               selected = selected_t[1])
+      freezeReactiveValue(input, "byplot_blocks")
+      selected_b <-unique(filter(index_data, Site %in% input$byplot_site) %>% select(Block))$Block
+      updateCheckboxGroupInput(session, inputId = "byplot_blocks", choices = selected_b,
+                               selected = selected_b[1])
+      
+    })
+    # Site-Level tab  
+    observeEvent(input$bysite_sites,{
+      freezeReactiveValue(input, "bysite_trtmts")
+      selected_t <-unique(filter(index_data, Site %in% input$bysite_sites) %>%
+                            select(Treatment))$Treatment      
+      updateCheckboxGroupInput(session, inputId = "bysite_trtmts", choices = selected_t,
+                               selected = selected_t[1])
+      # freezeReactiveValue(input, "bysite_blocks")
+      # selected_b <-unique(filter(index_data, Site %in% input$bysite_sites) %>% select(Block))$Block
+      # updateCheckboxGroupInput(session, inputId = "bysite_blocks", choices = selected_b,
+      #                          selected = selected_b[1])
+      
+    })
     # Reactive Dataframes -----------------------------------------------------
     data <- reactiveValues(ctl_comp_sub_data = NULL,
                            bysite_sub_data = NULL,
@@ -194,8 +236,8 @@ shinyServer(
         geom_errorbar(aes(ymin = index_mean - index_sd/sqrt(N) , ymax= index_mean + index_sd/sqrt(N))) + 
         labs(y = which_index) +
         facet_grid(. ~ Year) + 
-        scale_color_manual(values = c("SHB" = "orange4", "HIST" = "darkgreen", "MAT" = "green4", "LMAT" = "chartreuse3",
-                                      "WSG" = "dodgerblue2", "MNAT" = "darkorchid", "NANT" = "mediumpurple4", "HTH" = "firebrick"
+        scale_color_manual(values = c("MAT89" = "green4", "MAT06" = "chartreuse3", "MAT81" = "darkgreen", "SHB89" = "orange4",   
+                                      "MNT97" = "darkorchid", "NNT97" = "mediumpurple4", "WSG89" = "dodgerblue2",  "DHT89" = "firebrick"
                                       ))
       
     })
@@ -263,7 +305,7 @@ shinyServer(
       
     })
     
-    output$plotPlot <- renderPlot({ ######## AGGREGRATE BY BLOCK
+    output$plotPlot <- renderPlotly({ ######## AGGREGRATE BY PLOT
       sub_data <- byplot_select(index_data)
       which_index <- input$byplot_index
       
