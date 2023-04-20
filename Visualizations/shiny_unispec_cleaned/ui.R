@@ -15,7 +15,7 @@ library(plotly)
 
 
 # Load Data ----------------------------------------------------------
-index_data <- read_rds("indices_2014-2021.rds") %>% #load dataframe "index_data"
+index_data <- read_rds("indices_2014-2022.rds") %>% #load dataframe "index_data"
          filter(!Site %in% c("IGNOR"))
 # Useful Vectors ----------------------------------------------------------
 

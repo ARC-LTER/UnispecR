@@ -13,8 +13,9 @@ library(shiny)
 library(markdown)
 library("viridis",warn.conflicts = FALSE)
 library(plotly)
+library(ggplot2)
 
-index_data <- read_rds("indices_2014-2021.rds") %>% #load dataframe "index_data"
+index_data <- read_rds("indices_2014-2022.rds") %>% #load dataframe "index_data"
                filter(!Treatment %in% c("IGNOR"))
 
 ## Useful Objects for Plotting 
@@ -218,6 +219,7 @@ shinyServer(
     })
     
     # Plot Output -------------------------------------------------------------
+    ##  Control Plots ----
     output$ctl_compPlot <- renderPlot({ ######## AGGREGRATE BY SITE
       sub_data <- ctl_comp_select(index_data)
       which_index <- input$ctl_comp_index
@@ -241,7 +243,7 @@ shinyServer(
                                       ))
       
     })
-    
+    ##  Site-Level ----
     output$sitePlot <- renderPlot({ ######## AGGREGRATE BY SITE
       sub_data <- bysite_select(index_data)
       which_index <- input$bysite_index
@@ -305,6 +307,7 @@ shinyServer(
       
     })
     
+    ##Plot-Level ----
     output$plotPlot <- renderPlotly({ ######## AGGREGRATE BY PLOT
       sub_data <- byplot_select(index_data)
       which_index <- input$byplot_index
@@ -320,8 +323,9 @@ shinyServer(
       
       
       ggplot(data = index_tograph, mapping = aes(x = DOY, y = index_mean, color=Treatment)) +
-        geom_point() + 
-        geom_line(aes(linetype=Replicate)) + 
+        geom_point(aes()) + 
+        geom_line(aes(linetype=Replicate)) +
+        guides(shape="none")+
         scale_color_manual(values=c("CT" = "black", "CT1"="black", "CT2"="black",
                                     "N" = "blue2", "NO3" = "dodgerblue", "NH4" = "deepskyblue",
                                     "P" = "red2",
@@ -334,6 +338,7 @@ shinyServer(
         theme_gray(base_size = 18) +
         labs(y = which_index) + 
         facet_grid(Block ~ Year)
+      
       
     })
     
