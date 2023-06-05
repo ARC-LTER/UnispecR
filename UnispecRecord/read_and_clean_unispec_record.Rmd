@@ -239,7 +239,7 @@ unispec_key <- unispec_data %>%
 ### Save Unispec key
 ```{r, dependson="directory"}
 ## Save .csv of file key for manual editing 
-unispec_keyname_og <- paste0("UnispecData/", format(unispec_key$Date[1], format="%Y"),"_unispec_key.csv")
+unispec_keyname_og <- paste0(data_path,"/", format(unispec_key$Date[1], format="%Y"),"_unispec_key.csv")
 write_csv(unispec_key, path = unispec_keyname_og)
 ```
 
@@ -257,14 +257,22 @@ Includes multispec spectral data and index data calculated using .xlsx summary s
   - 2018 :
 
 ```{r, load_xlsx_data, eval = T}
-xlsx_filename <- paste0(data_path, dir_year, "_processed_xlsx_data.rds")
+xlsx_filename <- paste0(data_path, "/", dir_year, "_processed_xlsx_data.rds")
 xlsx_data <- read_rds(xlsx_filename)
 
-multispec_data <- xlsx_data %>% select(spu_filename, xlsx_filename, ref_filenames, multispec_spectra)
+multispec_data <- xlsx_data %>% select(spu_filename, xlsx_filename, ref_filenames, multispec_spectra,Indices)
 index_data <- xlsx_data %>% select(spu_filename, xlsx_filename, Indices)
 
-xlsx_keyname <- paste0(data_path, dir_year, "_processed_xlsx_key.csv")
+xlsx_keyname <- paste0(data_path,"/", dir_year,"_processed_xlsx_key.csv")
 xlsx_key <- read_csv(xlsx_keyname)
+
+df<- xlsx_key %>% mutate(Site_filename = str_replace_all(spu_filename,c("jun"="","aug"="","jul"="" ,".spu"="","[:digit:]"=""))) %>%  
+mutate(FileNum = as.numeric(str_match(spu_filename, "(\\d{4,5}).spu")[,2]))
+df$Site_filename <- toupper(df$Site_filename)
+df$Site_filename <- recode (df$Site_filename, !!!Site_Names, .default = df$Site_filename)
+write.csv(df,file = paste0(data_path,"/",dir_year,"xlsx_key.csv"))
+
+xlsx_key_data <- full_join(xlsx_key,xlsx_data)
 
 ```
 
@@ -276,10 +284,10 @@ Includes raw spectra and instrument metadata.
   - 2016 : "UnispecData/2016_raw_spu_data.rds"; "UnispecData/2016_raw_spu_key.csv"
   
 ```{r, load_raw_data, eval = T}
-raw_filename <- paste0(data_path, dir_year, "_raw_spu_data.rds")
+raw_filename <- paste0(data_path,"/", dir_year, "_raw_spu_data.rds")
 spu_data <- read_rds(raw_filename)
 
-raw_keyname <- paste0(data_path, dir_year, "_raw_spu_key.csv")
+raw_keyname <- paste0(data_path,"/",  dir_year,"_raw_spu_key.csv")
 spu_key <- read_csv(raw_keyname) 
 
 ```
@@ -293,7 +301,7 @@ Includes manually corrected metadata.
   
 
 ```{r, df, dependson=c("load_raw_data", "load_xlsx_data"), eval=TRUE}
-unispec_keyname <- paste0(data_path, dir_year, "_unispec_key.csv") # manually updated key
+unispec_keyname <- paste0(data_path,"/", dir_year, "_unispec_key.csv") # manually updated key
 unispec_key_fix <- read_csv(unispec_keyname, skip_empty_rows = T, col_types = cols(
   spu_filename = col_character(),
   Type = col_factor(),
@@ -352,7 +360,7 @@ df_check <- df %>% # full dataframe not just ref's
   filter(format(DateTime, format="%Y-%m-%d") %in% check_dates) %>% # Date is NA for spu_files without 
   filter(Site %in% check_sites) %>% 
   arrange(DateTime)  %>% 
-  select(spu_filename, DateTime, Site, Block, Treatment, Replicate, FileNum, Type, Spectra, everything())
+  select(spu_filename, DateTime, Site, Block, Treatment, Replicate, FileNum, Type, Raw_Spectra, everything())
 
 ## PLOT RAW DATA --for specific File Numbers
 start_file <- 0
@@ -550,7 +558,7 @@ unprocessed_spu_files <- unprocessed_spu_data$spu_filename
 List files that maxed out, in the wavelengths used to calculate MODIS NDVI.
 ```{r maxed, dependson="df"}
 
-maxed_data <- df %>% inner_join(spu_data %>% select(spu_filename)) %>% unnest(Spectra) %>% 
+maxed_data <- df %>% inner_join(spu_data %>% select(spu_filename)) %>% unnest(Raw_Spectra) %>% 
   filter(ChA > 65000 | ChB > 65000) %>% 
   group_by(spu_filename) %>% 
   summarize(maxed_number = n(), maxed_wavelengths = str_c(Wavelength, collapse = ", ")) 
@@ -566,7 +574,7 @@ maxed_data %>% inner_join(df) %>% group_by(Site, Date) %>%
 ## Select those Max'd in NDVI Region
 maxed_limit <- 5 # keep files where spectra is max'd only at a narrow peak (e.g. for maxed_limit = 5, maxed region < 5*3.3nm = 16.5 nm)
 
-maxed_data_bad <- df %>% inner_join(spu_data %>% select(spu_filename)) %>% unnest(Spectra) %>% 
+maxed_data_bad <- df %>% inner_join(spu_data %>% select(spu_filename)) %>% unnest(Raw_Spectra) %>% 
   filter(ChA > 65000 | ChB > 65000) %>% 
   ## Extra conditions for NDVI region
   filter(Wavelength > 620) %>% # MODIS red lower bound
@@ -589,7 +597,7 @@ maxed_files_bad <- maxed_data_bad$spu_filename
 ### Dim'd Out Spectra
 Primarily Darkscans should show up. 
 ```{r dim, dependson=df}
-dim_data <- df %>% inner_join(spu_data %>% select(spu_filename)) %>% unnest(Spectra) %>% 
+dim_data <- df %>% inner_join(spu_data %>% select(spu_filename)) %>% unnest(Raw_Spectra) %>% 
   group_by(spu_filename) %>% 
   summarize(ChA_max = max(ChA)) %>% 
   filter(ChA_max < 20000) %>% 
@@ -613,7 +621,7 @@ dim_files <- dim_data$spu_filename
 #### Zero'd Spectra
 ```{r zerod}
 ## zero'd data 
-zero_data <- df %>% inner_join(spu_data %>% select(spu_filename)) %>% unnest(Spectra) %>% 
+zero_data <- df %>% inner_join(spu_data %>% select(spu_filename)) %>% unnest(Raw_Spectra) %>% 
   filter(ChA == 0) %>%  ## This is for all wavelengths, not just 400-1000nm
   group_by(spu_filename) %>% 
   summarize(Zeros = n()) %>% 
@@ -628,7 +636,7 @@ zero_data %>% group_by(Date, Site) %>%
 
 
 ## File List : Restricted Wavelengths
-zero_files <- zero_data %>% unnest(Spectra) %>% 
+zero_files <- zero_data %>% unnest(Raw_Spectra) %>% 
   filter(ChA == 0 ) %>% 
   filter(Wavelength > 400, Wavelength < 1000) %>% 
   pull(spu_filename) %>% unique()
@@ -651,12 +659,12 @@ zero_data_narrowed %>% group_by(Date, Site) %>%
 
 ## Raw Spectra
 absurd_raw_data <- df %>% 
-  filter(! Spectra %>% map(is.null) %>% map_lgl(any)) %>% # remove files w/out spu_spectra
+  filter(! Raw_Spectra %>% map(is.null) %>% map_lgl(any)) %>% # remove files w/out spu_spectra
   filter(!str_detect(Treatment, "REF")) %>% # ignore REF files
-  unnest(Spectra) %>% # use raw spectra
+  unnest(Raw_Spectra) %>% # use raw spectra
   filter(Wavelength > 400 & Wavelength < 1000) %>% 
   filter(Reflectance > 1) %>% 
-  nest(Wavelength, ChA, ChB, Reflectance, .key = Spectra)
+  nest(Wavelength, ChA, ChB, Reflectance, .key = Raw_Spectra)
 
 absurd_raw_files <- absurd_raw_data$spu_filename
 
@@ -709,7 +717,7 @@ ref_data <- xlsx_key %>%
   inner_join(spu_data)
 
 ## Build Plot all reference data files
-ref_data_all <- ref_data %>% unnest(Spectra) %>%
+ref_data_all <- ref_data %>% unnest(Raw_Spectra) %>%
   filter(Wavelength > 400, Wavelength < 1000) %>% 
   mutate(CorrectionFactor = 1/Reflectance)
 
