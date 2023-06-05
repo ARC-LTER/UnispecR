@@ -25,12 +25,13 @@ library("tidyverse")
 library("knitr")
 require(lubridate)
 require(openxlsx)
-require(rChoiceDialogs)
+require(rstudioapi)
 source("unispec_record_functions.R") # file loads required functions
 
 ## Standardize Names 
 # Recode Site to standard names. This should cover must years.
-Site_Names <- list(DH ="HTH", LHTH = "HTH", HTHB = "HTH", HTHPC = "HTH",HIS="HIST", 
+Site_Names <- list(DH ="HTH", LHTH = "HTH", HTHB = "HTH", HTHPC = "HTH",
+                   HIS="HIST", 
                    LOF = "LMAT",  LOFB = "LMAT", LNB = "LMAT", LOFRB ="LMAT",
                    MATB="MAT", MATSL= "MAT", MATBK = "MAT", 
                    MANTB ="MNAT",MNATB ="MNAT", NAMTB = "MNAT", 
@@ -57,8 +58,7 @@ Select the YEAR directory containing the files you want to process. Run the foll
 ```{r directory, eval=T}
 if (interactive()) {
   ## INTERACTIVE CODE (use when in RStudio)
-  library("rChoiceDialogs") # for interactively selecting file directories
-  data_path <- rchoose.dir(caption = "Select Unispec files directory")
+  data_path <- selectDirectory(caption = "Select Unispec files directory")
   dir_year <- str_split(data_path, pattern = "/")[[1]] %>% last()
 } else {
   ## STATIC CODE (use when Knitting)
@@ -71,15 +71,7 @@ if (interactive()) {
 
 ## Read .xlsx summary files
 ```{r, read_xlsx, eval=FALSE}
-## Choose directory
-processed_path <- rchoose.dir(data_path,caption = "Select Processed Files Directory")
 
-## Get the list of filenames of processed directory (recursive=F) without path (full.names=F)
-filenames <- list.files(processed_path, full.names= T, pattern='*.xlsx', recursive=T)
-
-## Read data from files (can take minutes)
-key_info_list <- tibble(processed_filename = filenames) %>% # create dataframe
-  mutate(file_contents = map(processed_filename, function(x) read_xlsx_file(x)))
 
 ## Unnest so that each row is a .spu file
 key_info <- key_info_list %>% 
