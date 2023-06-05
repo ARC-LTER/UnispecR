@@ -25,12 +25,13 @@ library("tidyverse")
 library("knitr")
 require(lubridate)
 require(openxlsx)
-require(rChoiceDialogs)
+require(rstudioapi)
 source("unispec_record_functions.R") # file loads required functions
 
 ## Standardize Names 
 # Recode Site to standard names. This should cover must years.
-Site_Names <- list(DH ="HTH", LHTH = "HTH", HTHB = "HTH", HTHPC = "HTH",HIS="HIST", 
+Site_Names <- list(DH ="HTH", LHTH = "HTH", HTHB = "HTH", HTHPC = "HTH",
+                   HIS="HIST", 
                    LOF = "LMAT",  LOFB = "LMAT", LNB = "LMAT", LOFRB ="LMAT",
                    MATB="MAT", MATSL= "MAT", MATBK = "MAT", 
                    MANTB ="MNAT",MNATB ="MNAT", NAMTB = "MNAT", 
@@ -57,8 +58,7 @@ Select the YEAR directory containing the files you want to process. Run the foll
 ```{r directory, eval=T}
 if (interactive()) {
   ## INTERACTIVE CODE (use when in RStudio)
-  library("rChoiceDialogs") # for interactively selecting file directories
-  data_path <- rchoose.dir(caption = "Select Unispec files directory")
+  data_path <- selectDirectory(caption = "Select Unispec files directory")
   dir_year <- str_split(data_path, pattern = "/")[[1]] %>% last()
 } else {
   ## STATIC CODE (use when Knitting)
@@ -71,15 +71,7 @@ if (interactive()) {
 
 ## Read .xlsx summary files
 ```{r, read_xlsx, eval=FALSE}
-## Choose directory
-processed_path <- rchoose.dir(data_path,caption = "Select Processed Files Directory")
 
-## Get the list of filenames of processed directory (recursive=F) without path (full.names=F)
-filenames <- list.files(processed_path, full.names= T, pattern='*.xlsx', recursive=T)
-
-## Read data from files (can take minutes)
-key_info_list <- tibble(processed_filename = filenames) %>% # create dataframe
-  mutate(file_contents = map(processed_filename, function(x) read_xlsx_file(x)))
 
 ## Unnest so that each row is a .spu file
 key_info <- key_info_list %>% 
@@ -111,7 +103,7 @@ multispec_data <- key_info %>% select(spu_filename, xlsx_filename, ref_filenames
 ## Confirm no duplicates: 
 paste0("Duplicate multispec spectra: ", 
 multispec_data %>% group_by(spu_filename) %>% filter(n()>1) %>% nrow() > 0)
-
+duplicat_spu_filename <-key_info %>% group_by(spu_filename) %>% filter(n()>1) %>% arrange(spu_filename)
 ## Extract Index Data
 index_data <- key_info %>% 
   select(-multispec_spectra) %>% # can't nest w/list column -- remove for now 
@@ -130,11 +122,11 @@ xlsx_key <- key_info %>%
 
 
 # > Save XLSX info --------------------------------------------------------
-xlsx_filename <- paste0("UnispecData/", format(key_info$Date[1], format="%Y"),"_processed_xlsx_data.rds")
-write_rds(xlsx_data, path = xlsx_filename)
+xlsx_filename <- paste0(data_path,"/", format(key_info$Date[1], format="%Y"),"_processed_xlsx_data.rds")
+write_rds(xlsx_data, file = xlsx_filename)
 
-xlsx_keyname <- paste0("UnispecData/", format(xlsx_key$Date[1], format="%Y"),"_processed_xlsx_key.csv")
-write_csv(xlsx_key, path = xlsx_keyname)
+xlsx_keyname <- paste0(data_path,"/", format(xlsx_key$Date[1], format="%Y"),"_processed_xlsx_key.csv")
+write_csv(xlsx_key, file = xlsx_keyname)
 
 
 ```
@@ -142,7 +134,7 @@ write_csv(xlsx_key, path = xlsx_keyname)
 
 ## Read .spu raw files
 ```{r, spu_dataframe}
-raw_data_path <- rchoose.dir(caption = "Select Raw Data Files Directory")
+raw_data_path <- rstudioapi::selectDirectory(caption = "Select Raw Data Files Directory")
 spu_files <- list.files(path = raw_data_path, pattern = ".spu$", full.names = T, recursive=T)
 
 # Read all the metadata from the spu files using function read_spufile_metadata; add a variable with the filename
@@ -151,7 +143,7 @@ spu_metadata <- map_dfr(spu_files, read_spu_file_metadata) %>%
   mutate(spu_filename_full = spu_files)
 
 spu_data <- spu_metadata %>% 
-  mutate(Spectra=map(spu_filename_full, function(x) read_spu_file_spectra(x)))
+  mutate(Raw_Spectra=map(spu_filename_full, function(x) read_spu_file_spectra(x)))
 
 # > Standardize Site Names -----------------------------------------------------
 # Check for different spelling of site names
@@ -161,8 +153,9 @@ spu_data$Site <- recode (spu_data$Site, !!!Site_Names, .default = spu_data$Site)
 # Recheck Site Names
 unique(spu_data$Site)
 
-spu_dataframe <- read_rds("UnispecData/2016_raw_spu_dataframe.rds") %>% 
-  select(spu_filename, Site, FileNum, Date, DateTime, Integration_ms, Temp, Remarks, Spectra)
+#spu_dataframe <- read_rds("UnispecData/2016_raw_spu_dataframe.rds") %>% 
+ spu_dataframe <- spu_data %>% 
+    select(spu_filename, Site, FileNum, Date, DateTime, Integration_ms, Temp, Remarks, Raw_Spectra)
 
 # > Set Type of Scan -----------------------------------------------------
 spu_dataframe <- spu_dataframe %>% 
@@ -170,35 +163,35 @@ spu_dataframe <- spu_dataframe %>%
                        ifelse(grepl("Datascan,DC",Remarks, fixed=T), "Throwawayscan", NA))) %>% 
   distinct(DateTime, spu_filename, .keep_all = T)  # duplicate files in 2015 WSG 2014-06-20
 
-# > Extract only Spectral datawithout metadata -----------------------------------------------------
+# > Extract only Raw_Spectral data without metadata -----------------------------------------------------
 
-spu_spectra <- spu_dataframe %>% select(spu_filename, DateTime, Spectra)
+spu_spectra <- spu_dataframe %>% select(spu_filename, DateTime, Raw_Spectra)
 
-# > Extract only Spectral Metadata for .csv key -----------------------------------------------------
+# > Extract only Raw_Spectral Metadata for .csv key -----------------------------------------------------
 spu_key <- spu_dataframe %>% 
-  select(-Spectra, -spu_filename_full) %>% # remove for .csv
+  select(-Raw_Spectra) %>% # remove for .csv
   select(spu_filename, everything()) # set order
 ```
 
 ### Save .spu data & key 
 ```{r, save_raw_data}
 
-# > Extract only Spectral datawithout metadata -----------------------------------------------------
-spu_spectra <- spu_dataframe %>% select(spu_filename, DateTime, Spectra)
+# > Extract only Raw_Spectral data without metadata -----------------------------------------------------
+spu_spectra <- spu_dataframe %>% select(spu_filename, DateTime, Raw_Spectra)
 
 ## Save raw data as .rds 
-raw_filename <- paste0("UnispecData/", format(spu_dataframe$DateTime[1], format="%Y"),"_raw_spu_data.rds")
-write_rds(spu_spectra, path = raw_filename)
+raw_filename <- paste0(data_path,"/", format(spu_dataframe$DateTime[1], format="%Y"),"_raw_spu_data.rds")
+write_rds(spu_spectra, file = raw_filename)
 
 
-# > Extract only Spectral Metadata for .csv key -----------------------------------------------------
+# > Extract only Raw_Spectral Metadata for .csv key -----------------------------------------------------
 spu_key <- spu_dataframe %>% 
-  select(-Spectra, -spu_filename_full, -key) %>% # remove for .csv
+  select(-Raw_Spectra) %>% # remove for .csv
   select(spu_filename, everything()) # set order
 
 ## Save raw metadata key
-raw_keyname <- paste0("UnispecData/", format(spu_dataframe$DateTime[1], format="%Y"),"_raw_spu_key.csv")
-write_csv(spu_key, path = raw_keyname)
+raw_keyname <- paste0(data_path,"/", format(spu_dataframe$DateTime[1], format="%Y"),"_raw_spu_key.csv")
+write_csv(spu_key, file = raw_keyname)
 
 ```
 
